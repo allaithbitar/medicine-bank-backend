@@ -7,7 +7,7 @@
     "dev": "bun run --watch src/index.ts",
     "build": "bun build  --target=bun --outfile=./dist/build.js ./src/index.ts",
     "build:compile": "bun build  --compile --outfile=./dist/build ./src/index.ts",
-    "start": "NODE_ENV=production bun run ./src/index.ts",
+    "start": "NODE_ENV=production bun run ./dist/build.js",
     "generate": "bun x drizzle-kit generate",
     "push": "bun x drizzle-kit push",
     "migrate": "bun x drizzle-kit migrate",

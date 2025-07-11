@@ -46,8 +46,8 @@ ENV JWT_REFRESH_TOKEN_EXPIRE=$JWT_REFRESH_TOKEN_EXPIRE
 
 ENV PORT=$PORT 
 
-RUN bun run build
+ENV NODE_ENV="production"
 
-# RUN bun migrate
+RUN bun run build
 
 CMD ["bun", "run", "start"]
