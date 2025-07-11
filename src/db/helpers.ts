@@ -40,7 +40,6 @@ export const getReadableDbErrorMessage = (
       if ("var" in errorToReturn) {
         const duplicatedValue =
           (error.detail ?? "").match(/\(([^)]+)\)/g)?.[1] ?? "";
-        console.log({ duplicatedValue });
 
         errorToReturn.en = errorToReturn.en.replace(
           `{${errorToReturn.var}}`,

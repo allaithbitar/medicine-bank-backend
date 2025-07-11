@@ -1,4 +1,3 @@
-import { config } from "./config";
 import app from "./server";
 
 const signals = ["SIGINT", "SIGTERM", "SIGKILL"];
@@ -19,6 +18,6 @@ process.on("unhandledRejection", (error) => {
   console.error(error);
 });
 
-app.listen(config.PORT, () =>
+app.listen(Bun.env.PORT, () =>
   console.log(`🦊 Server started at ${app.server?.url.origin}`),
 );

@@ -1,18 +1,20 @@
 import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import * as schema from "./schema";
-import { config } from "../config";
-
-console.log(
-  `postgresql://${config.POSTGRES_USER}:${config.POSTGRES_PASSWORD}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${config.POSTGRES_DB}`,
-);
 
 const DbInstance = drizzle(
-  `postgresql://${config.POSTGRES_USER}:${config.POSTGRES_PASSWORD}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${config.POSTGRES_DB}`,
+  `postgresql://${Bun.env.POSTGRES_USER}:${Bun.env.POSTGRES_PASSWORD}@${Bun.env.POSTGRES_HOST}:${Bun.env.POSTGRES_PORT}/${Bun.env.POSTGRES_DB}`,
   {
     schema,
     casing: "snake_case",
   },
 );
+
+if (Bun.env.NODE_ENV === "production") {
+  (async () => {
+    await migrate(DbInstance, { migrationsFolder: "src/db/migrations" });
+  })();
+}
 
 export type TDbContext = typeof DbInstance;
 

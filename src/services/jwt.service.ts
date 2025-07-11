@@ -1,11 +1,10 @@
 import "reflect-metadata";
 import { injectable } from "inversify";
 import jwt, { SignOptions } from "jsonwebtoken";
-import { config } from "../config";
 
 @injectable()
 export class JwtService {
-  private privateKey = config.JWT_SECRET;
+  private privateKey = Bun.env.JWT_SECRET!;
 
   sign(data: object, options?: SignOptions): Promise<string> {
     return new Promise((res, rej) => {

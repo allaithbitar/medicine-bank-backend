@@ -8,7 +8,6 @@ import {
 } from "../types/employee.type";
 import { ERROR_CODES, UnauthorizedError } from "../constants/errors";
 import { JwtService } from "./jwt.service";
-import { config } from "../config";
 import employeeMappers from "../mappers/employee.mappers";
 @injectable()
 export class EmployeeService {
@@ -40,14 +39,14 @@ export class EmployeeService {
       {
         userId: employee.id,
       },
-      { expiresIn: config.JWT_TOKEN_EXPIRE as any },
+      { expiresIn: Bun.env.JWT_TOKEN_EXPIRE as any },
     );
 
     const refreshToken = await this.jwtService.sign(
       {
         userId: employee.id,
       },
-      { expiresIn: config.JWT_REFRESH_TOKEN_EXPIRE as any },
+      { expiresIn: Bun.env.JWT_REFRESH_TOKEN_EXPIRE as any },
     );
 
     return employeeMappers.safeEntityToLoginResponseDto(
