@@ -1,6 +1,6 @@
 import { inject, injectable } from "inversify";
 import "reflect-metadata";
-import { PatientRepo } from "../repos/patients.repo";
+import { PatientRepo } from "../repos/patient.repo";
 import { TAddPatientDto, TUpdatePatientDto } from "../types/patient.type";
 @injectable()
 export class PatientService {

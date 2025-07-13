@@ -4,7 +4,7 @@ import { JwtService } from "../services/jwt.service";
 // import { EmployeeRepo } from "../repos/employee.repo";
 import { EmployeeService } from "../services/employee.service";
 import { EmployeeRepo } from "../repos/employee.repo";
-import { PatientRepo } from "../repos/patients.repo";
+import { PatientRepo } from "../repos/patient.repo";
 import { PatientService } from "../services/patient.service";
 import { DisclosureRepo } from "../repos/disclosure.repo";
 import { DisclosureService } from "../services/disclosure.service";
