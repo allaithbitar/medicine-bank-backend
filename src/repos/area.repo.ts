@@ -1,9 +1,13 @@
 import { inject, injectable } from "inversify";
 import { TDbContext } from "../db/drizzle";
 import { areas } from "../db/schema";
-import { TUpdateCityDto } from "../types/city.type";
 import { and, count, eq, ilike } from "drizzle-orm";
-import { TAddAreaDto, TArea, TFilterAreasDto } from "../types/area.type";
+import {
+  TAddAreaDto,
+  TArea,
+  TFilterAreasDto,
+  TUpdateAreaDto,
+} from "../types/area.type";
 import { TPaginatedResponse } from "../types/common.types";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 
@@ -50,7 +54,7 @@ export class AreaRepo {
     return await (tx ?? this.db).insert(areas).values(dto);
   }
 
-  async update(dto: TUpdateCityDto, tx?: TDbContext) {
+  async update(dto: TUpdateAreaDto, tx?: TDbContext) {
     const { id, name } = dto;
     return await (tx ?? this.db)
       .update(areas)
