@@ -13,6 +13,6 @@ export const updatePriorityDegreeModel = t.Composite([
   t.Pick(priorityDegreeInsertModel, ["color"]),
 ]);
 
-export const filterPrioityDegreesModel = t.Partial(
+export const filterPriorityDegreesModel = t.Partial(
   t.Pick(priorityDegreeInsertModel, ["name"]),
 );
