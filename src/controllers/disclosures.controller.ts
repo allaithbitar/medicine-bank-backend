@@ -3,9 +3,11 @@ import DiContainer from "../di/di-container";
 import {
   addDisclosureModel,
   addDisclosureRatingModel,
+  addDisclosureVisitModel,
   searchDisclosuresModel,
   updateDisclosureModel,
   updateDisclosureRatingModel,
+  updateDisclosureVisitModel,
 } from "../models/disclosure.model";
 import { DisclosureService } from "../services/disclosure.service";
 
@@ -20,6 +22,16 @@ export const DisclosuresController = new Elysia({
       .resolve(() => ({
         disclosureService: DiContainer.get(DisclosureService),
       }))
+      .post(
+        "search",
+        ({ body, disclosureService }) =>
+          disclosureService.searchDisclosures(body),
+
+        {
+          body: searchDisclosuresModel,
+        },
+      )
+
       .post(
         "",
         ({ body, disclosureService }) => {
@@ -39,15 +51,6 @@ export const DisclosuresController = new Elysia({
         },
       )
       .post(
-        "search",
-        ({ body, disclosureService }) =>
-          disclosureService.searchDisclosures(body),
-
-        {
-          body: searchDisclosuresModel,
-        },
-      )
-      .post(
         "/rating",
         ({ body, disclosureService }) =>
           disclosureService.addDisclosureRating(body),
@@ -63,6 +66,23 @@ export const DisclosuresController = new Elysia({
 
         {
           body: updateDisclosureRatingModel,
+        },
+      )
+      .post(
+        "/visit",
+        ({ body, disclosureService }) =>
+          disclosureService.addDisclosureVisit(body),
+
+        {
+          body: addDisclosureVisitModel,
+        },
+      )
+      .put(
+        "/visit",
+        ({ body, disclosureService }) =>
+          disclosureService.updateDisclosureVisit(body),
+        {
+          body: updateDisclosureVisitModel,
         },
       ),
 

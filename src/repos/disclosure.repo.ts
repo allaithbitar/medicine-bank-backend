@@ -1,21 +1,15 @@
 import { inject, injectable } from "inversify";
 import { TDbContext } from "../db/drizzle";
-import { disclosures, disclosuresToRatings } from "../db/schema";
+import { disclosures, disclosuresToRatings, visits } from "../db/schema";
 import {
   TAddDisclosureDto,
   TAddDisclosureRatingDto,
+  TAddDisclosureVisitDto,
   TFilterDisclosuresDto,
   TUpdateDisclosureRatingDto,
+  TUpdateDisclosureVisitDto,
 } from "../types/disclosure.type";
-import {
-  and,
-  count,
-  eq,
-  gte,
-  inArray,
-  InferInsertModel,
-  lte,
-} from "drizzle-orm";
+import { and, count, eq, gte, inArray, lte } from "drizzle-orm";
 
 @injectable()
 export class DisclosureRepo {
@@ -137,18 +131,26 @@ export class DisclosureRepo {
     await (tx ?? this.db).insert(disclosures).values(createDto);
   }
 
-  findManyWithIncludesPaginated(dto: TFilterDisclosuresDto) {
-    return this.getBase(dto);
+  async findManyWithIncludesPaginated(dto: TFilterDisclosuresDto) {
+    return await this.getBase(dto);
   }
 
-  addDisclosureRating(dto: TAddDisclosureRatingDto) {
-    return this.db.insert(disclosuresToRatings).values(dto);
+  async addDisclosureRating(dto: TAddDisclosureRatingDto) {
+    return await this.db.insert(disclosuresToRatings).values(dto);
   }
 
-  updateDislosureRating({ id, ...rest }: TUpdateDisclosureRatingDto) {
-    return this.db
+  async updateDislosureRating({ id, ...rest }: TUpdateDisclosureRatingDto) {
+    return await this.db
       .update(disclosuresToRatings)
       .set(rest)
       .where(eq(disclosuresToRatings.id, id));
+  }
+
+  async addDisclosureVisit(dto: TAddDisclosureVisitDto) {
+    return await this.db.insert(visits).values(dto);
+  }
+
+  async updateDislosureVisit({ id, ...rest }: TUpdateDisclosureVisitDto) {
+    return await this.db.update(visits).set(rest).where(eq(visits.id, id));
   }
 }

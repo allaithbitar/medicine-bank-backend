@@ -1,5 +1,5 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-typebox";
-import { disclosures, disclosuresToRatings } from "../db/schema";
+import { disclosures, disclosuresToRatings, visits } from "../db/schema";
 import { t } from "elysia";
 import { paginationModel } from "./common.model";
 
@@ -55,4 +55,27 @@ export const updateDisclosureRatingModel = t.Composite([
   t.Required(t.Pick(ratingToDisclosureInsertModel, ["id"])),
 
   t.Omit(addDisclosureRatingModel, ["id"]),
+]);
+
+export const visitSelectModel = createSelectSchema(visits);
+
+export const visitInsertModel = createInsertSchema(visits);
+
+export const addDisclosureVisitModel = t.Omit(visitInsertModel, [
+  "id",
+  "createdAt",
+  "updatedAt",
+  "createdBy",
+  "updatedBy",
+]);
+
+export const updateDisclosureVisitModel = t.Composite([
+  t.Pick(visitSelectModel, ["id"]),
+  t.Omit(visitInsertModel, [
+    "id",
+    "createdAt",
+    "updatedAt",
+    "createdBy",
+    "updatedBy",
+  ]),
 ]);

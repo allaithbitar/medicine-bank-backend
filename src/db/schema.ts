@@ -126,8 +126,10 @@ export const disclosures = pgTable("disclosures", {
 
 export const visits = pgTable("visits", {
   id: uuid("id").primaryKey().defaultRandom(),
-  disclosureId: uuid("disclosure_id").references(() => disclosures.id),
-  result: visit_result_enum("result").default("not_completed"),
+  disclosureId: uuid("disclosure_id")
+    .notNull()
+    .references(() => disclosures.id),
+  result: visit_result_enum("result").notNull().default("not_completed"),
   reason: text("reason"),
   note: text("note"),
   ...createdAtColumn,
@@ -150,11 +152,11 @@ export const disclosuresToRatings = pgTable("disclosures_to_ratings", {
   ...updatedBy,
 });
 
-export const disclosuresToVisists = pgTable("disclosures_to_visits", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  disclosureId: uuid("disclosure_id").references(() => disclosures.id),
-  visitId: uuid("visit_id").references(() => visits.id),
-});
+// export const disclosuresToVisists = pgTable("disclosures_to_visits", {
+//   id: uuid("id").primaryKey().defaultRandom(),
+//   disclosureId: uuid("disclosure_id").references(() => disclosures.id),
+//   visitId: uuid("visit_id").references(() => visits.id),
+// });
 
 // RELATIONS //
 
@@ -182,27 +184,30 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
     fields: [disclosures.priortyId],
     references: [priorityDegrees.id],
   }),
-  visits: many(disclosuresToVisists),
+  visits: many(visits),
   ratings: many(disclosuresToRatings),
 }));
 
-export const visitsRelations = relations(visits, ({ many }) => ({
-  disclosure: many(disclosuresToVisists),
+export const visitsRelations = relations(visits, ({ one }) => ({
+  disclosure: one(disclosures, {
+    fields: [visits.disclosureId],
+    references: [disclosures.id],
+  }),
 }));
 
-export const disclosuresToVisistsRelations = relations(
-  disclosuresToVisists,
-  ({ one }) => ({
-    disclosure: one(disclosures, {
-      fields: [disclosuresToVisists.disclosureId],
-      references: [disclosures.id],
-    }),
-    visit: one(visits, {
-      fields: [disclosuresToVisists.visitId],
-      references: [visits.id],
-    }),
-  }),
-);
+// export const disclosuresToVisistsRelations = relations(
+//   disclosuresToVisists,
+//   ({ one }) => ({
+//     disclosure: one(disclosures, {
+//       fields: [disclosuresToVisists.disclosureId],
+//       references: [disclosures.id],
+//     }),
+//     visit: one(visits, {
+//       fields: [disclosuresToVisists.visitId],
+//       references: [visits.id],
+//     }),
+//   }),
+// );
 
 export const disclosuresToRatingsRelations = relations(
   disclosuresToRatings,

@@ -4,8 +4,10 @@ import { DisclosureRepo } from "../repos/disclosure.repo";
 import {
   TAddDisclosureDto,
   TAddDisclosureRatingDto,
+  TAddDisclosureVisitDto,
   TFilterDisclosuresDto,
   TUpdateDisclosureRatingDto,
+  TUpdateDisclosureVisitDto,
 } from "../types/disclosure.type";
 @injectable()
 export class DisclosureService {
@@ -25,5 +27,13 @@ export class DisclosureService {
 
   updateDisclosureRating(dto: TUpdateDisclosureRatingDto) {
     return this.disclosureRepo.updateDislosureRating(dto);
+  }
+
+  addDisclosureVisit(dto: TAddDisclosureVisitDto) {
+    return this.disclosureRepo.addDisclosureVisit(dto);
+  }
+
+  updateDisclosureVisit(dto: TUpdateDisclosureVisitDto) {
+    return this.disclosureRepo.updateDislosureVisit(dto);
   }
 }
