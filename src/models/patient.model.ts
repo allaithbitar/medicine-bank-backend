@@ -9,7 +9,7 @@ export const patientInsertModel = createInsertSchema(patients);
 export const addPatientModel = t.Composite([
   t.Omit(patientInsertModel, ["createdAt", "updatedAt", "id"]),
   t.Object({
-    phoneNumbers: t.Optional(t.Array(t.String(), { default: [] })),
+    phoneNumbers: t.Array(t.String(), { default: [], minItems: 1 }),
   }),
 ]);
 export const updatePatientModel = t.Composite([

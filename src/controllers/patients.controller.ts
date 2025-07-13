@@ -1,6 +1,5 @@
 import { Elysia } from "elysia";
 import DiContainer from "../di/di-container";
-import { TDbContext } from "../db/drizzle";
 import { addPatientModel, updatePatientModel } from "../models/patient.model";
 import { PatientService } from "../services/patient.service";
 
@@ -13,18 +12,7 @@ export const PatientsController = new Elysia({
     .post("", ({ body, patientService }) => patientService.addPatient(body), {
       body: addPatientModel,
     })
-    .put(
-      "",
-      () => {
-        const db = DiContainer.get("db") as TDbContext;
-        return db.query.employees.findMany({
-          with: {
-            area: true,
-          },
-        });
-      },
-      {
-        body: updatePatientModel,
-      },
-    ),
+    .put("", ({ body, patientService }) => patientService.updatePatient(body), {
+      body: updatePatientModel,
+    }),
 );

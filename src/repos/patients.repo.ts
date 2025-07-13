@@ -1,17 +1,11 @@
 import { inject, injectable } from "inversify";
-import IGenericRepo from "./generic.repo";
-import {
-  TAddPatientDto,
-  TPatient,
-  TUpdatePatientDto,
-} from "../types/patient.type";
+import { TAddPatientDto, TUpdatePatientDto } from "../types/patient.type";
 import { TDbContext } from "../db/drizzle";
 import { patients, patientsPhoneNumbers } from "../db/schema";
+import { eq } from "drizzle-orm";
 
 @injectable()
-export class PatientRepo
-  implements IGenericRepo<TPatient, TAddPatientDto, TUpdatePatientDto, any, {}>
-{
+export class PatientRepo {
   constructor(@inject("db") private db: TDbContext) {}
   async create(createDto: TAddPatientDto, tx?: TDbContext): Promise<void> {
     const { phoneNumbers, ...rest } = createDto;
@@ -22,11 +16,28 @@ export class PatientRepo
         .values(rest)
         .returning({ id: patients.id });
 
-      if (phoneNumbers?.length) {
-        await _tx
-          .insert(patientsPhoneNumbers)
-          .values(phoneNumbers.map((phone) => ({ patientId: id, phone })));
-      }
+      await _tx
+        .insert(patientsPhoneNumbers)
+        .values(phoneNumbers.map((phone) => ({ patientId: id, phone })));
+    });
+  }
+
+  async update(updateDto: TUpdatePatientDto, tx?: TDbContext): Promise<void> {
+    const { phoneNumbers, ...rest } = updateDto;
+
+    await (tx ?? this.db).transaction(async (_tx) => {
+      const [{ id }] = await _tx
+        .update(patients)
+        .set(rest)
+        .returning({ id: patients.id });
+
+      await _tx
+        .delete(patientsPhoneNumbers)
+        .where(eq(patientsPhoneNumbers.patientId, id));
+
+      await _tx
+        .insert(patientsPhoneNumbers)
+        .values(phoneNumbers.map((phone) => ({ patientId: id, phone })));
     });
   }
 }
