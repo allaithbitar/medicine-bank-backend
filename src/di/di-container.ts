@@ -12,6 +12,8 @@ import { AreaRepo } from "../repos/area.repo";
 import { AreaService } from "../services/area.service";
 import { CityRepo } from "../repos/city.repo";
 import { CityService } from "../services/city.service";
+import { PriorityDegreeRepo } from "../repos/priority-degree.repo";
+import { PriorityDegreeService } from "../services/priority-degree.service";
 
 const DiContainer = new Container();
 
@@ -32,5 +34,11 @@ DiContainer.bind<AreaRepo>(AreaRepo).toSelf().inRequestScope();
 DiContainer.bind<AreaService>(AreaService).toSelf().inRequestScope();
 DiContainer.bind<CityRepo>(CityRepo).toSelf().inRequestScope();
 DiContainer.bind<CityService>(CityService).toSelf().inRequestScope();
+DiContainer.bind<PriorityDegreeRepo>(PriorityDegreeRepo)
+  .toSelf()
+  .inRequestScope();
+DiContainer.bind<PriorityDegreeService>(PriorityDegreeService)
+  .toSelf()
+  .inRequestScope();
 
 export default DiContainer;

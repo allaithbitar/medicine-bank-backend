@@ -25,4 +25,10 @@ export const DB_CONSTRAINT_ERRORS = {
     code: "13",
     var: "phone",
   },
+  priority_degrees_name_unique: {
+    en: "Priority degree name {name} already exists",
+    ar: "اسم درجة الأهمية {name} موجود بالفعل",
+    code: "14",
+    var: "name",
+  },
 };

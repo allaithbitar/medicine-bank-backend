@@ -97,7 +97,7 @@ export const patientsPhoneNumbers = pgTable("patients_phone_numbers", {
   phone: text("phone").unique().notNull(),
 });
 
-export const prioriyDegress = pgTable("prioriy_degress", {
+export const priorityDegrees = pgTable("priority_degrees", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").unique().notNull(),
   color: text("color"),
@@ -115,7 +115,7 @@ export const disclosures = pgTable("disclosures", {
   status: disclosure_status_enum("status").notNull().default("active"),
   priortyId: uuid("priorty_id")
     .notNull()
-    .references(() => prioriyDegress.id),
+    .references(() => priorityDegrees.id),
   patientId: uuid("patient_id")
     .notNull()
     .references(() => patients.id),
@@ -178,9 +178,9 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
     fields: [disclosures.patientId],
     references: [patients.id],
   }),
-  prioriy: one(prioriyDegress, {
+  prioriy: one(priorityDegrees, {
     fields: [disclosures.priortyId],
-    references: [prioriyDegress.id],
+    references: [priorityDegrees.id],
   }),
   visits: many(disclosuresToVisists),
   ratings: many(disclosuresToRatings),

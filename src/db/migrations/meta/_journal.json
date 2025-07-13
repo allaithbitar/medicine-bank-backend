@@ -8,6 +8,13 @@
       "when": 1752245517852,
       "tag": "0000_handy_black_bird",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1752396693734,
+      "tag": "0001_tough_leo",
+      "breakpoints": true
     }
   ]
 }
