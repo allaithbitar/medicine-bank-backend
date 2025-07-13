@@ -57,6 +57,11 @@ export const updateDisclosureRatingModel = t.Composite([
   t.Omit(addDisclosureRatingModel, ["id"]),
 ]);
 
+export const getDisclosureRatingsModel = t.Composite([
+  paginationModel,
+  t.Pick(ratingToDisclosureInsertModel, ["disclosureId", "isCustom"]),
+]);
+
 export const visitSelectModel = createSelectSchema(visits);
 
 export const visitInsertModel = createInsertSchema(visits);
@@ -77,5 +82,18 @@ export const updateDisclosureVisitModel = t.Composite([
     "updatedAt",
     "createdBy",
     "updatedBy",
+  ]),
+]);
+
+export const getDisclosureVisitsModel = t.Composite([
+  paginationModel,
+  t.Omit(visitInsertModel, [
+    "id",
+    "createdAt",
+    "updatedAt",
+    "createdBy",
+    "updatedBy",
+    "reason",
+    "note",
   ]),
 ]);

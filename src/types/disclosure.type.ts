@@ -4,6 +4,8 @@ import {
   addDisclosureRatingModel,
   addDisclosureVisitModel,
   disclosureSelectModel,
+  getDisclosureRatingsModel,
+  getDisclosureVisitsModel,
   searchDisclosuresModel,
   updateDisclosureModel,
   updateDisclosureRatingModel,
@@ -20,6 +22,8 @@ export type TUpdateDisclosureDto = Static<typeof updateDisclosureModel>;
 
 export type TFilterDisclosuresDto = Static<typeof searchDisclosuresModel>;
 
+export type TGetDisclosureRatingsDto = Static<typeof getDisclosureRatingsModel>;
+
 export type TAddDisclosureRatingDto = Static<typeof addDisclosureRatingModel> &
   Pick<
     InferInsertModel<typeof disclosuresToRatings>,
@@ -30,6 +34,8 @@ export type TUpdateDisclosureRatingDto = Static<
   typeof updateDisclosureRatingModel
 > &
   Pick<InferInsertModel<typeof disclosuresToRatings>, "updatedBy">;
+
+export type TGetDisclosureVisitsDto = Static<typeof getDisclosureVisitsModel>;
 
 export type TAddDisclosureVisitDto = Static<typeof addDisclosureVisitModel>;
 

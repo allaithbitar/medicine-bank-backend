@@ -1,9 +1,12 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import DiContainer from "../di/di-container";
 import {
   addDisclosureModel,
   addDisclosureRatingModel,
   addDisclosureVisitModel,
+  disclosureSelectModel,
+  getDisclosureRatingsModel,
+  getDisclosureVisitsModel,
   searchDisclosuresModel,
   updateDisclosureModel,
   updateDisclosureRatingModel,
@@ -31,6 +34,15 @@ export const DisclosuresController = new Elysia({
           body: searchDisclosuresModel,
         },
       )
+      .get(
+        ":id",
+        ({ params, disclosureService }) =>
+          disclosureService.getDisclosureById(params.id),
+
+        {
+          params: t.Pick(disclosureSelectModel, ["id"]),
+        },
+      )
 
       .post(
         "",
@@ -50,8 +62,18 @@ export const DisclosuresController = new Elysia({
           body: updateDisclosureModel,
         },
       )
+      .get(
+        "/ratings",
+        ({ query, disclosureService }) =>
+          disclosureService.getDisclosureRatings(query),
+
+        {
+          query: getDisclosureRatingsModel,
+        },
+      )
+
       .post(
-        "/rating",
+        "/ratings",
         ({ body, disclosureService }) =>
           disclosureService.addDisclosureRating(body),
 
@@ -60,7 +82,7 @@ export const DisclosuresController = new Elysia({
         },
       )
       .put(
-        "/rating",
+        "/ratings",
         ({ body, disclosureService }) =>
           disclosureService.updateDisclosureRating(body),
 
@@ -68,8 +90,18 @@ export const DisclosuresController = new Elysia({
           body: updateDisclosureRatingModel,
         },
       )
+      .get(
+        "/visits",
+        ({ query, disclosureService }) =>
+          disclosureService.getDisclosureVisits(query),
+
+        {
+          query: getDisclosureVisitsModel,
+        },
+      )
+
       .post(
-        "/visit",
+        "/visits",
         ({ body, disclosureService }) =>
           disclosureService.addDisclosureVisit(body),
 
@@ -78,7 +110,7 @@ export const DisclosuresController = new Elysia({
         },
       )
       .put(
-        "/visit",
+        "/visits",
         ({ body, disclosureService }) =>
           disclosureService.updateDisclosureVisit(body),
         {
