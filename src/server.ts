@@ -34,6 +34,7 @@ import { AuthController } from "./controllers/auth.controller";
 import { CitiesController } from "./controllers/cities.controller";
 import { AreasController } from "./controllers/areas.controller";
 import { PriorityDegreesController } from "./controllers/priority-degrees.controller";
+import { RatingsController } from "./controllers/ratings.controller";
 
 const app = new Elysia()
   .use(cors())
@@ -106,6 +107,7 @@ const app = new Elysia()
   .use(CitiesController)
   .use(AreasController)
   .use(PriorityDegreesController)
+  .use(RatingsController)
   .get("/", async () => {
     return "pong";
   });

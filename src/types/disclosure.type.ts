@@ -3,7 +3,6 @@ import {
   addDisclosureModel,
   addDisclosureRatingModel,
   disclosureSelectModel,
-  ratingToDisclosureInsertModel,
   searchDisclosuresModel,
   updateDisclosureModel,
   updateDisclosureRatingModel,
