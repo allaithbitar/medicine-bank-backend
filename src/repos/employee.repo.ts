@@ -1,5 +1,9 @@
 import { inject, injectable } from "inversify";
-import { TAddEmployeeDto, TEmployeeEntity } from "../types/employee.type";
+import {
+  TAddEmployeeDto,
+  TEmployeeEntity,
+  TUpdateEmployeeDto,
+} from "../types/employee.type";
 import { TDbContext } from "../db/drizzle";
 import { employees } from "../db/schema";
 import { eq } from "drizzle-orm";
@@ -10,6 +14,14 @@ export class EmployeeRepo {
 
   async create(createDto: TAddEmployeeDto, tx?: TDbContext): Promise<void> {
     await (tx ?? this.db).insert(employees).values(createDto);
+  }
+
+  async update(updateDto: TUpdateEmployeeDto, tx?: TDbContext): Promise<void> {
+    const { id, ...rest } = updateDto;
+    await (tx ?? this.db)
+      .update(employees)
+      .set(rest)
+      .where(eq(employees.id, id));
   }
 
   async findById(id: string): Promise<TEmployeeEntity | undefined> {

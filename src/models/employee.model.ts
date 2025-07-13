@@ -14,7 +14,8 @@ export const addEmployeeModel = t.Omit(employeeInsertModel, [
 
 export const updateEmployeeModel = t.Composite([
   t.Pick(employeeSelectModel, ["id"]),
-  addEmployeeModel,
+  t.Omit(addEmployeeModel, ["password"]),
+  t.Partial(t.Pick(addEmployeeModel, ["password"])),
 ]);
 
 export const loginEmployeeModel = t.Pick(employeeInsertModel, [

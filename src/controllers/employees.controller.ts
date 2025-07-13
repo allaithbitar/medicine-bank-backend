@@ -4,7 +4,6 @@ import {
   updateEmployeeModel,
 } from "../models/employee.model";
 import DiContainer from "../di/di-container";
-import { TDbContext } from "../db/drizzle";
 import { EmployeeService } from "../services/employee.service";
 
 export const EmployeesController = new Elysia({
@@ -23,14 +22,8 @@ export const EmployeesController = new Elysia({
     )
     .put(
       "",
-      () => {
-        const db = DiContainer.get("db") as TDbContext;
-        return db.query.employees.findMany({
-          with: {
-            area: true,
-          },
-        });
-      },
+      ({ employeeService, body }) => employeeService.updateEmployee(body),
+
       {
         body: updateEmployeeModel,
       },

@@ -5,8 +5,13 @@ import {
   TAddEmployeeDto,
   TLoginEmployeeDto,
   TRefreshTokenDto,
+  TUpdateEmployeeDto,
 } from "../types/employee.type";
-import { ERROR_CODES, UnauthorizedError } from "../constants/errors";
+import {
+  ERROR_CODES,
+  NotFoundError,
+  UnauthorizedError,
+} from "../constants/errors";
 import { JwtService } from "./jwt.service";
 import employeeMappers from "../mappers/employee.mappers";
 @injectable()
@@ -19,6 +24,25 @@ export class EmployeeService {
   async addEmployee(dto: TAddEmployeeDto) {
     const passwordHash = await Bun.password.hash(dto.password);
     return this.employeeRepo.create({ ...dto, password: passwordHash });
+  }
+
+  async updateEmployee(dto: TUpdateEmployeeDto) {
+    const employee = await this.employeeRepo.findById(dto.id);
+
+    if (!employee) {
+      throw new NotFoundError(ERROR_CODES.USER_NOT_FOUND);
+    }
+
+    const { password: oldPassword } = employee;
+
+    let newPassword = oldPassword;
+
+    if (dto.password) {
+      const newPasswordHashed = await Bun.password.hash(dto.password);
+      newPassword = newPasswordHashed;
+    }
+
+    await this.updateEmployee({ ...dto, password: newPassword });
   }
 
   async loginEmployee(dto: TLoginEmployeeDto) {
