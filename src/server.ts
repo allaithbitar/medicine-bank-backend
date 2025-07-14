@@ -100,6 +100,11 @@ const app = new Elysia()
     }
     return { success: false, data: null, errorMessage: message };
   })
+  .onAfterHandle(({ response }) => ({
+    success: true,
+    data: response ?? null,
+    errorMessage: null,
+  }))
   .use(AuthController)
   .use(EmployeesController)
   .use(PatientsController)
