@@ -1,6 +1,6 @@
 services:
   app:
-    container_name: medicine-bank-backend-app
+    container_name: ${APP_CONTAINER_NAME}
     env_file: .env
     build:
       context: .
@@ -21,7 +21,9 @@ services:
       - .:/app
       - ./node_modules:/app/node_modules
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+        restart: true
     stdin_open: true
     tty: true
 
@@ -39,6 +41,15 @@ services:
       - ${POSTGRES_PORT}:${POSTGRES_PORT}
     volumes:
       - medicine_bank_dev_db:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER} -p ${POSTGRES_PORT}",
+        ]
+      interval: 1s
+      timeout: 5s
+      retries: 10
 
 volumes:
   medicine_bank_dev_db:

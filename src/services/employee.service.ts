@@ -3,6 +3,7 @@ import "reflect-metadata";
 import { EmployeeRepo } from "../repos/employee.repo";
 import {
   TAddEmployeeDto,
+  TFilterEmployeesDto,
   TLoginEmployeeDto,
   TRefreshTokenDto,
   TUpdateEmployeeDto,
@@ -42,7 +43,7 @@ export class EmployeeService {
       newPassword = newPasswordHashed;
     }
 
-    await this.updateEmployee({ ...dto, password: newPassword });
+    await this.employeeRepo.update({ ...dto, password: newPassword });
   }
 
   async loginEmployee(dto: TLoginEmployeeDto) {
@@ -96,12 +97,12 @@ export class EmployeeService {
 
     const newToken = await this.jwtService.sign(
       { userId: user.id },
-      { expiresIn: config.JWT_TOKEN_EXPIRE as any },
+      { expiresIn: Bun.env.JWT_TOKEN_EXPIRE as any },
     );
 
     const newRefreshToken = await this.jwtService.sign(
       { userId: user.id },
-      { expiresIn: config.JWT_REFRESH_TOKEN_EXPIRE as any },
+      { expiresIn: Bun.env.JWT_REFRESH_TOKEN_EXPIRE as any },
     );
 
     return employeeMappers.safeEntityToLoginResponseDto(
@@ -109,5 +110,9 @@ export class EmployeeService {
       newToken,
       newRefreshToken,
     );
+  }
+
+  async searchEmployees(dto: TFilterEmployeesDto) {
+    return this.employeeRepo.findManyWithIncludesPaginated(dto);
   }
 }

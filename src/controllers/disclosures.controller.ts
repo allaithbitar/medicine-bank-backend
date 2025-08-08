@@ -56,7 +56,7 @@ export const DisclosuresController = new Elysia({
       .put(
         "",
         ({ body, disclosureService }) => {
-          disclosureService.addDisclosure(body);
+          disclosureService.updateDisclosure(body);
         },
         {
           body: updateDisclosureModel,

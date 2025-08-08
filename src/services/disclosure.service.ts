@@ -8,6 +8,7 @@ import {
   TFilterDisclosuresDto,
   TGetDisclosureRatingsDto,
   TGetDisclosureVisitsDto,
+  TUpdateDisclosureDto,
   TUpdateDisclosureRatingDto,
   TUpdateDisclosureVisitDto,
 } from "../types/disclosure.type";
@@ -21,6 +22,10 @@ export class DisclosureService {
 
   addDisclosure(dto: TAddDisclosureDto) {
     return this.disclosureRepo.create(dto);
+  }
+
+  updateDisclosure(dto: TUpdateDisclosureDto) {
+    return this.disclosureRepo.update(dto);
   }
 
   searchDisclosures(dto: TFilterDisclosuresDto) {

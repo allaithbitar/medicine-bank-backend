@@ -1,7 +1,5 @@
 FROM oven/bun:1.2.18-alpine AS base
 
-
-
 WORKDIR /app
 
 COPY package.json bun.lock ./
@@ -32,6 +30,6 @@ ENV POSTGRES_DB=$POSTGRES_DB
 
 ENV POSTGRES_PASSWORD=$POSTGRES_PASSWORD 
 
-ENV API_PORT=$API_PORT 
+ENV PORT=$PORT
 
 CMD ["bun", "run", "dev"]

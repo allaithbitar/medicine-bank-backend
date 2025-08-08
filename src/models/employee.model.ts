@@ -1,6 +1,7 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-typebox";
 import { t } from "elysia";
 import { employees } from "../db/schema";
+import { paginationModel } from "./common.model";
 
 export const employeeSelectModel = createSelectSchema(employees);
 
@@ -22,3 +23,24 @@ export const loginEmployeeModel = t.Pick(employeeInsertModel, [
   "phone",
   "password",
 ]);
+
+export const filterEmployeesModel = t.Partial(
+  t.Composite([
+    paginationModel,
+    t.Omit(employeeSelectModel, [
+      "password",
+      "id",
+      "name",
+      "phone",
+      "role",
+      "createdAt",
+      "updatedAt",
+    ]),
+    t.Object({
+      query: t.String(),
+      role: t.Optional(
+        t.Array(employeeInsertModel.properties.role, { default: [] }),
+      ),
+    }),
+  ]),
+);

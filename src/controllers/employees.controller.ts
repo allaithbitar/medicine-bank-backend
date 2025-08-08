@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
 import {
   addEmployeeModel,
+  filterEmployeesModel,
   updateEmployeeModel,
 } from "../models/employee.model";
 import DiContainer from "../di/di-container";
@@ -13,6 +14,14 @@ export const EmployeesController = new Elysia({
   app
 
     .resolve(() => ({ employeeService: DiContainer.get(EmployeeService) }))
+    .post(
+      "/search",
+      ({ body, employeeService }) => employeeService.searchEmployees(body),
+      {
+        body: filterEmployeesModel,
+      },
+    )
+
     .post(
       "",
       ({ body, employeeService }) => employeeService.addEmployee(body),

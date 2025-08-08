@@ -30,21 +30,29 @@ export const searchDisclosuresModel = t.Composite([
     "updatedAt",
     "employeeId",
     "createdAt",
+    "status",
   ]),
   t.Object({
     // patientIds: t.Optional(t.Array(t.String({ format: "uuid" }))),
     employeeIds: t.Optional(
       t.Array(t.String({ format: "uuid" }), { default: [] }),
     ),
+
+    patientId: t.Optional(t.String({ format: "uuid" })),
+
     ratingIds: t.Optional(
       t.Array(t.String({ format: "uuid" }), { default: [] }),
     ),
     createdAtStart: t.Optional(t.String({ format: "date-time" })),
     createdAtEnd: t.Optional(t.String({ format: "date-time" })),
+    status: t.Optional(
+      t.Array(disclosureInsertModel.properties.status, { default: [] }),
+    ),
   }),
 ]);
 
 export const addDisclosureRatingModel = t.Omit(ratingToDisclosureInsertModel, [
+  "id",
   "createdAt",
   "updatedAt",
   "createdBy",

@@ -98,6 +98,7 @@ const app = new Elysia()
         }
       }
     }
+
     return { success: false, data: null, errorMessage: message };
   })
   .onAfterHandle(({ response }) => ({

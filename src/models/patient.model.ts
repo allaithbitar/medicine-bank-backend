@@ -1,6 +1,7 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-typebox";
 import { t } from "elysia";
 import { patients } from "../db/schema";
+import { paginationModel } from "./common.model";
 
 export const patientSelectModel = createSelectSchema(patients);
 
@@ -12,7 +13,16 @@ export const addPatientModel = t.Composite([
     phoneNumbers: t.Array(t.String(), { default: [], minItems: 1 }),
   }),
 ]);
+
 export const updatePatientModel = t.Composite([
   t.Pick(patientSelectModel, ["id"]),
   addPatientModel,
+]);
+
+export const filterPatientsModel = t.Composite([
+  paginationModel,
+  t.Pick(patientInsertModel, ["areaId"]),
+  t.Object({
+    query: t.Optional(t.String()),
+  }),
 ]);

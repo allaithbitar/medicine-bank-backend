@@ -8,6 +8,7 @@ import {
   TFilterDisclosuresDto,
   TGetDisclosureRatingsDto,
   TGetDisclosureVisitsDto,
+  TUpdateDisclosureDto,
   TUpdateDisclosureRatingDto,
   TUpdateDisclosureVisitDto,
 } from "../types/disclosure.type";
@@ -18,7 +19,9 @@ const withClause = {
   employee: {
     columns: { id: true, name: true },
   },
-  patient: true,
+  patient: {
+    with: { phones: true, area: true },
+  },
   prioriy: true,
 } as const;
 
@@ -31,11 +34,13 @@ export class DisclosureRepo {
     createdAtStart,
     employeeIds,
     ratingIds,
+    patientId,
     status,
   }: TFilterDisclosuresDto) {
     let ratingsFilter = undefined;
 
     let employeeFilter = undefined;
+    let patientFilter = undefined;
 
     const createdAtStartFilter = createdAtStart
       ? gte(disclosures.createdAt, createdAtStart)
@@ -45,13 +50,16 @@ export class DisclosureRepo {
       ? lte(disclosures.createdAt, createdAtEnd)
       : undefined;
 
-    const statusFilter = status ? eq(disclosures.status, status) : undefined;
+    const statusFilter = status?.length
+      ? inArray(disclosures.status, status)
+      : undefined;
 
     if (ratingIds?.length) {
       const _ids = await this.db.query.disclosuresToRatings.findMany({
         where: inArray(disclosuresToRatings.ratingId, ratingIds),
         columns: { disclosureId: true },
       });
+
       ratingsFilter = _ids.length
         ? inArray(
             disclosures.id,
@@ -63,12 +71,18 @@ export class DisclosureRepo {
     if (employeeIds?.length) {
       employeeFilter = inArray(disclosures.employeeId, employeeIds);
     }
+
+    if (patientId) {
+      patientFilter = eq(disclosures.patientId, patientId);
+    }
+
     return {
       ratingsFilter,
       employeeFilter,
       createdAtStartFilter,
       createdAtEndFilter,
       statusFilter,
+      patientFilter,
     };
   }
 
@@ -79,6 +93,7 @@ export class DisclosureRepo {
       employeeFilter,
       ratingsFilter,
       statusFilter,
+      patientFilter,
     } = await this.getFilters(dto);
 
     const [{ value: totalCount }] = await this.db
@@ -91,6 +106,7 @@ export class DisclosureRepo {
           employeeFilter,
           ratingsFilter,
           statusFilter,
+          patientFilter,
         ),
       );
     return totalCount;
@@ -107,6 +123,7 @@ export class DisclosureRepo {
       employeeFilter,
       ratingsFilter,
       statusFilter,
+      patientFilter,
     } = await this.getFilters(rest);
 
     const result = await this.db.query.disclosures.findMany({
@@ -117,6 +134,7 @@ export class DisclosureRepo {
         employeeFilter,
         ratingsFilter,
         statusFilter,
+        patientFilter,
       ),
       limit: pageSize,
       offset: pageNumber,
@@ -129,6 +147,17 @@ export class DisclosureRepo {
 
   async create(createDto: TAddDisclosureDto, tx?: TDbContext): Promise<void> {
     await (tx ?? this.db).insert(disclosures).values(createDto);
+  }
+
+  async update(
+    updateDto: TUpdateDisclosureDto,
+    tx?: TDbContext,
+  ): Promise<void> {
+    const { id, ...rest } = updateDto;
+    await (tx ?? this.db)
+      .update(disclosures)
+      .set(rest)
+      .where(eq(disclosures.id, id));
   }
 
   async findManyWithIncludesPaginated(dto: TFilterDisclosuresDto) {
@@ -202,11 +231,11 @@ export class DisclosureRepo {
   }
 
   async addDisclosureRating(dto: TAddDisclosureRatingDto) {
-    return await this.db.insert(disclosuresToRatings).values(dto);
+    await this.db.insert(disclosuresToRatings).values(dto);
   }
 
   async updateDislosureRating({ id, ...rest }: TUpdateDisclosureRatingDto) {
-    return await this.db
+    await this.db
       .update(disclosuresToRatings)
       .set(rest)
       .where(eq(disclosuresToRatings.id, id));
