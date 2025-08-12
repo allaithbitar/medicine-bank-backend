@@ -16,10 +16,10 @@ export class RatingRepo {
   private getFilters({ name, code, description }: TFilterRatingsDto) {
     const nameFilter = name ? ilike(ratings.name, `%${name}%`) : undefined;
 
-    const codeFilter = code ? ilike(ratings.code, `%${name}%`) : undefined;
+    const codeFilter = code ? ilike(ratings.code, `%${code}%`) : undefined;
 
     const descriptionFilter = description
-      ? ilike(ratings.description, `%${name}%`)
+      ? ilike(ratings.description, `%${description}%`)
       : undefined;
 
     return {

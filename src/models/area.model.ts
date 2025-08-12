@@ -18,6 +18,6 @@ export const filterAreasModel = t.Composite([
   paginationModel,
   t.Object({
     name: t.Optional(t.String()),
-    cityId: t.String({ format: "uuid" }),
+    cityId: t.Optional(t.String({ format: "uuid" })),
   }),
 ]);

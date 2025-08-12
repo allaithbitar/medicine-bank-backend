@@ -17,7 +17,7 @@ export class AreaRepo {
 
   private getFilters({ name, cityId }: TFilterAreasDto) {
     const nameFilter = name ? ilike(areas.name, `%${name}%`) : undefined;
-    const cityIdFilter = eq(areas.cityId, cityId);
+    const cityIdFilter = cityId ? eq(areas.cityId, cityId) : undefined;
     return {
       nameFilter,
       cityIdFilter,

@@ -105,15 +105,14 @@ export const priorityDegrees = pgTable("priority_degrees", {
 
 export const ratings = pgTable("ratings", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name"),
+  name: text("name").notNull(),
   description: text("description"),
-  code: text("code"),
+  code: text("code").notNull(),
 });
-
 export const disclosures = pgTable("disclosures", {
   id: uuid("id").primaryKey().defaultRandom(),
   status: disclosure_status_enum("status").notNull().default("active"),
-  priortyId: uuid("priorty_id")
+  priorityId: uuid("priority_id")
     .notNull()
     .references(() => priorityDegrees.id),
   patientId: uuid("patient_id")
@@ -146,6 +145,7 @@ export const disclosuresToRatings = pgTable("disclosures_to_ratings", {
   ratingId: uuid("rating_id").references(() => ratings.id),
   isCustom: boolean("is_custom").notNull().default(false),
   customRating: text("custom_rating"),
+  note: text("note"),
   ...createdAtColumn,
   ...updatedAtColumn,
   ...createdBy,
@@ -180,8 +180,8 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
     fields: [disclosures.patientId],
     references: [patients.id],
   }),
-  prioriy: one(priorityDegrees, {
-    fields: [disclosures.priortyId],
+  priority: one(priorityDegrees, {
+    fields: [disclosures.priorityId],
     references: [priorityDegrees.id],
   }),
   visits: many(visits),

@@ -15,6 +15,13 @@
       "when": 1752396693734,
       "tag": "0001_tough_leo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754996136985,
+      "tag": "0002_youthful_ultimo",
+      "breakpoints": true
     }
   ]
 }

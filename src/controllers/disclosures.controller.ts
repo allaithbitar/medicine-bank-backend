@@ -72,6 +72,18 @@ export const DisclosuresController = new Elysia({
         },
       )
 
+      .get(
+        "/ratings/:id",
+        ({ params, disclosureService }) =>
+          disclosureService.getDisclosureRating(params.id),
+
+        {
+          params: t.Object({
+            id: t.String({ format: "uuid" }),
+          }),
+        },
+      )
+
       .post(
         "/ratings",
         ({ body, disclosureService }) =>
@@ -97,6 +109,17 @@ export const DisclosuresController = new Elysia({
 
         {
           query: getDisclosureVisitsModel,
+        },
+      )
+      .get(
+        "/visits/:id",
+        ({ params, disclosureService }) =>
+          disclosureService.getDisclosureVisit(params.id),
+
+        {
+          params: t.Object({
+            id: t.String({ format: "uuid" }),
+          }),
         },
       )
 

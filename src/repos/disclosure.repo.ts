@@ -12,7 +12,7 @@ import {
   TUpdateDisclosureRatingDto,
   TUpdateDisclosureVisitDto,
 } from "../types/disclosure.type";
-import { and, count, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 
 const withClause = {
@@ -22,7 +22,7 @@ const withClause = {
   patient: {
     with: { phones: true, area: true },
   },
-  prioriy: true,
+  priority: true,
 } as const;
 
 @injectable()
@@ -35,11 +35,13 @@ export class DisclosureRepo {
     employeeIds,
     ratingIds,
     patientId,
+    priorityIds,
     status,
   }: TFilterDisclosuresDto) {
     let ratingsFilter = undefined;
 
     let employeeFilter = undefined;
+    let priortyFilter = undefined;
     let patientFilter = undefined;
 
     const createdAtStartFilter = createdAtStart
@@ -72,6 +74,10 @@ export class DisclosureRepo {
       employeeFilter = inArray(disclosures.employeeId, employeeIds);
     }
 
+    if (priorityIds?.length) {
+      priortyFilter = inArray(disclosures.priorityId, priorityIds);
+    }
+
     if (patientId) {
       patientFilter = eq(disclosures.patientId, patientId);
     }
@@ -83,6 +89,7 @@ export class DisclosureRepo {
       createdAtEndFilter,
       statusFilter,
       patientFilter,
+      priortyFilter,
     };
   }
 
@@ -94,6 +101,7 @@ export class DisclosureRepo {
       ratingsFilter,
       statusFilter,
       patientFilter,
+      priortyFilter,
     } = await this.getFilters(dto);
 
     const [{ value: totalCount }] = await this.db
@@ -107,6 +115,7 @@ export class DisclosureRepo {
           ratingsFilter,
           statusFilter,
           patientFilter,
+          priortyFilter,
         ),
       );
     return totalCount;
@@ -124,6 +133,7 @@ export class DisclosureRepo {
       ratingsFilter,
       statusFilter,
       patientFilter,
+      priortyFilter,
     } = await this.getFilters(rest);
 
     const result = await this.db.query.disclosures.findMany({
@@ -135,6 +145,7 @@ export class DisclosureRepo {
         ratingsFilter,
         statusFilter,
         patientFilter,
+        priortyFilter,
       ),
       limit: pageSize,
       offset: pageNumber,
@@ -221,6 +232,7 @@ export class DisclosureRepo {
       with: {
         rating: true,
       },
+      orderBy: desc(disclosuresToRatings.createdAt),
     });
     return {
       items: result,
@@ -228,6 +240,15 @@ export class DisclosureRepo {
       pageSize,
       pageNumber,
     };
+  }
+
+  async getDisclosureRating(id: string) {
+    return (
+      (await this.db.query.disclosuresToRatings.findFirst({
+        where: eq(disclosuresToRatings.id, id),
+        with: { rating: true },
+      })) ?? null
+    );
   }
 
   async addDisclosureRating(dto: TAddDisclosureRatingDto) {
@@ -276,6 +297,7 @@ export class DisclosureRepo {
       where: and(disclosureIdFilter, resultFilter),
       offset: pageNumber,
       limit: pageSize,
+      orderBy: desc(visits.createdAt),
     });
 
     return {
@@ -286,11 +308,29 @@ export class DisclosureRepo {
     };
   }
 
+  async getDisclosureVisit(id: string) {
+    return (
+      (await this.db.query.visits.findFirst({
+        where: eq(visits.id, id),
+      })) ?? null
+    );
+  }
+
   async addDisclosureVisit(dto: TAddDisclosureVisitDto) {
     return await this.db.insert(visits).values(dto);
   }
 
   async updateDislosureVisit({ id, ...rest }: TUpdateDisclosureVisitDto) {
     return await this.db.update(visits).set(rest).where(eq(visits.id, id));
+  }
+
+  async getDisclosuresRatings() {
+    return await this.db.query.disclosuresToRatings.findMany({
+      with: { rating: true },
+    });
+  }
+
+  async getDisclosuresVisits() {
+    return await this.db.query.visits.findMany();
   }
 }

@@ -25,7 +25,7 @@ export const searchDisclosuresModel = t.Composite([
   paginationModel,
   t.Omit(disclosureInsertModel, [
     "id",
-    "priortyId",
+    "priorityId",
     "patientId",
     "updatedAt",
     "employeeId",
@@ -43,6 +43,11 @@ export const searchDisclosuresModel = t.Composite([
     ratingIds: t.Optional(
       t.Array(t.String({ format: "uuid" }), { default: [] }),
     ),
+
+    priorityIds: t.Optional(
+      t.Array(t.String({ format: "uuid" }), { default: [] }),
+    ),
+
     createdAtStart: t.Optional(t.String({ format: "date-time" })),
     createdAtEnd: t.Optional(t.String({ format: "date-time" })),
     status: t.Optional(
