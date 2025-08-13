@@ -12,7 +12,17 @@ import {
   TUpdateDisclosureRatingDto,
   TUpdateDisclosureVisitDto,
 } from "../types/disclosure.type";
-import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+} from "drizzle-orm";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 
 const withClause = {
@@ -36,13 +46,18 @@ export class DisclosureRepo {
     ratingIds,
     patientId,
     priorityIds,
+    undelivered,
     status,
   }: TFilterDisclosuresDto) {
     let ratingsFilter = undefined;
 
     let employeeFilter = undefined;
+
     let priortyFilter = undefined;
+
     let patientFilter = undefined;
+
+    let undeliveredFilter = undefined;
 
     const createdAtStartFilter = createdAtStart
       ? gte(disclosures.createdAt, createdAtStart)
@@ -82,6 +97,12 @@ export class DisclosureRepo {
       patientFilter = eq(disclosures.patientId, patientId);
     }
 
+    if (typeof undelivered !== "undefined") {
+      undeliveredFilter = undelivered
+        ? isNull(disclosures.employeeId)
+        : isNotNull(disclosures.employeeId);
+    }
+
     return {
       ratingsFilter,
       employeeFilter,
@@ -90,6 +111,7 @@ export class DisclosureRepo {
       statusFilter,
       patientFilter,
       priortyFilter,
+      undeliveredFilter,
     };
   }
 
@@ -102,6 +124,7 @@ export class DisclosureRepo {
       statusFilter,
       patientFilter,
       priortyFilter,
+      undeliveredFilter,
     } = await this.getFilters(dto);
 
     const [{ value: totalCount }] = await this.db
@@ -116,6 +139,7 @@ export class DisclosureRepo {
           statusFilter,
           patientFilter,
           priortyFilter,
+          undeliveredFilter,
         ),
       );
     return totalCount;
@@ -134,6 +158,7 @@ export class DisclosureRepo {
       statusFilter,
       patientFilter,
       priortyFilter,
+      undeliveredFilter,
     } = await this.getFilters(rest);
 
     const result = await this.db.query.disclosures.findMany({
@@ -146,6 +171,7 @@ export class DisclosureRepo {
         statusFilter,
         patientFilter,
         priortyFilter,
+        undeliveredFilter,
       ),
       limit: pageSize,
       offset: pageNumber,

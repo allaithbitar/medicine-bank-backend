@@ -49,10 +49,14 @@ export const searchDisclosuresModel = t.Composite([
     ),
 
     createdAtStart: t.Optional(t.String({ format: "date-time" })),
+
     createdAtEnd: t.Optional(t.String({ format: "date-time" })),
+
     status: t.Optional(
       t.Array(disclosureInsertModel.properties.status, { default: [] }),
     ),
+
+    undelivered: t.Optional(t.Boolean()),
   }),
 ]);
 

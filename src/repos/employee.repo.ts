@@ -90,4 +90,14 @@ export class EmployeeRepo {
       pageNumber,
     };
   }
+
+  async findOneByIdWithIncludes(id: string) {
+    const result = await this.db.query.employees.findFirst({
+      where: eq(employees.id, id),
+      with: { area: true },
+      orderBy: desc(employees.createdAt),
+      columns: { password: false },
+    });
+    return result;
+  }
 }

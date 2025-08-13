@@ -1,4 +1,4 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import {
   addEmployeeModel,
   filterEmployeesModel,
@@ -19,6 +19,16 @@ export const EmployeesController = new Elysia({
       ({ body, employeeService }) => employeeService.searchEmployees(body),
       {
         body: filterEmployeesModel,
+      },
+    )
+    .get(
+      "/:id",
+      ({ params, employeeService }) =>
+        employeeService.getEmployeeById(params.id),
+      {
+        params: t.Object({
+          id: t.String({ format: "uuid" }),
+        }),
       },
     )
 

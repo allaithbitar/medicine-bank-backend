@@ -115,4 +115,10 @@ export class EmployeeService {
   async searchEmployees(dto: TFilterEmployeesDto) {
     return this.employeeRepo.findManyWithIncludesPaginated(dto);
   }
+
+  async getEmployeeById(id: string) {
+    const result = await this.employeeRepo.findOneByIdWithIncludes(id);
+    if (!result) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    return result;
+  }
 }

@@ -10,12 +10,12 @@ const DbInstance = drizzle(
   },
 );
 
-if (Bun.env.NODE_ENV === "production") {
-  (async () => {
-    await migrate(DbInstance, { migrationsFolder: "src/db/migrations" });
-    console.info("Finished Running Migrations");
-  })();
-}
+// if (Bun.env.NODE_ENV === "production") {
+(async () => {
+  await migrate(DbInstance, { migrationsFolder: "src/db/migrations" });
+  console.info("Finished Running Migrations");
+})();
+// }
 
 export type TDbContext = typeof DbInstance;
 

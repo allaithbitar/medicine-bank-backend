@@ -6,7 +6,7 @@ import {
 } from "../types/patient.type";
 import { TDbContext } from "../db/drizzle";
 import { patients, patientsPhoneNumbers } from "../db/schema";
-import { and, count, desc, eq, ilike, or } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 
 @injectable()
@@ -43,7 +43,7 @@ export class PatientRepo {
     });
   }
 
-  private getFilters({ query, areaId }: TFilterPatientsDto) {
+  private getFilters({ query, areaIds }: TFilterPatientsDto) {
     const nameFilter = query ? ilike(patients.name, `%${query}%`) : undefined;
 
     const nationalNumber = query
@@ -56,7 +56,9 @@ export class PatientRepo {
       ? ilike(patients.address, `%${query}%`)
       : undefined;
 
-    const areaFilter = areaId ? eq(patients.areaId, areaId) : undefined;
+    const areaFilter = areaIds?.length
+      ? inArray(patients.areaId, areaIds)
+      : undefined;
 
     const queryFilter = or(
       nameFilter,

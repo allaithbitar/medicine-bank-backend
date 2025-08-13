@@ -21,8 +21,8 @@ export const updatePatientModel = t.Composite([
 
 export const filterPatientsModel = t.Composite([
   paginationModel,
-  t.Pick(patientInsertModel, ["areaId"]),
   t.Object({
     query: t.Optional(t.String()),
+    areaIds: t.Optional(t.Array(t.String({ format: "uuid" }), { default: [] })),
   }),
 ]);
