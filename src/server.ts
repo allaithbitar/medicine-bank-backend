@@ -38,7 +38,11 @@ import { RatingsController } from "./controllers/ratings.controller";
 import { OfflineController } from "./controllers/offline.controller";
 import { SeedController } from "./controllers/seed.controller";
 
-const app = new Elysia()
+const app = new Elysia({
+  serve: {
+    idleTimeout: 60,
+  },
+})
   .use(cors())
   .use(
     logger({

@@ -6,12 +6,14 @@ import {
   updateCityModel,
 } from "../models/city.model";
 import { CityService } from "../services/city.service";
+import { AuthGuard } from "../guards/auth.guard";
 
 export const CitiesController = new Elysia({
   name: "Cities.Controller",
   tags: ["Cities"],
 }).group("/cities", (app) =>
   app
+    .use(AuthGuard)
     .resolve(() => ({
       cityServcie: DiContainer.get(CityService),
     }))
@@ -29,9 +31,11 @@ export const CitiesController = new Elysia({
 
       {
         body: addCityModel,
+        roles: ["manager", "supervisor"],
       },
     )
     .put("", async ({ cityServcie, body }) => cityServcie.updateCity(body), {
       body: updateCityModel,
+      roles: ["manager", "supervisor"],
     }),
 );

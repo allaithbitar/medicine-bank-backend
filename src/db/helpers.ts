@@ -14,9 +14,6 @@ import {
   Unhandled_Db_Error,
 } from "../constants/pg-errors";
 
-export const getRandomIndex = (arr: any[]) =>
-  Math.floor(Math.random() * arr.length);
-
 export const isDbError = (error: any): error is DatabaseError => {
   if ("cause" in error && "code" in error.cause) {
     return true;
@@ -58,3 +55,7 @@ export const getReadableDbErrorMessage = (
   }
   return { ...Unhandled_Db_Error, details: error };
 };
+
+export function getRandomArrayItem<T>(items: T[]) {
+  return items[Math.floor(Math.random() * items.length)];
+}

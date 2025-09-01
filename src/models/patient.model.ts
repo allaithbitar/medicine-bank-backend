@@ -8,7 +8,13 @@ export const patientSelectModel = createSelectSchema(patients);
 export const patientInsertModel = createInsertSchema(patients);
 
 export const addPatientModel = t.Composite([
-  t.Omit(patientInsertModel, ["createdAt", "updatedAt", "id"]),
+  t.Omit(patientInsertModel, [
+    "createdAt",
+    "updatedAt",
+    "id",
+    "createdBy",
+    "updatedBy",
+  ]),
   t.Object({
     phoneNumbers: t.Array(t.String(), { default: [], minItems: 1 }),
   }),

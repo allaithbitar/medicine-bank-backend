@@ -21,3 +21,11 @@ export type TPaginatedResponse<T> = {
   totalCount: number;
   items: T[];
 };
+
+export type TCreatedBy = {
+  createdBy: string;
+};
+
+export type TUpdatedBy = {
+  updatedBy: string;
+};

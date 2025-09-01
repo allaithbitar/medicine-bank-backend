@@ -6,12 +6,13 @@ import {
   filterPatientsModel,
   updatePatientModel,
 } from "../models/patient.model";
+import { TCreatedBy, TUpdatedBy } from "./common.types";
 
 export type TPatient = InferSelectModel<typeof patients>;
 
-export type TAddPatientDto = Static<typeof addPatientModel>;
+export type TAddPatientDto = Static<typeof addPatientModel> & TCreatedBy;
 
-export type TUpdatePatientDto = Static<typeof updatePatientModel>;
+export type TUpdatePatientDto = Static<typeof updatePatientModel> & TUpdatedBy;
 
 export type TPatientPhoneNumber = InferSelectModel<typeof patientsPhoneNumbers>;
 

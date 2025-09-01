@@ -11,37 +11,37 @@ import {
   updateDisclosureRatingModel,
   updateDisclosureVisitModel,
 } from "../models/disclosure.model";
-import { InferInsertModel } from "drizzle-orm";
-import { disclosuresToRatings } from "../db/schema";
+
+import { TCreatedBy, TUpdatedBy } from "./common.types";
 
 export type TDisclosure = Static<typeof disclosureSelectModel>;
 
-export type TAddDisclosureDto = Static<typeof addDisclosureModel>;
+export type TAddDisclosureDto = Static<typeof addDisclosureModel> & TCreatedBy;
 
-export type TUpdateDisclosureDto = Static<typeof updateDisclosureModel>;
+export type TUpdateDisclosureDto = Static<typeof updateDisclosureModel> &
+  TUpdatedBy;
 
 export type TFilterDisclosuresDto = Static<typeof searchDisclosuresModel>;
 
 export type TGetDisclosureRatingsDto = Static<typeof getDisclosureRatingsModel>;
 
 export type TAddDisclosureRatingDto = Static<typeof addDisclosureRatingModel> &
-  Pick<
-    InferInsertModel<typeof disclosuresToRatings>,
-    "createdAt" | "createdBy"
-  >;
+  TCreatedBy;
 
 export type TUpdateDisclosureRatingDto = Static<
   typeof updateDisclosureRatingModel
 > &
-  Pick<InferInsertModel<typeof disclosuresToRatings>, "updatedBy">;
+  TUpdatedBy;
 
 export type TGetDisclosureVisitsDto = Static<typeof getDisclosureVisitsModel>;
 
-export type TAddDisclosureVisitDto = Static<typeof addDisclosureVisitModel>;
+export type TAddDisclosureVisitDto = Static<typeof addDisclosureVisitModel> &
+  TCreatedBy;
 
 export type TUpdateDisclosureVisitDto = Static<
   typeof updateDisclosureVisitModel
->;
+> &
+  TUpdatedBy;
 
 // export type
 

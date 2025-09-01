@@ -7,12 +7,14 @@ import {
   updatePatientModel,
 } from "../models/patient.model";
 import { PatientService } from "../services/patient.service";
+import { AuthGuard } from "../guards/auth.guard";
 
 export const PatientsController = new Elysia({
   name: "Patients.Controller",
   tags: ["Patients"],
 }).group("/patients", (app) =>
   app
+    .use(AuthGuard)
     .resolve(() => ({ patientService: DiContainer.get(PatientService) }))
     .post(
       "search",
@@ -28,11 +30,22 @@ export const PatientsController = new Elysia({
         params: t.Pick(patientSelectModel, ["id"]),
       },
     )
-
-    .post("", ({ body, patientService }) => patientService.addPatient(body), {
-      body: addPatientModel,
-    })
-    .put("", ({ body, patientService }) => patientService.updatePatient(body), {
-      body: updatePatientModel,
-    }),
+    .post(
+      "",
+      ({ body, patientService, user }) =>
+        patientService.addPatient({ ...body, createdBy: user.id }),
+      {
+        body: addPatientModel,
+        roles: ["manager", "supervisor"],
+      },
+    )
+    .put(
+      "",
+      ({ body, patientService, user }) =>
+        patientService.updatePatient({ ...body, updatedBy: user.id }),
+      {
+        body: updatePatientModel,
+        roles: ["manager", "supervisor"],
+      },
+    ),
 );

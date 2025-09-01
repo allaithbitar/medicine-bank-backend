@@ -13,146 +13,137 @@ import {
   updateDisclosureVisitModel,
 } from "../models/disclosure.model";
 import { DisclosureService } from "../services/disclosure.service";
+import { AuthGuard } from "../guards/auth.guard";
 
 export const DisclosuresController = new Elysia({
   name: "Disclosures.Controller",
   tags: ["Disclosures"],
-}).group(
-  "/disclosures",
-  (app) =>
-    app
+}).group("/disclosures", (app) =>
+  app
+    .use(AuthGuard)
+    .resolve(() => ({
+      disclosureService: DiContainer.get(DisclosureService),
+    }))
+    .post(
+      "search",
+      ({ body, disclosureService }) =>
+        disclosureService.searchDisclosures(body),
 
-      .resolve(() => ({
-        disclosureService: DiContainer.get(DisclosureService),
-      }))
-      .post(
-        "search",
-        ({ body, disclosureService }) =>
-          disclosureService.searchDisclosures(body),
+      {
+        body: searchDisclosuresModel,
+      },
+    )
+    .get(
+      ":id",
+      ({ params, disclosureService }) =>
+        disclosureService.getDisclosureById(params.id),
 
-        {
-          body: searchDisclosuresModel,
-        },
-      )
-      .get(
-        ":id",
-        ({ params, disclosureService }) =>
-          disclosureService.getDisclosureById(params.id),
+      {
+        params: t.Pick(disclosureSelectModel, ["id"]),
+      },
+    )
+    .post(
+      "",
+      ({ body, disclosureService, user }) => {
+        disclosureService.addDisclosure({ ...body, createdBy: user.id });
+      },
+      {
+        body: addDisclosureModel,
+        roles: ["manager", "supervisor"],
+      },
+    )
+    .put(
+      "",
+      ({ body, disclosureService, user }) => {
+        disclosureService.updateDisclosure({ ...body, updatedBy: user.id });
+      },
+      {
+        body: updateDisclosureModel,
+        roles: ["manager", "supervisor"],
+      },
+    )
+    .get(
+      "/ratings",
+      ({ query, disclosureService }) =>
+        disclosureService.getDisclosureRatings(query),
 
-        {
-          params: t.Pick(disclosureSelectModel, ["id"]),
-        },
-      )
+      {
+        query: getDisclosureRatingsModel,
+      },
+    )
 
-      .post(
-        "",
-        ({ body, disclosureService }) => {
-          disclosureService.addDisclosure(body);
-        },
-        {
-          body: addDisclosureModel,
-        },
-      )
-      .put(
-        "",
-        ({ body, disclosureService }) => {
-          disclosureService.updateDisclosure(body);
-        },
-        {
-          body: updateDisclosureModel,
-        },
-      )
-      .get(
-        "/ratings",
-        ({ query, disclosureService }) =>
-          disclosureService.getDisclosureRatings(query),
+    .get(
+      "/ratings/:id",
+      ({ params, disclosureService }) =>
+        disclosureService.getDisclosureRating(params.id),
 
-        {
-          query: getDisclosureRatingsModel,
-        },
-      )
+      {
+        params: t.Object({
+          id: t.String({ format: "uuid" }),
+        }),
+      },
+    )
 
-      .get(
-        "/ratings/:id",
-        ({ params, disclosureService }) =>
-          disclosureService.getDisclosureRating(params.id),
+    .post(
+      "/ratings",
+      ({ body, disclosureService, user }) =>
+        disclosureService.addDisclosureRating({ ...body, createdBy: user.id }),
 
-        {
-          params: t.Object({
-            id: t.String({ format: "uuid" }),
-          }),
-        },
-      )
+      {
+        body: addDisclosureRatingModel,
+      },
+    )
+    .put(
+      "/ratings",
+      ({ body, disclosureService, user }) =>
+        disclosureService.updateDisclosureRating({
+          ...body,
+          updatedBy: user.id,
+        }),
 
-      .post(
-        "/ratings",
-        ({ body, disclosureService }) =>
-          disclosureService.addDisclosureRating(body),
+      {
+        body: updateDisclosureRatingModel,
+      },
+    )
+    .get(
+      "/visits",
+      ({ query, disclosureService }) =>
+        disclosureService.getDisclosureVisits(query),
 
-        {
-          body: addDisclosureRatingModel,
-        },
-      )
-      .put(
-        "/ratings",
-        ({ body, disclosureService }) =>
-          disclosureService.updateDisclosureRating(body),
+      {
+        query: getDisclosureVisitsModel,
+      },
+    )
+    .get(
+      "/visits/:id",
+      ({ params, disclosureService }) =>
+        disclosureService.getDisclosureVisit(params.id),
 
-        {
-          body: updateDisclosureRatingModel,
-        },
-      )
-      .get(
-        "/visits",
-        ({ query, disclosureService }) =>
-          disclosureService.getDisclosureVisits(query),
+      {
+        params: t.Object({
+          id: t.String({ format: "uuid" }),
+        }),
+      },
+    )
 
-        {
-          query: getDisclosureVisitsModel,
-        },
-      )
-      .get(
-        "/visits/:id",
-        ({ params, disclosureService }) =>
-          disclosureService.getDisclosureVisit(params.id),
+    .post(
+      "/visits",
+      ({ body, disclosureService, user }) =>
+        disclosureService.addDisclosureVisit({ ...body, createdBy: user.id }),
 
-        {
-          params: t.Object({
-            id: t.String({ format: "uuid" }),
-          }),
-        },
-      )
-
-      .post(
-        "/visits",
-        ({ body, disclosureService }) =>
-          disclosureService.addDisclosureVisit(body),
-
-        {
-          body: addDisclosureVisitModel,
-        },
-      )
-      .put(
-        "/visits",
-        ({ body, disclosureService }) =>
-          disclosureService.updateDisclosureVisit(body),
-        {
-          body: updateDisclosureVisitModel,
-        },
-      ),
-
-  // .put(
-  //   "",
-  //   () => {
-  //     const db = DiContainer.get("db") as TDbContext;
-  //     return db.query.employees.findMany({
-  //       with: {
-  //         area: true,
-  //       },
-  //     });
-  //   },
-  //   {
-  //     body: updateEmployeeModel,
-  //   },
-  // ),
+      {
+        body: addDisclosureVisitModel,
+      },
+    )
+    .put(
+      "/visits",
+      ({ body, disclosureService, user }) =>
+        disclosureService.updateDisclosureVisit({
+          ...body,
+          updatedBy: user.id,
+        }),
+      {
+        body: updateDisclosureVisitModel,
+      },
+    ),
 );

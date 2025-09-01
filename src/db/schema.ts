@@ -1,5 +1,3 @@
-// import { pgTable } from "drizzle-orm/pg-core"
-
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
@@ -7,6 +5,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -49,13 +48,17 @@ export const cities = pgTable("cities", {
   name: text("name").notNull(),
 });
 
-export const areas = pgTable("areas", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  cityId: uuid("city_id")
-    .notNull()
-    .references(() => cities.id, { onDelete: "set null" }),
-});
+export const areas = pgTable(
+  "areas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    cityId: uuid("city_id")
+      .notNull()
+      .references(() => cities.id, { onDelete: "set null" }),
+  },
+  (table) => [unique("table_name_city_id_unique").on(table.name, table.cityId)],
+);
 
 export const employees = pgTable("employees", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -63,23 +66,35 @@ export const employees = pgTable("employees", {
   password: text("password").notNull(),
   phone: text("phone").notNull().unique(),
   role: emplyee_role_enum("role").notNull(),
-  areaId: uuid("area_id").references(() => areas.id, { onDelete: "set null" }),
+  // areaId: uuid("area_id").references(() => areas.id, { onDelete: "set null" }),
   ...createdAtColumn,
   ...updatedAtColumn,
 });
 
-const updatedBy = {
-  updatedBy: uuid("updated_by").references(() => employees.id),
+export const areasToEmployees = pgTable(
+  "areas_to_employees ",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    employeeId: uuid("employee_id").notNull(),
+    areaId: uuid("area_id").notNull(),
+  },
+  (table) => [
+    unique("employee_area_unique").on(table.employeeId, table.areaId),
+  ],
+);
+
+const createdByColumn = {
+  createdBy: uuid("created_by").references(() => employees.id),
 };
 
-const createdBy = {
-  createdBy: uuid("created_by").references(() => employees.id),
+const updatedByColumn = {
+  updatedBy: uuid("updated_by").references(() => employees.id),
 };
 
 export const patients = pgTable("patients", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
-  nationalNumber: text("national_number").notNull().unique(),
+  nationalNumber: text("national_number"),
   areaId: uuid("area_id").references(() => areas.id, {
     onDelete: "set null",
   }),
@@ -87,6 +102,8 @@ export const patients = pgTable("patients", {
   about: text("about").notNull().default(""),
   ...createdAtColumn,
   ...updatedAtColumn,
+  ...createdByColumn,
+  ...updatedByColumn,
 });
 
 export const patientsPhoneNumbers = pgTable("patients_phone_numbers", {
@@ -94,7 +111,7 @@ export const patientsPhoneNumbers = pgTable("patients_phone_numbers", {
   patientId: uuid("patient_id")
     .notNull()
     .references(() => patients.id, { onDelete: "cascade" }),
-  phone: text("phone").unique().notNull(),
+  phone: text("phone").notNull(),
 });
 
 export const priorityDegrees = pgTable("priority_degrees", {
@@ -118,9 +135,12 @@ export const disclosures = pgTable("disclosures", {
   patientId: uuid("patient_id")
     .notNull()
     .references(() => patients.id),
-  employeeId: uuid("employee_id").references(() => employees.id),
+  scoutId: uuid("scout_id").references(() => employees.id),
+  note: text("note"),
   ...createdAtColumn,
   ...updatedAtColumn,
+  ...createdByColumn,
+  ...updatedByColumn,
 });
 
 export const visits = pgTable("visits", {
@@ -133,8 +153,8 @@ export const visits = pgTable("visits", {
   note: text("note"),
   ...createdAtColumn,
   ...updatedAtColumn,
-  ...createdBy,
-  ...updatedBy,
+  ...createdByColumn,
+  ...updatedByColumn,
 });
 
 export const disclosuresToRatings = pgTable("disclosures_to_ratings", {
@@ -148,8 +168,8 @@ export const disclosuresToRatings = pgTable("disclosures_to_ratings", {
   note: text("note"),
   ...createdAtColumn,
   ...updatedAtColumn,
-  ...createdBy,
-  ...updatedBy,
+  ...createdByColumn,
+  ...updatedByColumn,
 });
 
 // export const disclosuresToVisists = pgTable("disclosures_to_visits", {
@@ -158,23 +178,65 @@ export const disclosuresToRatings = pgTable("disclosures_to_ratings", {
 //   visitId: uuid("visit_id").references(() => visits.id),
 // });
 
+export const auditLog = pgTable("audit_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tableName: text("table_name").notNull(),
+  recordId: uuid("record_id").notNull(),
+  columnName: text("column_name").notNull(),
+  oldValue: text("old_value"),
+  newValue: text("new_value"),
+  action: text("action").notNull(), // e.g., 'INSERT', 'UPDATE', 'DELETE'
+  ...createdByColumn,
+  ...createdAtColumn,
+});
+
 // RELATIONS //
 
-export const employeeRelations = relations(employees, ({ one, many }) => ({
-  disclosures: many(disclosures),
-  area: one(areas, { fields: [employees.areaId], references: [areas.id] }),
+export const employeeRelations = relations(employees, ({ many }) => ({
+  areas: many(areasToEmployees),
+  disclosures_created: many(disclosures, { relationName: "createdBy" }),
+  disclosures_assigned: many(disclosures, { relationName: "scout" }),
 }));
 
-export const patientsRelations = relations(patients, ({ one, many }) => ({
+export const areaRelations = relations(areas, ({ many, one }) => ({
+  areasToEmployees: many(areasToEmployees),
+  city: one(cities, { fields: [areas.cityId], references: [cities.id] }),
+  // patient: one(patients, { fields: [areas.id], references: [patients.areaId] }),
+}));
+
+export const areasToEmployeeRelations = relations(
+  areasToEmployees,
+  ({ one }) => ({
+    area: one(areas, {
+      fields: [areasToEmployees.areaId],
+      references: [areas.id],
+    }),
+    employee: one(employees, {
+      fields: [areasToEmployees.employeeId],
+      references: [employees.id],
+    }),
+  }),
+);
+
+export const patientRelations = relations(patients, ({ one, many }) => ({
   disclosures: many(disclosures),
   area: one(areas, { fields: [patients.areaId], references: [areas.id] }),
   phones: many(patientsPhoneNumbers),
+  createdBy: one(employees, {
+    fields: [patients.createdBy],
+    references: [employees.id],
+  }),
+  updatedBy: one(employees, {
+    fields: [patients.updatedBy],
+    references: [employees.id],
+  }),
 }));
 
 export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
-  employee: one(employees, {
-    fields: [disclosures.employeeId],
+  scout: one(employees, {
+    fields: [disclosures.scoutId],
     references: [employees.id],
+    relationName: "scout",
   }),
   patient: one(patients, {
     fields: [disclosures.patientId],
@@ -186,12 +248,30 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
   }),
   visits: many(visits),
   ratings: many(disclosuresToRatings),
+  createdBy: one(employees, {
+    fields: [disclosures.createdBy],
+    references: [employees.id],
+    relationName: "createdBy",
+  }),
+  updatedBy: one(employees, {
+    fields: [disclosures.updatedBy],
+    references: [employees.id],
+    relationName: "updatedBy",
+  }),
 }));
 
 export const visitsRelations = relations(visits, ({ one }) => ({
   disclosure: one(disclosures, {
     fields: [visits.disclosureId],
     references: [disclosures.id],
+  }),
+  createdBy: one(employees, {
+    fields: [visits.createdBy],
+    references: [employees.id],
+  }),
+  updatedBy: one(employees, {
+    fields: [visits.updatedBy],
+    references: [employees.id],
   }),
 }));
 
@@ -240,3 +320,10 @@ export const patientPhoneNumbersRelations = relations(
     }),
   }),
 );
+
+export const auditLogRelations = relations(auditLog, ({ one }) => ({
+  createdBy: one(employees, {
+    fields: [auditLog.createdBy],
+    references: [employees.id],
+  }),
+}));

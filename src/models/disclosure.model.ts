@@ -14,6 +14,8 @@ export const addDisclosureModel = t.Omit(disclosureInsertModel, [
   "id",
   "createdAt",
   "updatedAt",
+  "createdBy",
+  "updatedBy",
 ]);
 
 export const updateDisclosureModel = t.Composite([
@@ -28,13 +30,13 @@ export const searchDisclosuresModel = t.Composite([
     "priorityId",
     "patientId",
     "updatedAt",
-    "employeeId",
+    "scoutId",
     "createdAt",
     "status",
   ]),
   t.Object({
     // patientIds: t.Optional(t.Array(t.String({ format: "uuid" }))),
-    employeeIds: t.Optional(
+    scoutIds: t.Optional(
       t.Array(t.String({ format: "uuid" }), { default: [] }),
     ),
 

@@ -113,7 +113,7 @@ export class EmployeeService {
   }
 
   async searchEmployees(dto: TFilterEmployeesDto) {
-    return this.employeeRepo.findManyWithIncludesPaginated(dto);
+    return await this.employeeRepo.findManyWithIncludesPaginated(dto);
   }
 
   async getEmployeeById(id: string) {

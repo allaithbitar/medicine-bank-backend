@@ -7,10 +7,11 @@ export const employeeSelectModel = createSelectSchema(employees);
 
 export const employeeInsertModel = createInsertSchema(employees);
 
-export const addEmployeeModel = t.Omit(employeeInsertModel, [
-  "createdAt",
-  "updatedAt",
-  "id",
+export const addEmployeeModel = t.Composite([
+  t.Omit(employeeInsertModel, ["createdAt", "updatedAt", "id"]),
+  t.Object({
+    areaIds: t.Optional(t.Array(t.String({ format: "uuid" }), { default: [] })),
+  }),
 ]);
 
 export const updateEmployeeModel = t.Composite([
@@ -41,6 +42,7 @@ export const filterEmployeesModel = t.Partial(
       role: t.Optional(
         t.Array(employeeInsertModel.properties.role, { default: [] }),
       ),
+      areaIds: addEmployeeModel.properties.areaIds,
     }),
   ]),
 );

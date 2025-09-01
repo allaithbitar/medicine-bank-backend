@@ -23,16 +23,18 @@ import {
   isNull,
   lte,
 } from "drizzle-orm";
-import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
+import {
+  ACTIONER_WITH,
+  DEFAULT_PAGE_NUMBER,
+  DEFAULT_PAGE_SIZE,
+} from "../constants/constants";
 
 const withClause = {
-  employee: {
-    columns: { id: true, name: true },
-  },
-  patient: {
-    with: { phones: true, area: true },
-  },
   priority: true,
+  createdBy: ACTIONER_WITH,
+  patient: true,
+  scout: true,
+  updatedBy: ACTIONER_WITH,
 } as const;
 
 @injectable()
@@ -42,7 +44,7 @@ export class DisclosureRepo {
   private async getFilters({
     createdAtEnd,
     createdAtStart,
-    employeeIds,
+    scoutIds,
     ratingIds,
     patientId,
     priorityIds,
@@ -51,9 +53,9 @@ export class DisclosureRepo {
   }: TFilterDisclosuresDto) {
     let ratingsFilter = undefined;
 
-    let employeeFilter = undefined;
+    let scoutesFilter = undefined;
 
-    let priortyFilter = undefined;
+    let priorityFilter = undefined;
 
     let patientFilter = undefined;
 
@@ -85,32 +87,35 @@ export class DisclosureRepo {
         : undefined;
     }
 
-    if (employeeIds?.length) {
-      employeeFilter = inArray(disclosures.employeeId, employeeIds);
+    if (scoutIds?.length) {
+      scoutesFilter = inArray(disclosures.scoutId, scoutIds);
     }
 
+    console.log({ priorityIds });
+
     if (priorityIds?.length) {
-      priortyFilter = inArray(disclosures.priorityId, priorityIds);
+      priorityFilter = inArray(disclosures.priorityId, priorityIds);
     }
 
     if (patientId) {
       patientFilter = eq(disclosures.patientId, patientId);
     }
 
-    if (typeof undelivered !== "undefined") {
+    // if (typeof undelivered !== "undefined") {
+    if (undelivered) {
       undeliveredFilter = undelivered
-        ? isNull(disclosures.employeeId)
-        : isNotNull(disclosures.employeeId);
+        ? isNull(disclosures.scoutId)
+        : isNotNull(disclosures.scoutId);
     }
 
     return {
       ratingsFilter,
-      employeeFilter,
+      scoutesFilter,
       createdAtStartFilter,
       createdAtEndFilter,
       statusFilter,
       patientFilter,
-      priortyFilter,
+      priorityFilter,
       undeliveredFilter,
     };
   }
@@ -119,11 +124,11 @@ export class DisclosureRepo {
     const {
       createdAtEndFilter,
       createdAtStartFilter,
-      employeeFilter,
+      scoutesFilter,
       ratingsFilter,
       statusFilter,
       patientFilter,
-      priortyFilter,
+      priorityFilter,
       undeliveredFilter,
     } = await this.getFilters(dto);
 
@@ -134,11 +139,11 @@ export class DisclosureRepo {
         and(
           createdAtEndFilter,
           createdAtStartFilter,
-          employeeFilter,
+          scoutesFilter,
           ratingsFilter,
           statusFilter,
           patientFilter,
-          priortyFilter,
+          priorityFilter,
           undeliveredFilter,
         ),
       );
@@ -153,11 +158,11 @@ export class DisclosureRepo {
     const {
       createdAtEndFilter,
       createdAtStartFilter,
-      employeeFilter,
+      scoutesFilter,
       ratingsFilter,
       statusFilter,
       patientFilter,
-      priortyFilter,
+      priorityFilter,
       undeliveredFilter,
     } = await this.getFilters(rest);
 
@@ -166,15 +171,16 @@ export class DisclosureRepo {
       where: and(
         createdAtEndFilter,
         createdAtStartFilter,
-        employeeFilter,
+        scoutesFilter,
         ratingsFilter,
         statusFilter,
         patientFilter,
-        priortyFilter,
+        priorityFilter,
         undeliveredFilter,
       ),
       limit: pageSize,
       offset: pageNumber,
+      orderBy: desc(disclosures.createdAt),
     });
 
     const totalCount = await this.getCount(rest);
@@ -257,6 +263,8 @@ export class DisclosureRepo {
       limit: pageSize,
       with: {
         rating: true,
+        createdBy: ACTIONER_WITH,
+        updatedBy: ACTIONER_WITH,
       },
       orderBy: desc(disclosuresToRatings.createdAt),
     });
@@ -272,7 +280,11 @@ export class DisclosureRepo {
     return (
       (await this.db.query.disclosuresToRatings.findFirst({
         where: eq(disclosuresToRatings.id, id),
-        with: { rating: true },
+        with: {
+          rating: true,
+          createdBy: ACTIONER_WITH,
+          updatedBy: ACTIONER_WITH,
+        },
       })) ?? null
     );
   }
@@ -324,6 +336,7 @@ export class DisclosureRepo {
       offset: pageNumber,
       limit: pageSize,
       orderBy: desc(visits.createdAt),
+      with: { createdBy: ACTIONER_WITH, updatedBy: ACTIONER_WITH },
     });
 
     return {
@@ -338,6 +351,7 @@ export class DisclosureRepo {
     return (
       (await this.db.query.visits.findFirst({
         where: eq(visits.id, id),
+        with: { createdBy: ACTIONER_WITH, updatedBy: ACTIONER_WITH },
       })) ?? null
     );
   }

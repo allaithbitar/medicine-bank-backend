@@ -6,7 +6,7 @@ import {
   TUpdateEmployeeDto,
 } from "../types/employee.type";
 import { TDbContext } from "../db/drizzle";
-import { employees } from "../db/schema";
+import { areasToEmployees, employees } from "../db/schema";
 import { and, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { TFilterPatientsDto } from "../types/patient.type";
 
@@ -15,15 +15,33 @@ export class EmployeeRepo {
   constructor(@inject("db") private db: TDbContext) {}
 
   async create(createDto: TAddEmployeeDto, tx?: TDbContext): Promise<void> {
-    await (tx ?? this.db).insert(employees).values(createDto);
+    await (tx ?? this.db).transaction(async (_x) => {
+      const { areaIds, ...rest } = createDto;
+      const [{ id }] = await _x
+        .insert(employees)
+        .values(rest)
+        .returning({ id: employees.id });
+      if (areaIds) {
+        await _x
+          .insert(areasToEmployees)
+          .values(areaIds.map((aId) => ({ areaId: aId, employeeId: id })));
+      }
+    });
   }
 
   async update(updateDto: TUpdateEmployeeDto, tx?: TDbContext): Promise<void> {
-    const { id, ...rest } = updateDto;
-    await (tx ?? this.db)
-      .update(employees)
-      .set(rest)
-      .where(eq(employees.id, id));
+    const { id, areaIds, ...rest } = updateDto;
+    await (tx ?? this.db).transaction(async (_x) => {
+      await _x.update(employees).set(rest).where(eq(employees.id, id));
+      await _x
+        .delete(areasToEmployees)
+        .where(eq(areasToEmployees.employeeId, id));
+      if (areaIds?.length) {
+        await _x
+          .insert(areasToEmployees)
+          .values(areaIds.map((aId) => ({ areaId: aId, employeeId: id })));
+      }
+    });
   }
 
   async findById(id: string): Promise<TEmployeeEntity | undefined> {
@@ -36,7 +54,9 @@ export class EmployeeRepo {
     });
   }
 
-  private getFilters({ query, areaId, role }: TFilterEmployeesDto) {
+  private async getFilters({ query, areaIds, role }: TFilterEmployeesDto) {
+    let areasFilter;
+
     const nameFilter = query ? ilike(employees.name, `%${query}%`) : undefined;
 
     const roleFilter = role?.length ? inArray(employees.role, role) : undefined;
@@ -45,24 +65,38 @@ export class EmployeeRepo {
       ? ilike(employees.phone, `%${query}%`)
       : undefined;
 
-    const areaFilter = areaId ? eq(employees.areaId, areaId) : undefined;
+    if (areaIds?.length) {
+      const employeeIds = await this.db.query.areasToEmployees.findMany({
+        where: inArray(areasToEmployees.areaId, areaIds),
+        columns: { employeeId: true },
+      });
+
+      areasFilter = inArray(
+        employees.id,
+        employeeIds.map((e) => e.employeeId),
+      );
+    }
+
+    // const areaFilter = areaIds?.length
+    //   ? eq(employees.areaId, areaId)
+    //   : undefined;
 
     const queryFilter = or(nameFilter, phoneFilter);
 
     return {
       queryFilter,
-      areaFilter,
+      areasFilter,
       roleFilter,
     };
   }
 
   private async getCount(dto: TFilterPatientsDto) {
-    const { areaFilter, queryFilter, roleFilter } = this.getFilters(dto);
+    const { areasFilter, queryFilter, roleFilter } = await this.getFilters(dto);
 
     const [{ value: totalCount }] = await this.db
       .select({ value: count() })
       .from(employees)
-      .where(and(areaFilter, queryFilter, roleFilter));
+      .where(and(areasFilter, queryFilter, roleFilter));
 
     return totalCount;
   }
@@ -73,11 +107,17 @@ export class EmployeeRepo {
     ...rest
   }: TFilterEmployeesDto) {
     const count = await this.getCount(rest);
-    const { areaFilter, queryFilter, roleFilter } = this.getFilters(rest);
+    const { areasFilter, queryFilter, roleFilter } =
+      await this.getFilters(rest);
 
     const result = await this.db.query.employees.findMany({
-      where: and(areaFilter, queryFilter, roleFilter),
-      with: { area: true },
+      where: and(areasFilter, queryFilter, roleFilter),
+      with: {
+        areas: {
+          with: { area: true },
+          columns: { areaId: false, employeeId: false, id: false },
+        },
+      },
       limit: pageSize,
       offset: pageNumber,
       orderBy: desc(employees.createdAt),
@@ -94,7 +134,12 @@ export class EmployeeRepo {
   async findOneByIdWithIncludes(id: string) {
     const result = await this.db.query.employees.findFirst({
       where: eq(employees.id, id),
-      with: { area: true },
+      with: {
+        areas: {
+          with: { area: true },
+          columns: { areaId: false, employeeId: false, id: false },
+        },
+      },
       orderBy: desc(employees.createdAt),
       columns: { password: false },
     });
