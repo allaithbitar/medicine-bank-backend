@@ -9,6 +9,7 @@ import { TDbContext } from "../db/drizzle";
 import { areasToEmployees, employees } from "../db/schema";
 import { and, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { TFilterPatientsDto } from "../types/patient.type";
+import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 
 @injectable()
 export class EmployeeRepo {
@@ -102,8 +103,8 @@ export class EmployeeRepo {
   }
 
   async findManyWithIncludesPaginated({
-    pageSize,
-    pageNumber,
+    pageSize = DEFAULT_PAGE_SIZE,
+    pageNumber = DEFAULT_PAGE_NUMBER,
     ...rest
   }: TFilterEmployeesDto) {
     const count = await this.getCount(rest);
@@ -119,7 +120,7 @@ export class EmployeeRepo {
         },
       },
       limit: pageSize,
-      offset: pageNumber,
+      offset: pageSize * pageNumber,
       orderBy: desc(employees.createdAt),
       columns: { password: false },
     });

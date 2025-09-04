@@ -100,7 +100,7 @@ export class PatientRepo {
         phones: true,
       },
       limit: pageSize,
-      offset: pageNumber,
+      offset: pageSize * pageNumber,
       orderBy: desc(patients.createdAt),
     });
 

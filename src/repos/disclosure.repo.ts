@@ -151,8 +151,8 @@ export class DisclosureRepo {
   }
 
   private async getBase({
-    pageNumber,
-    pageSize,
+    pageNumber = DEFAULT_PAGE_NUMBER,
+    pageSize = DEFAULT_PAGE_SIZE,
     ...rest
   }: TFilterDisclosuresDto = {}) {
     const {
@@ -179,7 +179,7 @@ export class DisclosureRepo {
         undeliveredFilter,
       ),
       limit: pageSize,
-      offset: pageNumber,
+      offset: pageSize * pageNumber,
       orderBy: desc(disclosures.createdAt),
     });
 
@@ -259,8 +259,8 @@ export class DisclosureRepo {
 
     const result = await this.db.query.disclosuresToRatings.findMany({
       where: and(disclosureIdFilter, isCustomFitler),
-      offset: pageNumber,
       limit: pageSize,
+      offset: pageSize * pageNumber,
       with: {
         rating: true,
         createdBy: ACTIONER_WITH,
@@ -333,8 +333,8 @@ export class DisclosureRepo {
 
     const result = await this.db.query.visits.findMany({
       where: and(disclosureIdFilter, resultFilter),
-      offset: pageNumber,
       limit: pageSize,
+      offset: pageSize * pageNumber,
       orderBy: desc(visits.createdAt),
       with: { createdBy: ACTIONER_WITH, updatedBy: ACTIONER_WITH },
     });
