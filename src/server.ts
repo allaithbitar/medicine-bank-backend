@@ -37,6 +37,7 @@ import { PriorityDegreesController } from "./controllers/priority-degrees.contro
 import { RatingsController } from "./controllers/ratings.controller";
 import { OfflineController } from "./controllers/offline.controller";
 import { SeedController } from "./controllers/seed.controller";
+import { SatisticsController } from "./controllers/satistics.controller";
 
 const app = new Elysia({
   serve: {
@@ -121,6 +122,7 @@ const app = new Elysia({
   .use(PriorityDegreesController)
   .use(RatingsController)
   .use(OfflineController)
+  .use(SatisticsController)
   .use(SeedController)
   .get("/", async () => {
     return "pong";

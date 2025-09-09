@@ -16,6 +16,7 @@ import { PriorityDegreeRepo } from "../repos/priority-degree.repo";
 import { PriorityDegreeService } from "../services/priority-degree.service";
 import { RatingRepo } from "../repos/rating.repo";
 import { RatingService } from "../services/rating.service";
+import { SatisticsService } from "../services/satistics.service";
 
 const DiContainer = new Container();
 
@@ -44,5 +45,6 @@ DiContainer.bind<PriorityDegreeService>(PriorityDegreeService)
   .inRequestScope();
 DiContainer.bind<RatingRepo>(RatingRepo).toSelf().inRequestScope();
 DiContainer.bind<RatingService>(RatingService).toSelf().inRequestScope();
+DiContainer.bind<SatisticsService>(SatisticsService).toSelf().inRequestScope();
 
 export default DiContainer;
