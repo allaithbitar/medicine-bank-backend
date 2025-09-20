@@ -1,12 +1,14 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  date,
   pgEnum,
   pgTable,
   text,
   timestamp,
   unique,
   uuid,
+  real,
 } from "drizzle-orm/pg-core";
 
 const createdAtColumn = {
@@ -37,10 +39,40 @@ export const disclosure_status_enum = pgEnum("disclosure_status_enum", [
   "finished",
 ]);
 
+export const gender_enum = pgEnum("gender_enum", ["male", "female"]);
+
+// export const martial_status_enum = pgEnum("martial_status_enum", [
+//   "single",
+//   "married",
+//   "divorced",
+// ]);
+
+export const kinshep_enum = pgEnum("kinshep_enum", [
+  "partner",
+  "child",
+  "parent",
+  "brother",
+  "grandparent",
+  "grandchild",
+]);
+
+export const house_hold_asset_condition_enum = pgEnum(
+  "house_hold_asset_condition_enum ",
+  ["very_good", "good", "medium", "bad", "very_bad", "not_working"],
+);
+
 export const visit_result_enum = pgEnum("visit_status_enum", [
   "not_completed",
   "cant_be_completed",
   "completed",
+]);
+
+export const medicine_form_enum = pgEnum("medicine_form_enum", [
+  "pill",
+  "syrup",
+  "injection",
+  "capsule",
+  "ointment",
 ]);
 
 export const cities = pgTable("cities", {
@@ -95,16 +127,71 @@ export const patients = pgTable("patients", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   nationalNumber: text("national_number"),
+  birthDate: date("birth_date", { mode: "string" }),
+  gender: gender_enum("gender").default("male"),
+  job: text("job"),
+  address: text("address").notNull().default(""),
+  about: text("about").notNull().default(""),
   areaId: uuid("area_id").references(() => areas.id, {
     onDelete: "set null",
   }),
-  address: text("address").notNull().default(""),
-  about: text("about").notNull().default(""),
   ...createdAtColumn,
   ...updatedAtColumn,
   ...createdByColumn,
   ...updatedByColumn,
 });
+
+export const familyMembers = pgTable("family_members", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  birthDate: date("birth_date", { mode: "string" }),
+  gender: gender_enum("gender"),
+  // maritalStatus: martial_status_enum("marital_status"),
+  kinshep: kinshep_enum("kinshep"),
+  jobOrSchool: text("job_or_school"),
+  note: text("note"),
+  patientId: uuid("patient_id")
+    .notNull()
+    .references(() => patients.id, { onDelete: "cascade" }),
+  ...createdAtColumn,
+  ...updatedAtColumn,
+  ...createdByColumn,
+  ...updatedByColumn,
+});
+
+export const medicines = pgTable("medicines", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  form: medicine_form_enum("form").notNull(),
+  doseVariants: real("dose_variants").array().notNull(),
+  // dosePerIntake: real("dose_per_intake").notNull(), // e.g., 1 pill
+  // intakeFrequency: text("intake_frequency"),
+  // note: text("note"),
+});
+
+export const patientMedicines = pgTable("patient_medicines", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  patientId: uuid("patient_id")
+    .notNull()
+    .references(() => patients.id, { onDelete: "cascade" }),
+  medicineId: uuid("medicine_id")
+    .notNull()
+    .references(() => medicines.id, { onDelete: "cascade" }),
+  dosePerIntake: real("dose_per_intake"),
+  intakeFrequency: text("intake_frequency"),
+  note: text("note"),
+  ...createdAtColumn,
+  ...updatedAtColumn,
+  ...createdByColumn,
+  ...updatedByColumn,
+});
+
+// export const houseHoldAssets = pgTable("house_hold_assets", {
+//   id: uuid("id").primaryKey().defaultRandom(),
+//   name: text("name").notNull(),
+//   condition: house_hold_asset_condition_enum("condition").default("medium"),
+//   available: boolean("available").default(true),
+// });
 
 export const patientsPhoneNumbers = pgTable("patients_phone_numbers", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -222,6 +309,8 @@ export const patientRelations = relations(patients, ({ one, many }) => ({
   disclosures: many(disclosures),
   area: one(areas, { fields: [patients.areaId], references: [areas.id] }),
   phones: many(patientsPhoneNumbers),
+  medicines: many(patientMedicines),
+  familyMembers: many(familyMembers),
   createdBy: one(employees, {
     fields: [patients.createdBy],
     references: [employees.id],
@@ -231,6 +320,47 @@ export const patientRelations = relations(patients, ({ one, many }) => ({
     references: [employees.id],
   }),
 }));
+
+export const familyMembersRelations = relations(familyMembers, ({ one }) => ({
+  patient: one(patients, {
+    fields: [familyMembers.patientId],
+    references: [patients.id],
+  }),
+  createdBy: one(employees, {
+    fields: [familyMembers.createdBy],
+    references: [employees.id],
+  }),
+  updatedBy: one(employees, {
+    fields: [familyMembers.updatedBy],
+    references: [employees.id],
+  }),
+}));
+
+export const medicineRelations = relations(medicines, ({ many }) => ({
+  patients: many(patientMedicines),
+}));
+
+export const patientMedicinesRelations = relations(
+  patientMedicines,
+  ({ one }) => ({
+    patient: one(patients, {
+      fields: [patientMedicines.patientId],
+      references: [patients.id],
+    }),
+    medicine: one(medicines, {
+      fields: [patientMedicines.medicineId],
+      references: [medicines.id],
+    }),
+    createdBy: one(employees, {
+      fields: [patientMedicines.createdBy],
+      references: [employees.id],
+    }),
+    updatedBy: one(employees, {
+      fields: [patientMedicines.updatedBy],
+      references: [employees.id],
+    }),
+  }),
+);
 
 export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
   scout: one(employees, {

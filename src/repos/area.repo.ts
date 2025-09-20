@@ -45,6 +45,8 @@ export class AreaRepo {
 
     const result = await this.db.query.areas.findMany({
       where: and(nameFilter, cityIdFilter),
+      limit: pageSize,
+      offset: pageSize * pageNumber,
     });
 
     return { items: result, totalCount, pageNumber, pageSize };

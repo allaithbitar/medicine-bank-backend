@@ -43,6 +43,13 @@
       "when": 1756733033980,
       "tag": "0005_clumsy_sue_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1758364880505,
+      "tag": "0006_parched_marten_broadcloak",
+      "breakpoints": true
     }
   ]
 }

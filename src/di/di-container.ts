@@ -17,6 +17,10 @@ import { PriorityDegreeService } from "../services/priority-degree.service";
 import { RatingRepo } from "../repos/rating.repo";
 import { RatingService } from "../services/rating.service";
 import { SatisticsService } from "../services/satistics.service";
+import { FamilyMemberRepo } from "../repos/family-member.repo";
+import { FamilyMemberService } from "../services/family-member.service";
+import { MedicineRepo } from "../repos/medicine.repo";
+import { MedicineService } from "../services/medicine.service";
 
 const DiContainer = new Container();
 
@@ -46,5 +50,11 @@ DiContainer.bind<PriorityDegreeService>(PriorityDegreeService)
 DiContainer.bind<RatingRepo>(RatingRepo).toSelf().inRequestScope();
 DiContainer.bind<RatingService>(RatingService).toSelf().inRequestScope();
 DiContainer.bind<SatisticsService>(SatisticsService).toSelf().inRequestScope();
+DiContainer.bind<FamilyMemberRepo>(FamilyMemberRepo).toSelf().inRequestScope();
+DiContainer.bind<FamilyMemberService>(FamilyMemberService)
+  .toSelf()
+  .inRequestScope();
+DiContainer.bind<MedicineRepo>(MedicineRepo).toSelf().inRequestScope();
+DiContainer.bind<MedicineService>(MedicineService).toSelf().inRequestScope();
 
 export default DiContainer;

@@ -55,6 +55,8 @@ export class CityRepo {
 
     const result = await this.db.query.cities.findMany({
       where: nameFilter,
+      limit: pageSize,
+      offset: pageSize * pageNumber,
     });
 
     return { items: result, totalCount, pageNumber, pageSize };

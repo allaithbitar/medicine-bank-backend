@@ -38,6 +38,8 @@ import { RatingsController } from "./controllers/ratings.controller";
 import { OfflineController } from "./controllers/offline.controller";
 import { SeedController } from "./controllers/seed.controller";
 import { SatisticsController } from "./controllers/satistics.controller";
+import { FamilyMembersController } from "./controllers/family-members.controller";
+import { MedicinesController } from "./controllers/medicine.controller";
 
 const app = new Elysia({
   serve: {
@@ -123,6 +125,8 @@ const app = new Elysia({
   .use(RatingsController)
   .use(OfflineController)
   .use(SatisticsController)
+  .use(FamilyMembersController)
+  .use(MedicinesController)
   .use(SeedController)
   .get("/", async () => {
     return "pong";
