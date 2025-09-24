@@ -277,6 +277,19 @@ export const auditLog = pgTable("audit_log", {
   ...createdAtColumn,
 });
 
+export const appointments = pgTable("appointments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  disclosureId: uuid("disclosure_id")
+    .notNull()
+    .references(() => disclosures.id),
+  date: date("date", { mode: "string" }).notNull(),
+  isCompleted: boolean("is_completed").default(false),
+  ...createdAtColumn,
+  ...updatedAtColumn,
+  ...createdByColumn,
+  ...updatedByColumn,
+});
+
 // RELATIONS //
 
 export const employeeRelations = relations(employees, ({ many }) => ({
@@ -378,6 +391,7 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
   }),
   visits: many(visits),
   ratings: many(disclosuresToRatings),
+  appointments: many(appointments),
   createdBy: one(employees, {
     fields: [disclosures.createdBy],
     references: [employees.id],
@@ -454,6 +468,21 @@ export const patientPhoneNumbersRelations = relations(
 export const auditLogRelations = relations(auditLog, ({ one }) => ({
   createdBy: one(employees, {
     fields: [auditLog.createdBy],
+    references: [employees.id],
+  }),
+}));
+
+export const appointmentRelations = relations(appointments, ({ one }) => ({
+  disclosure: one(disclosures, {
+    fields: [appointments.disclosureId],
+    references: [disclosures.id],
+  }),
+  createdBy: one(employees, {
+    fields: [appointments.createdBy],
+    references: [employees.id],
+  }),
+  updatedBy: one(employees, {
+    fields: [appointments.updatedBy],
     references: [employees.id],
   }),
 }));

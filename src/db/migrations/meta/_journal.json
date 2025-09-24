@@ -50,6 +50,13 @@
       "when": 1758364880505,
       "tag": "0006_parched_marten_broadcloak",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1758704408241,
+      "tag": "0007_useful_jamie_braddock",
+      "breakpoints": true
     }
   ]
 }

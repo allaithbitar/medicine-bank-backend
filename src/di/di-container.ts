@@ -21,6 +21,8 @@ import { FamilyMemberRepo } from "../repos/family-member.repo";
 import { FamilyMemberService } from "../services/family-member.service";
 import { MedicineRepo } from "../repos/medicine.repo";
 import { MedicineService } from "../services/medicine.service";
+import { AppointmentRepo } from "../repos/appointment.repo";
+import { AppointmentService } from "../services/appointment.service";
 
 const DiContainer = new Container();
 
@@ -56,5 +58,9 @@ DiContainer.bind<FamilyMemberService>(FamilyMemberService)
   .inRequestScope();
 DiContainer.bind<MedicineRepo>(MedicineRepo).toSelf().inRequestScope();
 DiContainer.bind<MedicineService>(MedicineService).toSelf().inRequestScope();
+DiContainer.bind<AppointmentRepo>(AppointmentRepo).toSelf().inRequestScope();
+DiContainer.bind<AppointmentService>(AppointmentService)
+  .toSelf()
+  .inRequestScope();
 
 export default DiContainer;
