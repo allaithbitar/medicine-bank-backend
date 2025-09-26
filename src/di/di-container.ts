@@ -23,6 +23,10 @@ import { MedicineRepo } from "../repos/medicine.repo";
 import { MedicineService } from "../services/medicine.service";
 import { AppointmentRepo } from "../repos/appointment.repo";
 import { AppointmentService } from "../services/appointment.service";
+import { SystemBroadcastRepo } from "../repos/system-broadcast.repo";
+import { SystemBroadcastService } from "../services/system-broadcast.service";
+import { MeetingService } from "../services/meeting.service";
+import { MeetingRepo } from "../repos/meeting.repo";
 
 const DiContainer = new Container();
 
@@ -62,5 +66,14 @@ DiContainer.bind<AppointmentRepo>(AppointmentRepo).toSelf().inRequestScope();
 DiContainer.bind<AppointmentService>(AppointmentService)
   .toSelf()
   .inRequestScope();
+DiContainer.bind<SystemBroadcastRepo>(SystemBroadcastRepo)
+  .toSelf()
+  .inRequestScope();
+DiContainer.bind<SystemBroadcastService>(SystemBroadcastService)
+  .toSelf()
+  .inRequestScope();
+
+DiContainer.bind<MeetingRepo>(MeetingRepo).toSelf().inRequestScope();
+DiContainer.bind<MeetingService>(MeetingService).toSelf().inRequestScope();
 
 export default DiContainer;

@@ -75,6 +75,22 @@ export const medicine_form_enum = pgEnum("medicine_form_enum", [
   "ointment",
 ]);
 
+// export const notification_type_enum = pgEnum("notification_type_enum", [
+//   "disclosure_check",
+//   "patient_check",
+// ]);
+
+export const system_broadcast_type_enum = pgEnum("system_broadcast_type_enum", [
+  "meeting",
+  "custom",
+]);
+
+export const broadcast_audience_enum = pgEnum("broadcast_audience_enum", [
+  "all",
+  "scouts",
+  "supervisors",
+]);
+
 export const cities = pgTable("cities", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
@@ -213,6 +229,7 @@ export const ratings = pgTable("ratings", {
   description: text("description"),
   code: text("code").notNull(),
 });
+
 export const disclosures = pgTable("disclosures", {
   id: uuid("id").primaryKey().defaultRandom(),
   status: disclosure_status_enum("status").notNull().default("active"),
@@ -223,11 +240,66 @@ export const disclosures = pgTable("disclosures", {
     .notNull()
     .references(() => patients.id),
   scoutId: uuid("scout_id").references(() => employees.id),
+  // isFinished: boolean("is_finished").default(false),
+  // finished_at: timestamp("finished_at", {
+  //   mode: "string",
+  //   withTimezone: true,
+  // }),
+  // finishedBy: uuid("finished_by").references(() => employees.id),
+  // isCanceled: boolean("is_canceled").default(false),
+  // canceledAt: timestamp("canceled_at", {
+  //   mode: "string",
+  //   withTimezone: true,
+  // }),
+  // canceledBy: uuid("canceled_by").references(() => employees.id),
   note: text("note"),
   ...createdAtColumn,
   ...updatedAtColumn,
   ...createdByColumn,
   ...updatedByColumn,
+});
+
+// export const disclosureNotes = pgTable("disclosure_notes", {
+//   id: uuid("id").primaryKey().defaultRandom(),
+//   note: text("note"),
+//   disclosureId: uuid("disclosure_id")
+//     .notNull()
+//     .references(() => priorityDegrees.id),
+//   ...createdAtColumn,
+//   ...updatedAtColumn,
+//   ...createdByColumn,
+// });
+
+// export const notifications = pgTable("notifications", {
+//   id: uuid("id").primaryKey().defaultRandom(),
+//   type: notification_type_enum("type").notNull(),
+//   from: uuid("from")
+//     .notNull()
+//     .references(() => employees.id),
+//   to: uuid("to")
+//     .notNull()
+//     .references(() => employees.id),
+//   text: text("text"),
+//   recordId: uuid("record_id"),
+// });
+
+export const systemBroadcasts = pgTable("system_broadcasts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  type: system_broadcast_type_enum("type").notNull(),
+  title: text("title"),
+  details: text("details"),
+  audience: broadcast_audience_enum("audience").default("all").notNull(),
+  ...createdAtColumn,
+});
+
+export const meetings = pgTable("meetings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  note: text("note"),
+  date: timestamp("date", {
+    mode: "string",
+    withTimezone: true,
+  }),
+  ...createdAtColumn,
 });
 
 export const visits = pgTable("visits", {
