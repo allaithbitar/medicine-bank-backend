@@ -1,5 +1,10 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-typebox";
-import { disclosures, disclosuresToRatings, visits } from "../db/schema";
+import {
+  disclosureNotes,
+  disclosures,
+  disclosuresToRatings,
+  visits,
+} from "../db/schema";
 import { t } from "elysia";
 import { paginationModel } from "./common.model";
 
@@ -16,11 +21,19 @@ export const addDisclosureModel = t.Omit(disclosureInsertModel, [
   "updatedAt",
   "createdBy",
   "updatedBy",
+  "finishedAt",
+  "finishedBy",
+  "canceledAt",
+  "canceledBy",
 ]);
 
 export const updateDisclosureModel = t.Composite([
   t.Pick(disclosureSelectModel, ["id"]),
-  addDisclosureModel,
+  t.Partial(addDisclosureModel),
+]);
+
+export const updateDisclosureStatusModel = t.Composite([
+  t.Pick(disclosureSelectModel, ["id"]),
 ]);
 
 export const searchDisclosuresModel = t.Composite([
@@ -115,4 +128,36 @@ export const getDisclosureVisitsModel = t.Composite([
     "reason",
     "note",
   ]),
+]);
+
+// NOTES
+export const disclosureNoteSelectModel = createSelectSchema(disclosureNotes);
+
+export const disclosureNoteInsertModel = createInsertSchema(disclosureNotes, {
+  note: t.String({ minLength: 10 }),
+});
+
+export const addDisclosureNoteModel = t.Omit(disclosureNoteInsertModel, [
+  "id",
+  "createdAt",
+  "createdBy",
+  "updatedAt",
+]);
+
+export const updateDisclosureNoteModel = t.Composite([
+  t.Pick(disclosureNoteSelectModel, ["id"]),
+  addDisclosureNoteModel,
+]);
+
+export const getDisclosureNotesModel = t.Composite([
+  paginationModel,
+  t.Pick(disclosureNoteInsertModel, ["disclosureId"]),
+  t.Object({ query: t.Optional(t.String()) }),
+]);
+
+// AUDIT LOG
+
+export const getDisclosureAuditLogsModel = t.Composite([
+  paginationModel,
+  t.Pick(disclosureNoteInsertModel, ["disclosureId"]),
 ]);

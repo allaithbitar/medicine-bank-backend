@@ -2,13 +2,17 @@ import { Elysia, t } from "elysia";
 import DiContainer from "../di/di-container";
 import {
   addDisclosureModel,
+  addDisclosureNoteModel,
   addDisclosureRatingModel,
   addDisclosureVisitModel,
   disclosureSelectModel,
+  getDisclosureAuditLogsModel,
+  getDisclosureNotesModel,
   getDisclosureRatingsModel,
   getDisclosureVisitsModel,
   searchDisclosuresModel,
   updateDisclosureModel,
+  updateDisclosureNoteModel,
   updateDisclosureRatingModel,
   updateDisclosureVisitModel,
 } from "../models/disclosure.model";
@@ -54,14 +58,15 @@ export const DisclosuresController = new Elysia({
     )
     .put(
       "",
-      ({ body, disclosureService, user }) => {
-        disclosureService.updateDisclosure({ ...body, updatedBy: user.id });
+      async ({ body, disclosureService, user }) => {
+        await disclosureService.updateDisclosure(body.id, user.id, body);
       },
       {
         body: updateDisclosureModel,
         roles: ["manager", "supervisor"],
       },
     )
+
     .get(
       "/ratings",
       ({ query, disclosureService }) =>
@@ -144,6 +149,74 @@ export const DisclosuresController = new Elysia({
         }),
       {
         body: updateDisclosureVisitModel,
+      },
+    )
+    .get(
+      "/notes",
+      ({ query, disclosureService }) =>
+        disclosureService.getDisclosureNotes(query),
+
+      {
+        query: getDisclosureNotesModel,
+      },
+    )
+    .get(
+      "/notes/:id",
+      ({ params, disclosureService }) =>
+        disclosureService.getDisclosureNote(params.id),
+
+      {
+        params: t.Object({
+          id: t.String({ format: "uuid" }),
+        }),
+      },
+    )
+
+    .post(
+      "/notes",
+      ({ body, disclosureService, user }) =>
+        disclosureService.addDisclsoureNote({ ...body, createdBy: user.id }),
+
+      {
+        body: addDisclosureNoteModel,
+      },
+    )
+    .put(
+      "/notes",
+      ({ body, disclosureService, user }) =>
+        disclosureService.updateDisclsoureNote({
+          ...body,
+          updatedBy: user.id,
+        }),
+      {
+        body: updateDisclosureNoteModel,
+      },
+    )
+    .get(
+      "/audit-log",
+      ({ query, disclosureService }) =>
+        disclosureService.getDisclosureAuditLogsGroupedByDate(query),
+      {
+        query: getDisclosureAuditLogsModel,
+        roles: ["supervisor"],
+      },
+    )
+    .post(
+      "/audit-log/details",
+      ({ body, disclosureService }) => {
+        return disclosureService.getDisclosureAuditLogsByDate(
+          body.disclosureId,
+          body.date,
+        );
+      },
+      {
+        body: t.Composite([
+          getDisclosureAuditLogsModel,
+          t.Object({
+            date: t.String({ date: t.String({ format: "date-time" }) }),
+          }),
+        ]),
+        roles: ["supervisor"],
       },
     ),
 );

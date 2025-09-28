@@ -1,13 +1,17 @@
 import { Static } from "elysia";
 import {
   addDisclosureModel,
+  addDisclosureNoteModel,
   addDisclosureRatingModel,
   addDisclosureVisitModel,
   disclosureSelectModel,
+  getDisclosureAuditLogsModel,
+  getDisclosureNotesModel,
   getDisclosureRatingsModel,
   getDisclosureVisitsModel,
   searchDisclosuresModel,
   updateDisclosureModel,
+  updateDisclosureNoteModel,
   updateDisclosureRatingModel,
   updateDisclosureVisitModel,
 } from "../models/disclosure.model";
@@ -46,3 +50,16 @@ export type TUpdateDisclosureVisitDto = Static<
 // export type
 
 // export type TUpdateDisclosureDto =Static<typeof updateDis>
+export type TGetDisclosureNotesDto = Static<typeof getDisclosureNotesModel>;
+
+export type TAddDisclosureNoteDto = Static<typeof addDisclosureNoteModel> &
+  TCreatedBy;
+
+export type TUpdateDisclosureNoteDto = Static<
+  typeof updateDisclosureNoteModel
+> &
+  TUpdatedBy;
+
+export type TGetDisclosureAuditLogsDto = Static<
+  typeof getDisclosureAuditLogsModel
+>;

@@ -1,14 +1,22 @@
 import { inject, injectable } from "inversify";
 import { TDbContext } from "../db/drizzle";
-import { disclosures, disclosuresToRatings, visits } from "../db/schema";
+import {
+  disclosureNotes,
+  disclosures,
+  disclosuresToRatings,
+  visits,
+} from "../db/schema";
 import {
   TAddDisclosureDto,
+  TAddDisclosureNoteDto,
   TAddDisclosureRatingDto,
   TAddDisclosureVisitDto,
   TFilterDisclosuresDto,
+  TGetDisclosureNotesDto,
   TGetDisclosureRatingsDto,
   TGetDisclosureVisitsDto,
   TUpdateDisclosureDto,
+  TUpdateDisclosureNoteDto,
   TUpdateDisclosureRatingDto,
   TUpdateDisclosureVisitDto,
 } from "../types/disclosure.type";
@@ -18,6 +26,7 @@ import {
   desc,
   eq,
   gte,
+  ilike,
   inArray,
   isNotNull,
   isNull,
@@ -90,8 +99,6 @@ export class DisclosureRepo {
     if (scoutIds?.length) {
       scoutesFilter = inArray(disclosures.scoutId, scoutIds);
     }
-
-    console.log({ priorityIds });
 
     if (priorityIds?.length) {
       priorityFilter = inArray(disclosures.priorityId, priorityIds);
@@ -192,15 +199,13 @@ export class DisclosureRepo {
     await (tx ?? this.db).insert(disclosures).values(createDto);
   }
 
-  async update(
-    updateDto: TUpdateDisclosureDto,
-    tx?: TDbContext,
-  ): Promise<void> {
+  async update(updateDto: TUpdateDisclosureDto, tx?: TDbContext) {
     const { id, ...rest } = updateDto;
-    await (tx ?? this.db)
+    return await (tx ?? this.db)
       .update(disclosures)
       .set(rest)
-      .where(eq(disclosures.id, id));
+      .where(eq(disclosures.id, id))
+      .returning();
   }
 
   async findManyWithIncludesPaginated(dto: TFilterDisclosuresDto) {
@@ -213,6 +218,8 @@ export class DisclosureRepo {
       where: eq(disclosures.id, id),
     });
   }
+
+  // RATINGS
 
   private getRatingsFilters({
     disclosureId,
@@ -289,16 +296,52 @@ export class DisclosureRepo {
     );
   }
 
-  async addDisclosureRating(dto: TAddDisclosureRatingDto) {
-    await this.db.insert(disclosuresToRatings).values(dto);
+  async addDisclosureRating(dto: TAddDisclosureRatingDto, tx?: TDbContext) {
+    return await (tx ?? this.db)
+      .insert(disclosuresToRatings)
+      .values(dto)
+      .returning();
   }
 
-  async updateDislosureRating({ id, ...rest }: TUpdateDisclosureRatingDto) {
-    await this.db
+  async updateDislosureRating(
+    { id, ...rest }: TUpdateDisclosureRatingDto,
+    tx?: TDbContext,
+  ) {
+    return await (tx ?? this.db)
       .update(disclosuresToRatings)
       .set(rest)
-      .where(eq(disclosuresToRatings.id, id));
+      .where(eq(disclosuresToRatings.id, id))
+      .returning();
   }
+
+  async addDisclosureVisit(dto: TAddDisclosureVisitDto, tx?: TDbContext) {
+    return await (tx ?? this.db).insert(visits).values(dto).returning();
+  }
+
+  async updateDislosureVisit(
+    { id, ...rest }: TUpdateDisclosureVisitDto,
+    tx?: TDbContext,
+  ) {
+    return await (tx ?? this.db)
+      .update(visits)
+      .set(rest)
+      .where(eq(visits.id, id))
+      .returning();
+  }
+
+  async getDisclosuresRatings() {
+    return await this.db.query.disclosuresToRatings.findMany({
+      with: { rating: true },
+    });
+  }
+
+  async getDislosureRating(id: string) {
+    return await this.db.query.disclosuresToRatings.findFirst({
+      where: eq(disclosuresToRatings.id, id),
+    });
+  }
+
+  // VISITS
 
   private getVisitsFilters({ disclosureId, result }: TGetDisclosureVisitsDto) {
     const disclosureIdFilter = eq(visits.disclosureId, disclosureId);
@@ -356,21 +399,95 @@ export class DisclosureRepo {
     );
   }
 
-  async addDisclosureVisit(dto: TAddDisclosureVisitDto) {
-    return await this.db.insert(visits).values(dto);
-  }
-
-  async updateDislosureVisit({ id, ...rest }: TUpdateDisclosureVisitDto) {
-    return await this.db.update(visits).set(rest).where(eq(visits.id, id));
-  }
-
-  async getDisclosuresRatings() {
-    return await this.db.query.disclosuresToRatings.findMany({
-      with: { rating: true },
-    });
-  }
-
+  // for offline
   async getDisclosuresVisits() {
     return await this.db.query.visits.findMany();
   }
+
+  // for offline
+  async getDisclosuresVisit(id: string) {
+    return await this.db.query.visits.findFirst({ where: eq(visits.id, id) });
+  }
+
+  // NOTES
+
+  private getNotesFilters({ disclosureId, query }: TGetDisclosureNotesDto) {
+    const disclosureIdFilter = eq(disclosureNotes.disclosureId, disclosureId);
+
+    const queryFilter = query
+      ? ilike(disclosureNotes.note, `%${query}%`)
+      : undefined;
+
+    return {
+      disclosureIdFilter,
+      queryFilter,
+    };
+  }
+
+  private async getNotesCount(dto: TGetDisclosureNotesDto) {
+    const { disclosureIdFilter, queryFilter } = this.getNotesFilters(dto);
+
+    const [{ value: totalCount }] = await this.db
+      .select({ value: count() })
+      .from(disclosureNotes)
+      .where(and(disclosureIdFilter, queryFilter));
+    return totalCount;
+  }
+
+  async getDisclosureNotes({
+    pageSize = DEFAULT_PAGE_SIZE,
+    pageNumber = DEFAULT_PAGE_NUMBER,
+    ...rest
+  }: TGetDisclosureNotesDto) {
+    const { disclosureIdFilter, queryFilter } = this.getNotesFilters(rest);
+
+    const totalCount = await this.getNotesCount(rest);
+
+    const result = await this.db.query.disclosureNotes.findMany({
+      where: and(disclosureIdFilter, queryFilter),
+      limit: pageSize,
+      offset: pageSize * pageNumber,
+      orderBy: desc(disclosureNotes.createdAt),
+      with: { createdBy: ACTIONER_WITH },
+    });
+
+    return {
+      items: result,
+      totalCount,
+      pageSize,
+      pageNumber,
+    };
+  }
+
+  async getDisclosureNote(id: string) {
+    return (
+      (await this.db.query.disclosureNotes.findFirst({
+        where: eq(disclosureNotes.id, id),
+        with: { createdBy: ACTIONER_WITH },
+      })) ?? null
+    );
+  }
+
+  async addDisclosureNote(dto: TAddDisclosureNoteDto, tx?: TDbContext) {
+    return await (tx ?? this.db)
+      .insert(disclosureNotes)
+      .values(dto)
+      .returning();
+  }
+
+  async updateDisclosureNote(dto: TUpdateDisclosureNoteDto, tx?: TDbContext) {
+    const { id, disclosureId, ...rest } = dto;
+    return await (tx ?? this.db)
+      .update(disclosureNotes)
+      .set(rest)
+      .where(
+        and(
+          eq(disclosureNotes.id, id),
+          eq(disclosureNotes.disclosureId, disclosureId),
+        ),
+      )
+      .returning();
+  }
+
+  // Audit
 }

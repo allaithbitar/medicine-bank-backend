@@ -27,6 +27,7 @@ import { SystemBroadcastRepo } from "../repos/system-broadcast.repo";
 import { SystemBroadcastService } from "../services/system-broadcast.service";
 import { MeetingService } from "../services/meeting.service";
 import { MeetingRepo } from "../repos/meeting.repo";
+import { AuditLogRepo } from "../repos/audit-log.repo";
 
 const DiContainer = new Container();
 
@@ -75,5 +76,6 @@ DiContainer.bind<SystemBroadcastService>(SystemBroadcastService)
 
 DiContainer.bind<MeetingRepo>(MeetingRepo).toSelf().inRequestScope();
 DiContainer.bind<MeetingService>(MeetingService).toSelf().inRequestScope();
+DiContainer.bind<AuditLogRepo>(AuditLogRepo).toSelf().inRequestScope();
 
 export default DiContainer;

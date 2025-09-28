@@ -91,6 +91,19 @@ export const broadcast_audience_enum = pgEnum("broadcast_audience_enum", [
   "supervisors",
 ]);
 
+export const audit_table_enum = pgEnum("audit_table_enum", [
+  "disclosures",
+  "visits",
+  "disclosures_to_ratings",
+  "disclosure_notes",
+]);
+
+export const audit_action_type_enum = pgEnum("audit_action_type_enum", [
+  "INSERT",
+  "UPDATE",
+  "DELETE",
+]);
+
 export const cities = pgTable("cities", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
@@ -240,35 +253,22 @@ export const disclosures = pgTable("disclosures", {
     .notNull()
     .references(() => patients.id),
   scoutId: uuid("scout_id").references(() => employees.id),
-  // isFinished: boolean("is_finished").default(false),
-  // finished_at: timestamp("finished_at", {
-  //   mode: "string",
-  //   withTimezone: true,
-  // }),
-  // finishedBy: uuid("finished_by").references(() => employees.id),
-  // isCanceled: boolean("is_canceled").default(false),
-  // canceledAt: timestamp("canceled_at", {
-  //   mode: "string",
-  //   withTimezone: true,
-  // }),
-  // canceledBy: uuid("canceled_by").references(() => employees.id),
-  note: text("note"),
   ...createdAtColumn,
   ...updatedAtColumn,
   ...createdByColumn,
   ...updatedByColumn,
 });
 
-// export const disclosureNotes = pgTable("disclosure_notes", {
-//   id: uuid("id").primaryKey().defaultRandom(),
-//   note: text("note"),
-//   disclosureId: uuid("disclosure_id")
-//     .notNull()
-//     .references(() => priorityDegrees.id),
-//   ...createdAtColumn,
-//   ...updatedAtColumn,
-//   ...createdByColumn,
-// });
+export const disclosureNotes = pgTable("disclosure_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  note: text("note"),
+  disclosureId: uuid("disclosure_id")
+    .notNull()
+    .references(() => disclosures.id),
+  ...createdAtColumn,
+  ...createdByColumn,
+  ...updatedAtColumn,
+});
 
 // export const notifications = pgTable("notifications", {
 //   id: uuid("id").primaryKey().defaultRandom(),
@@ -337,16 +337,16 @@ export const disclosuresToRatings = pgTable("disclosures_to_ratings", {
 //   visitId: uuid("visit_id").references(() => visits.id),
 // });
 
-export const auditLog = pgTable("audit_log", {
+export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
-  tableName: text("table_name").notNull(),
-  recordId: uuid("record_id").notNull(),
-  columnName: text("column_name").notNull(),
+  table: audit_table_enum("table").notNull(),
+  column: text("column"),
+  action: audit_action_type_enum("action_type"),
   oldValue: text("old_value"),
   newValue: text("new_value"),
-  action: text("action").notNull(), // e.g., 'INSERT', 'UPDATE', 'DELETE'
-  ...createdByColumn,
+  recordId: uuid("record_id"),
   ...createdAtColumn,
+  ...createdByColumn,
 });
 
 export const appointments = pgTable("appointments", {
@@ -537,9 +537,9 @@ export const patientPhoneNumbersRelations = relations(
   }),
 );
 
-export const auditLogRelations = relations(auditLog, ({ one }) => ({
+export const auditLogRelations = relations(auditLogs, ({ one }) => ({
   createdBy: one(employees, {
-    fields: [auditLog.createdBy],
+    fields: [auditLogs.createdBy],
     references: [employees.id],
   }),
 }));
@@ -558,3 +558,17 @@ export const appointmentRelations = relations(appointments, ({ one }) => ({
     references: [employees.id],
   }),
 }));
+
+export const disclosureNoteRelations = relations(
+  disclosureNotes,
+  ({ one }) => ({
+    createdBy: one(employees, {
+      fields: [disclosureNotes.createdBy],
+      references: [employees.id],
+    }),
+    disclosure: one(disclosures, {
+      fields: [disclosureNotes.disclosureId],
+      references: [disclosures.id],
+    }),
+  }),
+);
