@@ -161,3 +161,8 @@ export const getDisclosureAuditLogsModel = t.Composite([
   paginationModel,
   t.Pick(disclosureNoteInsertModel, ["disclosureId"]),
 ]);
+
+export const moveDisclosuresModel = t.Object({
+  fromScoutId: t.String({ format: "uuid" }),
+  toScoutId: t.String({ format: "uuid" }),
+});

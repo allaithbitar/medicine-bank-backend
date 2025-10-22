@@ -31,6 +31,7 @@ import {
   isNotNull,
   isNull,
   lte,
+  or,
 } from "drizzle-orm";
 import {
   ACTIONER_WITH,
@@ -489,5 +490,63 @@ export class DisclosureRepo {
       .returning();
   }
 
-  // Audit
+  async moveDisclosures(fromScoutId: string, toScoutId: string) {
+    // Disclosures with no ratings
+    const disclosuresWithoutRatings = await this.db
+      .select({ id: disclosures.id })
+      .from(disclosures)
+      .leftJoin(
+        disclosuresToRatings,
+        eq(disclosures.id, disclosuresToRatings.disclosureId),
+      )
+      .where(
+        and(
+          eq(disclosures.scoutId, fromScoutId),
+          isNull(disclosuresToRatings.id),
+        ),
+      )
+      .groupBy(disclosures.id);
+
+    const disclosureIds = disclosuresWithoutRatings.map((d) => d.id);
+
+    if (disclosureIds.length === 0) return [];
+
+    // Now, for these disclosures, check visits: either no visits or all visits not_completed
+    const visitsCheck = await this.db
+      .select({
+        disclosureId: visits.disclosureId,
+        result: visits.result,
+      })
+      .from(visits)
+      .where(inArray(visits.disclosureId, disclosureIds));
+
+    // Group by disclosureId
+    const visitsByDisclosure = visitsCheck.reduce(
+      (acc, visit) => {
+        if (!acc[visit.disclosureId]) acc[visit.disclosureId] = [];
+        acc[visit.disclosureId].push(visit.result);
+        return acc;
+      },
+      {} as Record<string, string[]>,
+    );
+
+    // Filter disclosures where visits are empty or all not_completed
+    const eligibleIds = disclosureIds.filter((id) => {
+      const results = visitsByDisclosure[id] || [];
+      return (
+        results.length === 0 || results.every((r) => r === "not_completed")
+      );
+    });
+
+    if (eligibleIds.length === 0) return [];
+
+    // Update the scoutId
+    const updated = await this.db
+      .update(disclosures)
+      .set({ scoutId: toScoutId })
+      .where(inArray(disclosures.id, eligibleIds))
+      .returning();
+
+    return updated;
+  }
 }

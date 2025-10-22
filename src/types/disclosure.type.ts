@@ -9,6 +9,7 @@ import {
   getDisclosureNotesModel,
   getDisclosureRatingsModel,
   getDisclosureVisitsModel,
+  moveDisclosuresModel,
   searchDisclosuresModel,
   updateDisclosureModel,
   updateDisclosureNoteModel,
@@ -63,3 +64,5 @@ export type TUpdateDisclosureNoteDto = Static<
 export type TGetDisclosureAuditLogsDto = Static<
   typeof getDisclosureAuditLogsModel
 >;
+
+export type TMoveDisclosuresDto = Static<typeof moveDisclosuresModel>;

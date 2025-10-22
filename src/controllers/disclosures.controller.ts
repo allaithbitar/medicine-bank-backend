@@ -10,6 +10,7 @@ import {
   getDisclosureNotesModel,
   getDisclosureRatingsModel,
   getDisclosureVisitsModel,
+  moveDisclosuresModel,
   searchDisclosuresModel,
   updateDisclosureModel,
   updateDisclosureNoteModel,
@@ -217,6 +218,15 @@ export const DisclosuresController = new Elysia({
           }),
         ]),
         roles: ["supervisor"],
+      },
+    )
+    .post(
+      "/move",
+      ({ body, disclosureService, user }) =>
+        disclosureService.moveDisclosures(body, user.id),
+      {
+        body: moveDisclosuresModel,
+        roles: ["manager", "supervisor"],
       },
     ),
 );

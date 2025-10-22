@@ -12,6 +12,7 @@ import {
   TGetDisclosureNotesDto,
   TGetDisclosureRatingsDto,
   TGetDisclosureVisitsDto,
+  TMoveDisclosuresDto,
   TUpdateDisclosureNoteDto,
   TUpdateDisclosureRatingDto,
   TUpdateDisclosureVisitDto,
@@ -393,5 +394,34 @@ export class DisclosureService {
       disclosureId,
       date,
     );
+  }
+
+  async moveDisclosures(dto: TMoveDisclosuresDto, updatedBy: string) {
+    await this.db.transaction(async (tx) => {
+      const updatedDisclosures = await this.disclosureRepo.moveDisclosures(
+        dto.fromScoutId,
+        dto.toScoutId,
+      );
+
+      if (updatedDisclosures.length > 0) {
+        const auditCreatedAt = new Date().toISOString();
+
+        const auditsToAdd: InferInsertModel<typeof auditLogs>[] =
+          updatedDisclosures.map((disclosure) => ({
+            recordId: disclosure.id,
+            column: disclosures.scoutId.name,
+            action: "UPDATE",
+            createdBy: updatedBy,
+            newValue: dto.toScoutId,
+            oldValue: dto.fromScoutId,
+            table: "disclosures",
+            createdAt: auditCreatedAt,
+          }));
+
+        await this.auditLogRepo.create(auditsToAdd, tx as any);
+      }
+
+      return updatedDisclosures.length;
+    });
   }
 }

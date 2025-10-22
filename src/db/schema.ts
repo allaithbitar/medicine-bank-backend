@@ -35,8 +35,7 @@ export const emplyee_role_enum = pgEnum("emplyee_role_enum", [
 
 export const disclosure_status_enum = pgEnum("disclosure_status_enum", [
   "active",
-  "canceled",
-  "finished",
+  "archived",
 ]);
 
 export const gender_enum = pgEnum("gender_enum", ["male", "female"]);
@@ -253,6 +252,7 @@ export const disclosures = pgTable("disclosures", {
     .notNull()
     .references(() => patients.id),
   scoutId: uuid("scout_id").references(() => employees.id),
+  initialNote: text("initial_note"),
   ...createdAtColumn,
   ...updatedAtColumn,
   ...createdByColumn,

@@ -71,6 +71,13 @@
       "when": 1759059794860,
       "tag": "0009_flaky_hannibal_king",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1761132691075,
+      "tag": "0010_wide_black_panther",
+      "breakpoints": true
     }
   ]
 }
