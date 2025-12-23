@@ -6,7 +6,7 @@ import {
 } from "../types/notification.type";
 import { TDbContext } from "../db/drizzle";
 import { notifications } from "../db/schema";
-import { and, count, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 
 @injectable()
@@ -93,7 +93,7 @@ export class NotificationRepo {
     const [{ value: totalCount }] = await this.db
       .select({ value: count() })
       .from(notifications)
-      .where(and(eq(notifications.to, employeeId), eq(notifications.readAt, null)));
+      .where(and(eq(notifications.to, employeeId), isNull(notifications.readAt)));
 
     return totalCount;
   }

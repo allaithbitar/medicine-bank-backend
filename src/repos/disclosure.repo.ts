@@ -4,23 +4,19 @@ import {
   disclosureNotes,
   disclosures,
   disclosuresToRatings,
-  visits,
 } from "../db/schema";
 import {
   TAddDisclosureDto,
   TAddDisclosureNoteDto,
   TAddDisclosureNoteEntityDto,
   TAddDisclosureRatingDto,
-  TAddDisclosureVisitDto,
   TFilterDisclosuresDto,
   TGetDisclosureNotesDto,
   TGetDisclosureRatingsDto,
-  TGetDisclosureVisitsDto,
   TUpdateDisclosureDto,
   TUpdateDisclosureNoteDto,
   TUpdateDisclosureNoteEntityDto,
   TUpdateDisclosureRatingDto,
-  TUpdateDisclosureVisitDto,
 } from "../types/disclosure.type";
 import {
   and,
@@ -317,20 +313,7 @@ export class DisclosureRepo {
       .returning();
   }
 
-  async addDisclosureVisit(dto: TAddDisclosureVisitDto, tx?: TDbContext) {
-    return await (tx ?? this.db).insert(visits).values(dto).returning();
-  }
 
-  async updateDislosureVisit(
-    { id, ...rest }: TUpdateDisclosureVisitDto,
-    tx?: TDbContext,
-  ) {
-    return await (tx ?? this.db)
-      .update(visits)
-      .set(rest)
-      .where(eq(visits.id, id))
-      .returning();
-  }
 
   async getDisclosuresRatings() {
     return await this.db.query.disclosuresToRatings.findMany({
@@ -344,73 +327,7 @@ export class DisclosureRepo {
     });
   }
 
-  // VISITS
 
-  private getVisitsFilters({ disclosureId, result }: TGetDisclosureVisitsDto) {
-    const disclosureIdFilter = eq(visits.disclosureId, disclosureId);
-
-    const resultFilter =
-      typeof result !== "undefined" ? eq(visits.result, result) : undefined;
-
-    return {
-      disclosureIdFilter,
-      resultFilter,
-    };
-  }
-
-  private async getVisitsCount(dto: TGetDisclosureVisitsDto) {
-    const { disclosureIdFilter, resultFilter } = this.getVisitsFilters(dto);
-
-    const [{ value: totalCount }] = await this.db
-      .select({ value: count() })
-      .from(visits)
-      .where(and(disclosureIdFilter, resultFilter));
-    return totalCount;
-  }
-
-  async getDisclosureVisits({
-    pageSize = DEFAULT_PAGE_SIZE,
-    pageNumber = DEFAULT_PAGE_NUMBER,
-    ...rest
-  }: TGetDisclosureVisitsDto) {
-    const { disclosureIdFilter, resultFilter } = this.getVisitsFilters(rest);
-
-    const totalCount = await this.getVisitsCount(rest);
-
-    const result = await this.db.query.visits.findMany({
-      where: and(disclosureIdFilter, resultFilter),
-      limit: pageSize,
-      offset: pageSize * pageNumber,
-      orderBy: desc(visits.createdAt),
-      with: { createdBy: ACTIONER_WITH, updatedBy: ACTIONER_WITH },
-    });
-
-    return {
-      items: result,
-      totalCount,
-      pageSize,
-      pageNumber,
-    };
-  }
-
-  async getDisclosureVisit(id: string) {
-    return (
-      (await this.db.query.visits.findFirst({
-        where: eq(visits.id, id),
-        with: { createdBy: ACTIONER_WITH, updatedBy: ACTIONER_WITH },
-      })) ?? null
-    );
-  }
-
-  // for offline
-  async getDisclosuresVisits() {
-    return await this.db.query.visits.findMany();
-  }
-
-  // for offline
-  async getDisclosuresVisit(id: string) {
-    return await this.db.query.visits.findFirst({ where: eq(visits.id, id) });
-  }
 
   // NOTES
 
@@ -418,7 +335,7 @@ export class DisclosureRepo {
     const disclosureIdFilter = eq(disclosureNotes.disclosureId, disclosureId);
 
     const queryFilter = query
-      ? ilike(disclosureNotes.note, `%${query}%`)
+      ? ilike(disclosureNotes.noteText, `%${query}%`)
       : undefined;
 
     return {
@@ -519,40 +436,13 @@ export class DisclosureRepo {
 
     if (disclosureIds.length === 0) return [];
 
-    // Now, for these disclosures, check visits: either no visits or all visits not_completed
-    const visitsCheck = await this.db
-      .select({
-        disclosureId: visits.disclosureId,
-        result: visits.result,
-      })
-      .from(visits)
-      .where(inArray(visits.disclosureId, disclosureIds));
 
-    // Group by disclosureId
-    const visitsByDisclosure = visitsCheck.reduce(
-      (acc, visit) => {
-        if (!acc[visit.disclosureId]) acc[visit.disclosureId] = [];
-        acc[visit.disclosureId].push(visit.result);
-        return acc;
-      },
-      {} as Record<string, string[]>,
-    );
-
-    // Filter disclosures where visits are empty or all not_completed
-    const eligibleIds = disclosureIds.filter((id) => {
-      const results = visitsByDisclosure[id] || [];
-      return (
-        results.length === 0 || results.every((r) => r === "not_completed")
-      );
-    });
-
-    if (eligibleIds.length === 0) return [];
 
     // Update the scoutId
     const updated = await this.db
       .update(disclosures)
       .set({ scoutId: toScoutId })
-      .where(inArray(disclosures.id, eligibleIds))
+      .where(inArray(disclosures.id, disclosureIds))
       .returning();
 
     return updated;

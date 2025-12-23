@@ -58,13 +58,7 @@ export class AuditLogRepo {
             sql`(SELECT id FROM disclosures_to_ratings WHERE disclosure_id = ${disclosureId})`,
           ),
         ),
-        and(
-          eq(auditLogs.table, "visits"),
-          inArray(
-            auditLogs.recordId,
-            sql`(SELECT id FROM visits WHERE disclosure_id = ${disclosureId})`,
-          ),
-        ),
+        
       ),
       dateFilter,
     );
@@ -120,7 +114,6 @@ export class AuditLogRepo {
       let oldRecordValue: any = null;
       let newRecordValue: any = null;
       switch (auditRecord.table) {
-        case "visits":
         case "disclosure_notes": {
           return { ...auditRecord, oldRecordValue, newRecordValue };
         }

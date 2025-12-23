@@ -7,7 +7,6 @@ import {
   disclosures,
   disclosuresToRatings,
   ratings,
-  visits,
 } from "../db/schema";
 
 @injectable()
@@ -28,47 +27,8 @@ export class SatisticsService {
         ),
       );
 
-    let [{ count: completedVisitsCount }] = await this.db
-      .select({ count: count() })
-      .from(visits)
-      .where(
-        and(
-          gte(visits.createdAt, fromDate),
-          lte(visits.createdAt, toDate),
-          eq(visits.result, "completed"),
-          employeeId ? eq(visits.createdBy, employeeId) : undefined,
-        ),
-      );
-
-    let [{ count: uncompletedVisitsCount }] = await this.db
-      .select({ count: count() })
-      .from(visits)
-      .where(
-        and(
-          gte(visits.createdAt, fromDate),
-          lte(visits.createdAt, toDate),
-          eq(visits.result, "not_completed"),
-          employeeId ? eq(visits.createdBy, employeeId) : undefined,
-        ),
-      );
-
-    let [{ count: cantBeCompletedVisitsCount }] = await this.db
-      .select({ count: count() })
-      .from(visits)
-      .where(
-        and(
-          gte(visits.createdAt, fromDate),
-          lte(visits.createdAt, toDate),
-          eq(visits.result, "cant_be_completed"),
-          employeeId ? eq(visits.createdBy, employeeId) : undefined,
-        ),
-      );
-
     return {
       addedDisclosuresCount,
-      completedVisitsCount,
-      uncompletedVisitsCount,
-      cantBeCompletedVisitsCount,
     };
   }
 
@@ -86,45 +46,6 @@ export class SatisticsService {
         ),
       )
       .orderBy(disclosures.createdAt);
-
-    let completedVisits = await this.db
-      .select({ id: visits.id, createdAt: visits.createdAt })
-      .from(visits)
-      .where(
-        and(
-          gte(visits.createdAt, fromDate),
-          lte(visits.createdAt, toDate),
-          eq(visits.result, "completed"),
-          employeeId ? eq(visits.createdBy, employeeId) : undefined,
-        ),
-      )
-      .orderBy(visits.createdAt);
-
-    let uncompletedVisits = await this.db
-      .select({ id: visits.id, createdAt: visits.createdAt })
-      .from(visits)
-      .where(
-        and(
-          gte(visits.createdAt, fromDate),
-          lte(visits.createdAt, toDate),
-          eq(visits.result, "not_completed"),
-          employeeId ? eq(visits.createdBy, employeeId) : undefined,
-        ),
-      )
-      .orderBy(visits.createdAt);
-
-    let cantBeCompletedVisits = await this.db
-      .select({ id: visits.id, createdAt: visits.createdAt })
-      .from(visits)
-      .where(
-        and(
-          gte(visits.createdAt, fromDate),
-          lte(visits.createdAt, toDate),
-          eq(visits.result, "cant_be_completed"),
-          employeeId ? eq(visits.createdBy, employeeId) : undefined,
-        ),
-      )
-      .orderBy(visits.createdAt);
 
     const systemRatings = await this.db.select().from(ratings);
 
@@ -216,50 +137,8 @@ export class SatisticsService {
       {} as Record<string, string[]>,
     );
 
-    const groupedByCompletedVisits = completedVisits.reduce(
-      (acc, curr) => {
-        const currentDate = curr.createdAt.split(" ")[0];
-        if (!acc[currentDate]) {
-          acc[currentDate] = [curr.id];
-        } else {
-          acc[currentDate].push(curr.id);
-        }
-        return acc;
-      },
-      {} as Record<string, string[]>,
-    );
-
-    const groupedByUncompletedVisits = uncompletedVisits.reduce(
-      (acc, curr) => {
-        const currentDate = curr.createdAt.split(" ")[0];
-        if (!acc[currentDate]) {
-          acc[currentDate] = [curr.id];
-        } else {
-          acc[currentDate].push(curr.id);
-        }
-        return acc;
-      },
-      {} as Record<string, string[]>,
-    );
-
-    const groupedByCantBeCompletedVisits = cantBeCompletedVisits.reduce(
-      (acc, curr) => {
-        const currentDate = curr.createdAt.split(" ")[0];
-        if (!acc[currentDate]) {
-          acc[currentDate] = [curr.id];
-        } else {
-          acc[currentDate].push(curr.id);
-        }
-        return acc;
-      },
-      {} as Record<string, string[]>,
-    );
-
     return {
       addedDisclosures: groupedByAddedDisclosures,
-      completedVisits: groupedByCompletedVisits,
-      uncompletedVisits: groupedByUncompletedVisits,
-      cantBeCompletedVisits: groupedByCantBeCompletedVisits,
       ratings: resolvedRatingResults,
     };
   }

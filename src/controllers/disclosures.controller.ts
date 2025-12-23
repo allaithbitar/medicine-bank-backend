@@ -5,21 +5,18 @@ import {
   addDisclosureModel,
   addDisclosureNoteModel,
   addDisclosureRatingModel,
-  addDisclosureVisitModel,
   completeDisclosureConsultationModel,
   disclosureSelectModel,
   getDisclosureAuditLogsModel,
   getDisclosureConsultationsModel,
   getDisclosureNotesModel,
   getDisclosureRatingsModel,
-  getDisclosureVisitsModel,
   moveDisclosuresModel,
   searchDisclosuresModel,
   updateDisclosureConsultationModel,
   updateDisclosureModel,
   updateDisclosureNoteModel,
   updateDisclosureRatingModel,
-  updateDisclosureVisitModel,
 } from "../models/disclosure.model";
 import { DisclosureService } from "../services/disclosure.service";
 import { AuthGuard } from "../guards/auth.guard";
@@ -171,47 +168,7 @@ export const DisclosuresController = new Elysia({
       },
     )
 
-    .get(
-      "/visits",
-      ({ query, disclosureService }) =>
-        disclosureService.getDisclosureVisits(query),
 
-      {
-        query: getDisclosureVisitsModel,
-      },
-    )
-    .get(
-      "/visits/:id",
-      ({ params, disclosureService }) =>
-        disclosureService.getDisclosureVisit(params.id),
-
-      {
-        params: t.Object({
-          id: t.String({ format: "uuid" }),
-        }),
-      },
-    )
-
-    .post(
-      "/visits",
-      ({ body, disclosureService, user }) =>
-        disclosureService.addDisclosureVisit({ ...body, createdBy: user.id }),
-
-      {
-        body: addDisclosureVisitModel,
-      },
-    )
-    .put(
-      "/visits",
-      ({ body, disclosureService, user }) =>
-        disclosureService.updateDisclosureVisit({
-          ...body,
-          updatedBy: user.id,
-        }),
-      {
-        body: updateDisclosureVisitModel,
-      },
-    )
     .get(
       "/notes",
       ({ query, disclosureService }) =>

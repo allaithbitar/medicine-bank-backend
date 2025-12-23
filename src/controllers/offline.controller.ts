@@ -48,8 +48,6 @@ export const OfflineController = new Elysia({
         const disclosuresRatings =
           await disclosureService.getDisclosuresRatings();
 
-        const visits = await disclosureService.getDisclosuresVisits();
-
         const cities = await cityService.getCities({
           pageSize: Number.MAX_SAFE_INTEGER,
         });
@@ -65,7 +63,6 @@ export const OfflineController = new Elysia({
           employees: employees.items,
           disclosures: disclosures.items,
           disclosuresRatings,
-          visits,
           cities: cities.items,
           areas: areas.items,
           ratings: ratings,

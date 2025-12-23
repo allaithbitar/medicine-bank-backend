@@ -100,7 +100,6 @@ export const broadcast_audience_enum = pgEnum("broadcast_audience_enum", [
 
 export const audit_table_enum = pgEnum("audit_table_enum", [
   "disclosures",
-  "visits",
   "disclosures_to_ratings",
   "disclosure_notes",
   "disclosure_consultations",
@@ -274,6 +273,11 @@ export const disclosures = pgTable("disclosures", {
   //
   isReceived: boolean("is_received").notNull().default(false),
   archiveNumber: integer("archive_number"),
+  //
+  visitResult: visit_result_enum("visit_result").default("not_completed"),
+  visitReason: text("visit_reason"),
+  visitNote: text("visit_note"),
+  //
   ...createdAtColumn,
   ...updatedAtColumn,
   ...createdByColumn,
@@ -328,19 +332,7 @@ export const meetings = pgTable("meetings", {
   ...createdAtColumn,
 });
 
-export const visits = pgTable("visits", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  disclosureId: uuid("disclosure_id")
-    .notNull()
-    .references(() => disclosures.id),
-  result: visit_result_enum("result").notNull().default("not_completed"),
-  reason: text("reason"),
-  note: text("note"),
-  ...createdAtColumn,
-  ...updatedAtColumn,
-  ...createdByColumn,
-  ...updatedByColumn,
-});
+
 
 export const disclosuresToRatings = pgTable("disclosures_to_ratings", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -507,7 +499,6 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
     fields: [disclosures.priorityId],
     references: [priorityDegrees.id],
   }),
-  visits: many(visits),
   ratings: many(disclosuresToRatings),
   appointments: many(appointments),
   createdBy: one(employees, {
@@ -522,20 +513,7 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
   }),
 }));
 
-export const visitsRelations = relations(visits, ({ one }) => ({
-  disclosure: one(disclosures, {
-    fields: [visits.disclosureId],
-    references: [disclosures.id],
-  }),
-  createdBy: one(employees, {
-    fields: [visits.createdBy],
-    references: [employees.id],
-  }),
-  updatedBy: one(employees, {
-    fields: [visits.updatedBy],
-    references: [employees.id],
-  }),
-}));
+
 
 // export const disclosuresToVisistsRelations = relations(
 //   disclosuresToVisists,

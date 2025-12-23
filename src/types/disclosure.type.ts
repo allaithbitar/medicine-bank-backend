@@ -4,7 +4,6 @@ import {
   addDisclosureModel,
   addDisclosureNoteModel,
   addDisclosureRatingModel,
-  addDisclosureVisitModel,
   completeDisclosureConsultationModel,
   disclosureConsultationSelectModel,
   disclosureSelectModel,
@@ -12,14 +11,13 @@ import {
   getDisclosureConsultationsModel,
   getDisclosureNotesModel,
   getDisclosureRatingsModel,
-  getDisclosureVisitsModel,
   moveDisclosuresModel,
   searchDisclosuresModel,
   updateDisclosureConsultationModel,
   updateDisclosureModel,
   updateDisclosureNoteModel,
   updateDisclosureRatingModel,
-  updateDisclosureVisitModel,
+  // updateVisitModel,
 } from "../models/disclosure.model";
 
 import { TCreatedBy, TUpdatedBy } from "./common.types";
@@ -43,15 +41,7 @@ export type TUpdateDisclosureRatingDto = Static<
 > &
   TUpdatedBy;
 
-export type TGetDisclosureVisitsDto = Static<typeof getDisclosureVisitsModel>;
-
-export type TAddDisclosureVisitDto = Static<typeof addDisclosureVisitModel> &
-  TCreatedBy;
-
-export type TUpdateDisclosureVisitDto = Static<
-  typeof updateDisclosureVisitModel
-> &
-  TUpdatedBy;
+// export type TUpdateVisitDto = Static<typeof updateVisitModel> & TUpdatedBy;
 
 // export type
 

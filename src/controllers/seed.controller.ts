@@ -12,7 +12,6 @@ import {
   patientsPhoneNumbers,
   priorityDegrees,
   ratings,
-  visits,
 } from "../db/schema";
 import { TAddEmployeeDto, TEmployeeEntity } from "../types/employee.type";
 import { employeeInsertModel } from "../models/employee.model";
@@ -22,7 +21,6 @@ import { TAddPatientDto, TPatient } from "../types/patient.type";
 import {
   TAddDisclosureDto,
   TAddDisclosureRatingDto,
-  TAddDisclosureVisitDto,
   TDisclosure,
 } from "../types/disclosure.type";
 import { eq, InferInsertModel } from "drizzle-orm";
@@ -243,7 +241,7 @@ export const SeedController = new Elysia({
 
         // patients
         //
-        await db.delete(visits);
+
         await db.delete(disclosuresToRatings);
         await db.delete(disclosures);
         await db.delete(patientsPhoneNumbers);
@@ -323,7 +321,6 @@ export const SeedController = new Elysia({
           (p) => {
             const disclosureToAdd: {
               disclosure: InferInsertModel<typeof disclosures>;
-              visits: InferInsertModel<typeof visits>[];
               ratings: InferInsertModel<typeof disclosuresToRatings>[];
             }[] = [];
 
@@ -335,7 +332,6 @@ export const SeedController = new Elysia({
 
                 const disclosure: InferInsertModel<typeof disclosures> =
                   {} as any;
-                const disclosureVisits: InferInsertModel<typeof visits>[] = [];
                 const disclosureRatings: InferInsertModel<
                   typeof disclosuresToRatings
                 >[] = [];
@@ -343,7 +339,7 @@ export const SeedController = new Elysia({
                 logs.forEach((disclosureLog) => {
                   disclosure.createdAt = createdAt;
                   disclosure.createdAt = createdAt;
-                  disclosure.note = note;
+                  disclosure.initialNote = note;
                   disclosure.status = "active";
                   disclosure.scoutId =
                     allEmployees.find((e) => e.name === scoutName)?.id ?? null;
@@ -357,28 +353,20 @@ export const SeedController = new Elysia({
 
                   switch (disclosureLog.result.name) {
                     case oldDataVisitStatues.NOT_DONE:
+                      disclosure.visitResult = "not_completed";
                       break;
                     case oldDataVisitStatues.NOT_FINISHED:
                     case oldDataVisitStatues.NOT_FINISHED_PLUS: {
-                      disclosureVisits.push({
-                        result:
-                          disclosureLog.result.name ===
-                          oldDataVisitStatues.NOT_FINISHED
-                            ? "not_completed"
-                            : "cant_be_completed",
-                        createdAt: new Date(disclosureLog.date).toISOString(),
-                        disclosureId: "",
-                        reason: (disclosureLog.details ?? "").trim() || null,
-                        updatedAt: null,
-                      });
+                      disclosure.visitResult = "cant_be_completed";
+                      disclosure.visitReason = disclosureLog.details;
+                      disclosure.visitNote = disclosureLog.note;
                       break;
                     }
                     case oldDataVisitStatues.FINISHED: {
-                      disclosureVisits.push({
-                        result: "completed",
-                        createdAt: new Date(disclosureLog.date).toISOString(),
-                        disclosureId: "",
-                      });
+                      disclosure.visitResult = "completed";
+                      disclosure.visitReason = disclosureLog.details;
+                      disclosure.visitNote = disclosureLog.note;
+
                       disclosureRatings.push({
                         createdAt: new Date(disclosureLog.date).toISOString(),
                         disclosureId: "",
@@ -411,7 +399,6 @@ export const SeedController = new Elysia({
                 disclosureToAdd.push({
                   disclosure,
                   ratings: disclosureRatings,
-                  visits: disclosureVisits,
                 });
               },
             );
@@ -465,12 +452,6 @@ export const SeedController = new Elysia({
                       .values({ ...d.disclosure, patientId })
                       .returning({ id: disclosures.id });
 
-                    if (d.visits.length) {
-                      await tx
-                        .insert(visits)
-                        .values(d.visits.map((v) => ({ ...v, disclosureId })));
-                    }
-
                     if (d.ratings.length) {
                       await tx
                         .insert(disclosuresToRatings)
@@ -484,56 +465,8 @@ export const SeedController = new Elysia({
         );
 
         return {
-          // normalizedDictionary,
-          // length: Object.keys(dictionary).length,
+          // Data migration completed successfully
         };
-        // const resultTypes = new Set<string>();
-        // for (const d of data) {
-        //   for (const log of d.logs) {
-        //     ratings.add(log.result.name);
-        //     if (log.result.name === visitsStatuses.FINISHED) {
-        //       resultTypes.add(log.result.type);
-        //     }
-        //   }
-        // }
-        // return Array.from(resultTypes.values());
-        // const resultTypes = [];
-        //
-        // const phoneNumbersSet = new Set();
-        //
-        // const patientsPhoneNumbers = {};
-        //
-        // for (const d of data) {
-        //   if (!phoneNumbersSet.has(d.phone)) {
-        //     phoneNumbersSet.add(d.phone);
-        //     patientsPhoneNumbers[d.phone] = [d];
-        //   } else {
-        //     patientsPhoneNumbers[d.phone] = [
-        //       ...patientsPhoneNumbers[d.phone],
-        //       d,
-        //     ];
-        //   }
-        //   d.logs.forEach((dl) => {
-        //     if (!resultTypes.find((r) => r.id === dl.result.id)) {
-        //       resultTypes.push(dl.result);
-        //     }
-        //   });
-        // }
-        //
-        // const duplicatePhonePatietns = Object.fromEntries(
-        //   Object.entries(patientsPhoneNumbers).filter(
-        //     ([key, value]) => value.length > 1,
-        //   ),
-        // );
-        //
-        // return { r
-        //   uniquePhoneNumbers: phoneNumbersSet.size,
-        //   totalItems: data.length,
-        //   isArray: Array.isArray(data),
-        //   resultTypes,
-        //   // patientsPhoneNumbers,
-        //   // duplicatePhonePatietns,
-        // };
       })
       .get("syncOldAreas", async ({ db }) => {
         const city = await db.query.cities.findFirst();

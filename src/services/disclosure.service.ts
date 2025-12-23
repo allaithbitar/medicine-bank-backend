@@ -6,7 +6,6 @@ import {
   TAddDisclosureDto,
   TAddDisclosureNoteDto,
   TAddDisclosureRatingDto,
-  TAddDisclosureVisitDto,
   TCompleteDisclosureConsultationsDto,
   TDisclosure,
   TFilterDisclosuresDto,
@@ -14,12 +13,10 @@ import {
   TGetDisclosureConsultationsDto,
   TGetDisclosureNotesDto,
   TGetDisclosureRatingsDto,
-  TGetDisclosureVisitsDto,
   TMoveDisclosuresDto,
   TUpdateDisclosureConsultationDto,
   TUpdateDisclosureNoteDto,
   TUpdateDisclosureRatingDto,
-  TUpdateDisclosureVisitDto,
 } from "../types/disclosure.type";
 import {
   ERROR_CODES,
@@ -27,12 +24,7 @@ import {
   NotFoundError,
 } from "../constants/errors";
 import { TDbContext } from "../db/drizzle";
-import {
-  auditLogs,
-  disclosures,
-  disclosuresToRatings,
-  visits,
-} from "../db/schema";
+import { auditLogs, disclosures, disclosuresToRatings } from "../db/schema";
 import { eq, InferInsertModel } from "drizzle-orm";
 import { AuditLogRepo } from "../repos/audit-log.repo";
 import { deleteAudioFile, saveAudioFile } from "../db/helpers";
@@ -125,6 +117,46 @@ export class DisclosureService {
           createdBy: updatedBy,
           newValue: updatedDisclosure.priorityId,
           oldValue: oldDisclosure.priorityId,
+          table: "disclosures",
+          createdAt: auditCreatedAt,
+        });
+      }
+
+      // Visit
+      if (oldDisclosure.visitNote !== updatedDisclosure.visitNote) {
+        auditsToAdd.push({
+          recordId: id,
+          column: disclosures.visitNote.name,
+          action: "UPDATE",
+          createdBy: updatedBy,
+          newValue: updatedDisclosure.visitNote,
+          oldValue: oldDisclosure.visitNote,
+          table: "disclosures",
+          createdAt: auditCreatedAt,
+        });
+      }
+
+      if (oldDisclosure.visitReason !== updatedDisclosure.visitReason) {
+        auditsToAdd.push({
+          recordId: id,
+          column: disclosures.visitReason.name,
+          action: "UPDATE",
+          createdBy: updatedBy,
+          newValue: updatedDisclosure.visitReason,
+          oldValue: oldDisclosure.visitReason,
+          table: "disclosures",
+          createdAt: auditCreatedAt,
+        });
+      }
+
+      if (oldDisclosure.visitResult !== updatedDisclosure.visitResult) {
+        auditsToAdd.push({
+          recordId: id,
+          column: disclosures.visitResult.name,
+          action: "UPDATE",
+          createdBy: updatedBy,
+          newValue: updatedDisclosure.visitResult,
+          oldValue: oldDisclosure.visitResult,
           table: "disclosures",
           createdAt: auditCreatedAt,
         });
@@ -242,105 +274,8 @@ export class DisclosureService {
     });
   }
 
-  getDisclosureVisits(dto: TGetDisclosureVisitsDto) {
-    return this.disclosureRepo.getDisclosureVisits(dto);
-  }
-
-  async getDisclosureVisit(id: string) {
-    const result = await this.disclosureRepo.getDisclosureVisit(id);
-    if (!result) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
-    return result;
-  }
-
-  async addDisclosureVisit(dto: TAddDisclosureVisitDto) {
-    await this.db.transaction(async (tx) => {
-      const [addedVisit] = await this.disclosureRepo.addDisclosureVisit(
-        dto,
-        tx as any,
-      );
-      if (addedVisit) {
-        await this.auditLogRepo.create(
-          [
-            {
-              recordId: addedVisit.id,
-              table: "visits",
-              action: "INSERT",
-              createdBy: addedVisit.createdBy,
-            },
-          ],
-          tx as any,
-        );
-      }
-    });
-  }
-
-  async updateDisclosureVisit(dto: TUpdateDisclosureVisitDto) {
-    await this.db.transaction(async (tx) => {
-      const auditsToAdd: InferInsertModel<typeof auditLogs>[] = [];
-
-      const oldVisit = await this.disclosureRepo.getDisclosureVisit(dto.id);
-
-      if (!oldVisit) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
-
-      const [updatedVisit] = await this.disclosureRepo.updateDislosureVisit(
-        dto,
-        tx as any,
-      );
-
-      if (updatedVisit) {
-        const auditCreatedAt = new Date().toISOString();
-
-        if (oldVisit.result !== updatedVisit.result) {
-          auditsToAdd.push({
-            recordId: updatedVisit.id,
-            table: "visits",
-            action: "UPDATE",
-            column: visits.result.name,
-            newValue: updatedVisit.result,
-            oldValue: oldVisit.result,
-            createdBy: updatedVisit.updatedBy,
-            createdAt: auditCreatedAt,
-          });
-        }
-
-        if (oldVisit.reason !== updatedVisit.reason) {
-          auditsToAdd.push({
-            recordId: updatedVisit.id,
-            table: "visits",
-            action: "UPDATE",
-            column: visits.reason.name,
-            newValue: updatedVisit.reason,
-            oldValue: oldVisit.reason,
-            createdBy: updatedVisit.updatedBy,
-            createdAt: auditCreatedAt,
-          });
-        }
-
-        if (oldVisit.note !== updatedVisit.note) {
-          auditsToAdd.push({
-            recordId: updatedVisit.id,
-            table: "visits",
-            action: "UPDATE",
-            column: visits.note.name,
-            newValue: updatedVisit.note,
-            oldValue: oldVisit.note,
-            createdBy: updatedVisit.updatedBy,
-            createdAt: auditCreatedAt,
-          });
-        }
-
-        if (auditsToAdd.length)
-          await this.auditLogRepo.create(auditsToAdd, tx as any);
-      }
-    });
-  }
-
   async getDisclosuresRatings() {
     return await this.disclosureRepo.getDisclosuresRatings();
-  }
-
-  async getDisclosuresVisits() {
-    return await this.disclosureRepo.getDisclosuresVisits();
   }
 
   async getDisclosureNotes(dto: TGetDisclosureNotesDto) {

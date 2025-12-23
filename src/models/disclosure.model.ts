@@ -4,7 +4,6 @@ import {
   disclosureNotes,
   disclosures,
   disclosuresToRatings,
-  visits,
 } from "../db/schema";
 import { t } from "elysia";
 import { paginationModel } from "./common.model";
@@ -99,41 +98,14 @@ export const getDisclosureRatingsModel = t.Composite([
   t.Pick(ratingToDisclosureInsertModel, ["disclosureId", "isCustom"]),
 ]);
 
-export const visitSelectModel = createSelectSchema(visits);
-
-export const visitInsertModel = createInsertSchema(visits);
-
-export const addDisclosureVisitModel = t.Omit(visitInsertModel, [
-  "id",
-  "createdAt",
-  "updatedAt",
-  "createdBy",
-  "updatedBy",
-]);
-
-export const updateDisclosureVisitModel = t.Composite([
-  t.Pick(visitSelectModel, ["id"]),
-  t.Omit(visitInsertModel, [
-    "id",
-    "createdAt",
-    "updatedAt",
-    "createdBy",
-    "updatedBy",
-  ]),
-]);
-
-export const getDisclosureVisitsModel = t.Composite([
-  paginationModel,
-  t.Omit(visitInsertModel, [
-    "id",
-    "createdAt",
-    "updatedAt",
-    "createdBy",
-    "updatedBy",
-    "reason",
-    "note",
-  ]),
-]);
+// export const updateVisitModel = t.Composite([
+//   t.Pick(disclosureSelectModel, ["id"]),
+//   t.Object({
+//     visitResult: t.Optional(disclosureSelectModel.properties.visitResult),
+//     visitReason: t.Optional(disclosureSelectModel.properties.visitReason),
+//     visitNote: t.Optional(disclosureSelectModel.properties.visitNote),
+//   }),
+// ]);
 
 // NOTES
 export const disclosureNoteSelectModel = createSelectSchema(disclosureNotes);
