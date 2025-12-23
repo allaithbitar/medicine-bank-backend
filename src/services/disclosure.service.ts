@@ -2,22 +2,30 @@ import "reflect-metadata";
 import { inject, injectable } from "inversify";
 import { DisclosureRepo } from "../repos/disclosure.repo";
 import {
+  TAddDisclosureConsultationDto,
   TAddDisclosureDto,
   TAddDisclosureNoteDto,
   TAddDisclosureRatingDto,
   TAddDisclosureVisitDto,
+  TCompleteDisclosureConsultationsDto,
   TDisclosure,
   TFilterDisclosuresDto,
   TGetDisclosureAuditLogsDto,
+  TGetDisclosureConsultationsDto,
   TGetDisclosureNotesDto,
   TGetDisclosureRatingsDto,
   TGetDisclosureVisitsDto,
   TMoveDisclosuresDto,
+  TUpdateDisclosureConsultationDto,
   TUpdateDisclosureNoteDto,
   TUpdateDisclosureRatingDto,
   TUpdateDisclosureVisitDto,
 } from "../types/disclosure.type";
-import { ERROR_CODES, NotFoundError } from "../constants/errors";
+import {
+  ERROR_CODES,
+  ForbiddenError,
+  NotFoundError,
+} from "../constants/errors";
 import { TDbContext } from "../db/drizzle";
 import {
   auditLogs,
@@ -27,13 +35,20 @@ import {
 } from "../db/schema";
 import { eq, InferInsertModel } from "drizzle-orm";
 import { AuditLogRepo } from "../repos/audit-log.repo";
+import { deleteAudioFile, saveAudioFile } from "../db/helpers";
+import { DisclosureConsultationRepo } from "../repos/disclosure-consultation.repo";
+import { NotificationRepo } from "../repos/notification.repo";
 @injectable()
 export class DisclosureService {
   constructor(
     @inject(DisclosureRepo) private disclosureRepo: DisclosureRepo,
+    @inject(DisclosureConsultationRepo)
+    private consultationRepo: DisclosureConsultationRepo,
     @inject("db") private db: TDbContext,
     @inject(AuditLogRepo)
     private auditLogRepo: AuditLogRepo,
+    @inject(NotificationRepo)
+    private notificationRepo: NotificationRepo,
   ) {}
 
   getDisclosureById(id: string) {
@@ -131,7 +146,7 @@ export class DisclosureService {
   }
 
   async addDisclosureRating(dto: TAddDisclosureRatingDto) {
-    await this.db.transaction(async (tx) => {
+    return await this.db.transaction(async (tx) => {
       const [addedRating] = await this.disclosureRepo.addDisclosureRating(
         dto,
         tx as any,
@@ -149,6 +164,7 @@ export class DisclosureService {
           tx as any,
         );
       }
+      return addedRating;
     });
   }
 
@@ -336,9 +352,16 @@ export class DisclosureService {
   }
 
   async addDisclsoureNote(dto: TAddDisclosureNoteDto) {
+    const { audioFile, ...rest } = dto;
     await this.db.transaction(async (tx) => {
+      let noteAudio;
+
+      if (audioFile) {
+        noteAudio = await saveAudioFile(audioFile);
+      }
+
       const [addedNote] = await this.disclosureRepo.addDisclosureNote(
-        dto,
+        { ...rest, noteAudio },
         tx as any,
       );
 
@@ -357,28 +380,65 @@ export class DisclosureService {
 
   async updateDisclsoureNote(dto: TUpdateDisclosureNoteDto) {
     await this.db.transaction(async (tx) => {
+      const {
+        audioFile,
+        deleteAudioFile: _deleteAudioFile,
+        updatedBy,
+        ...rest
+      } = dto;
+
       const oldNote = await this.disclosureRepo.getDisclosureNote(dto.id);
 
       if (!oldNote) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
 
+      if ((oldNote.createdBy as any).id !== updatedBy)
+        throw new ForbiddenError(ERROR_CODES.FORBIDDEN_ACTION);
+
+      let noteAudio = "";
+
+      if (_deleteAudioFile === "true" || audioFile) {
+        if (oldNote.noteAudio) {
+          try {
+            await deleteAudioFile(oldNote.noteAudio);
+          } catch {}
+        }
+      }
+
+      if (audioFile) {
+        noteAudio = await saveAudioFile(audioFile);
+      }
+
       const [updatedNote] = await this.disclosureRepo.updateDisclosureNote(
-        dto,
+        { ...rest, noteAudio },
         tx as any,
       );
 
       if (updatedNote) {
-        if (oldNote.note !== updatedNote.note)
-          await this.auditLogRepo.create([
-            {
-              recordId: updatedNote.id,
-              table: "disclosure_notes",
-              column: "note",
-              action: "UPDATE",
-              newValue: updatedNote.note,
-              oldValue: oldNote.note,
-              createdBy: updatedNote.createdBy,
-            },
-          ]);
+        const auditsToAdd: InferInsertModel<typeof auditLogs>[] = [];
+
+        if (oldNote.noteText !== updatedNote.noteText)
+          auditsToAdd.push({
+            recordId: updatedNote.id,
+            table: "disclosure_notes",
+            column: "note_text",
+            action: "UPDATE",
+            newValue: updatedNote.noteText,
+            oldValue: oldNote.noteText,
+            createdBy: updatedNote.createdBy,
+          });
+        if (oldNote.noteAudio !== updatedNote.noteAudio) {
+          auditsToAdd.push({
+            recordId: updatedNote.id,
+            table: "disclosure_notes",
+            column: "note_audio",
+            action: "UPDATE",
+            newValue: updatedNote.noteAudio,
+            oldValue: oldNote.noteAudio,
+            createdBy: updatedNote.createdBy,
+          });
+        }
+
+        // await this.auditLogRepo.create([,]);
       }
     });
   }
@@ -422,6 +482,97 @@ export class DisclosureService {
       }
 
       return updatedDisclosures.length;
+    });
+  }
+
+  async addDisclosureConsultation(dto: TAddDisclosureConsultationDto) {
+    const { consultationAudioFile, ...rest } = dto;
+
+    await this.db.transaction(async (tx) => {
+      let consultationAudioUUID = undefined;
+
+      if (consultationAudioFile) {
+        consultationAudioUUID = await saveAudioFile(consultationAudioFile);
+      }
+
+      await this.consultationRepo.create(
+        {
+          ...rest,
+          consultationAudio: consultationAudioUUID,
+        },
+        tx as any,
+      );
+    });
+  }
+  // CONSULTATIONS
+  async updateDisclosureConsultation(dto: TUpdateDisclosureConsultationDto) {
+    const {
+      deleteAudioFile: _deleteAudioFile,
+      consultationAudioFile,
+      ...rest
+    } = dto;
+    await this.db.transaction(async (tx) => {
+      const oldConsultation = await this.consultationRepo.getById(dto.id);
+
+      let consultationAudio = "";
+
+      if (!oldConsultation)
+        throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+
+      if (_deleteAudioFile === "true" || consultationAudioFile) {
+        if (oldConsultation.consultationAudio) {
+          try {
+            await deleteAudioFile(oldConsultation.consultationAudio);
+          } catch {}
+        }
+      }
+
+      if (consultationAudioFile) {
+        consultationAudio = await saveAudioFile(consultationAudioFile);
+      }
+
+      await this.consultationRepo.update(
+        { ...rest, consultationAudio },
+        tx as any,
+      );
+    });
+  }
+
+  getDisclosureConsultations(dto: TGetDisclosureConsultationsDto) {
+    return this.consultationRepo.findManyWithIncludesPaginated(dto);
+  }
+
+  async getDisclosureConsultation(id: string) {
+    const result = await this.consultationRepo.getById(id);
+    if (!result) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    return result;
+  }
+
+  async completeConsultation(dto: TCompleteDisclosureConsultationsDto) {
+    const { id, disclosureRating, createdBy } = dto;
+    const consultation = await this.consultationRepo.getById(id);
+    if (!consultation) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    await this.db.transaction(async (tx) => {
+      const addDisclosureRating = await this.addDisclosureRating({
+        ...disclosureRating,
+        disclosureId: consultation.disclosureId,
+        createdBy: consultation.createdBy!,
+      });
+      await this.consultationRepo.update(
+        {
+          ...consultation,
+          disclosureRatingId: addDisclosureRating.id,
+          consultationStatus: "completed",
+          consultedBy: createdBy,
+          updatedBy: createdBy,
+        },
+        tx as any,
+      );
+      await this.notificationRepo.create({
+        from: dto.createdBy,
+        to: consultation.createdBy!,
+        type: "consultation_completed",
+      });
     });
   }
 }

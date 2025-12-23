@@ -9,6 +9,7 @@ import {
 import {
   TAddDisclosureDto,
   TAddDisclosureNoteDto,
+  TAddDisclosureNoteEntityDto,
   TAddDisclosureRatingDto,
   TAddDisclosureVisitDto,
   TFilterDisclosuresDto,
@@ -17,6 +18,7 @@ import {
   TGetDisclosureVisitsDto,
   TUpdateDisclosureDto,
   TUpdateDisclosureNoteDto,
+  TUpdateDisclosureNoteEntityDto,
   TUpdateDisclosureRatingDto,
   TUpdateDisclosureVisitDto,
 } from "../types/disclosure.type";
@@ -469,14 +471,20 @@ export class DisclosureRepo {
     );
   }
 
-  async addDisclosureNote(dto: TAddDisclosureNoteDto, tx?: TDbContext) {
+  async addDisclosureNote(
+    dto: Omit<TAddDisclosureNoteEntityDto, "audioFile">,
+    tx?: TDbContext,
+  ) {
     return await (tx ?? this.db)
       .insert(disclosureNotes)
       .values(dto)
       .returning();
   }
 
-  async updateDisclosureNote(dto: TUpdateDisclosureNoteDto, tx?: TDbContext) {
+  async updateDisclosureNote(
+    dto: TUpdateDisclosureNoteEntityDto,
+    tx?: TDbContext,
+  ) {
     const { id, disclosureId, ...rest } = dto;
     return await (tx ?? this.db)
       .update(disclosureNotes)

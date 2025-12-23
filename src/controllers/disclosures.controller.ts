@@ -1,17 +1,21 @@
 import { Elysia, t } from "elysia";
 import DiContainer from "../di/di-container";
 import {
+  addDisclosureConsultationModel,
   addDisclosureModel,
   addDisclosureNoteModel,
   addDisclosureRatingModel,
   addDisclosureVisitModel,
+  completeDisclosureConsultationModel,
   disclosureSelectModel,
   getDisclosureAuditLogsModel,
+  getDisclosureConsultationsModel,
   getDisclosureNotesModel,
   getDisclosureRatingsModel,
   getDisclosureVisitsModel,
   moveDisclosuresModel,
   searchDisclosuresModel,
+  updateDisclosureConsultationModel,
   updateDisclosureModel,
   updateDisclosureNoteModel,
   updateDisclosureRatingModel,
@@ -112,6 +116,62 @@ export const DisclosuresController = new Elysia({
       },
     )
     .get(
+      "consultations",
+      ({ query, disclosureService }) =>
+        disclosureService.getDisclosureConsultations(query),
+      {
+        query: getDisclosureConsultationsModel,
+      },
+    )
+    .get(
+      "consultations/:id",
+      ({ params, disclosureService }) =>
+        disclosureService.getDisclosureConsultation(params.id),
+      {
+        params: t.Object({
+          id: t.String({ format: "uuid" }),
+        }),
+      },
+    )
+    .post(
+      "consultations",
+      ({ body, disclosureService, user }) => {
+        return disclosureService.addDisclosureConsultation({
+          ...body,
+          createdBy: user.id,
+        });
+      },
+      {
+        body: addDisclosureConsultationModel,
+        parse: "multipart/form-data",
+      },
+    )
+    .put(
+      "consultations",
+      ({ body, disclosureService, user }) => {
+        return disclosureService.updateDisclosureConsultation({
+          ...body,
+          updatedBy: user.id,
+        });
+      },
+      {
+        body: updateDisclosureConsultationModel,
+      },
+    )
+    .put(
+      "consultations/complete",
+      ({ body, disclosureService, user }) => {
+        return disclosureService.completeConsultation({
+          ...body,
+          createdBy: user.id,
+        });
+      },
+      {
+        body: completeDisclosureConsultationModel,
+      },
+    )
+
+    .get(
       "/visits",
       ({ query, disclosureService }) =>
         disclosureService.getDisclosureVisits(query),
@@ -180,17 +240,30 @@ export const DisclosuresController = new Elysia({
 
       {
         body: addDisclosureNoteModel,
+        parse: "multipart/form-data",
       },
     )
     .put(
       "/notes",
       ({ body, disclosureService, user }) =>
-        disclosureService.updateDisclsoureNote({
+        disclosureService.updateDisclsoureNote({ ...body, updatedBy: user.id }),
+
+      {
+        body: updateDisclosureNoteModel,
+        parse: "multipart/form-data",
+      },
+    )
+
+    .put(
+      "/ratings",
+      ({ body, disclosureService, user }) =>
+        disclosureService.updateDisclosureRating({
           ...body,
           updatedBy: user.id,
         }),
+
       {
-        body: updateDisclosureNoteModel,
+        body: updateDisclosureRatingModel,
       },
     )
     .get(

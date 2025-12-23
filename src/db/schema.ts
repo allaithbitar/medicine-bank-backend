@@ -9,6 +9,8 @@ import {
   unique,
   uuid,
   real,
+  integer,
+  json,
 } from "drizzle-orm/pg-core";
 
 const createdAtColumn = {
@@ -36,6 +38,12 @@ export const emplyee_role_enum = pgEnum("emplyee_role_enum", [
 export const disclosure_status_enum = pgEnum("disclosure_status_enum", [
   "active",
   "archived",
+]);
+
+export const disclosure_type_enum = pgEnum("disclosure_type_enum", [
+  "new",
+  "return",
+  "help",
 ]);
 
 export const gender_enum = pgEnum("gender_enum", ["male", "female"]);
@@ -74,10 +82,10 @@ export const medicine_form_enum = pgEnum("medicine_form_enum", [
   "ointment",
 ]);
 
-// export const notification_type_enum = pgEnum("notification_type_enum", [
-//   "disclosure_check",
-//   "patient_check",
-// ]);
+export const notification_type_enum = pgEnum("notification_type_enum", [
+  "consultation_requested",
+  "consultation_completed",
+]);
 
 export const system_broadcast_type_enum = pgEnum("system_broadcast_type_enum", [
   "meeting",
@@ -95,12 +103,18 @@ export const audit_table_enum = pgEnum("audit_table_enum", [
   "visits",
   "disclosures_to_ratings",
   "disclosure_notes",
+  "disclosure_consultations",
 ]);
 
 export const audit_action_type_enum = pgEnum("audit_action_type_enum", [
   "INSERT",
   "UPDATE",
   "DELETE",
+]);
+
+export const consultation_status_enum = pgEnum("consultation_status_enum", [
+  "pending",
+  "completed",
 ]);
 
 export const cities = pgTable("cities", {
@@ -178,6 +192,7 @@ export const familyMembers = pgTable("family_members", {
   kinshep: kinshep_enum("kinshep"),
   jobOrSchool: text("job_or_school"),
   note: text("note"),
+  kidsCount: integer("kids_count"),
   patientId: uuid("patient_id")
     .notNull()
     .references(() => patients.id, { onDelete: "cascade" }),
@@ -245,6 +260,7 @@ export const ratings = pgTable("ratings", {
 export const disclosures = pgTable("disclosures", {
   id: uuid("id").primaryKey().defaultRandom(),
   status: disclosure_status_enum("status").notNull().default("active"),
+  type: disclosure_type_enum("type").notNull().default("new"),
   priorityId: uuid("priority_id")
     .notNull()
     .references(() => priorityDegrees.id),
@@ -253,6 +269,11 @@ export const disclosures = pgTable("disclosures", {
     .references(() => patients.id),
   scoutId: uuid("scout_id").references(() => employees.id),
   initialNote: text("initial_note"),
+  //
+  details: json("details"),
+  //
+  isReceived: boolean("is_received").notNull().default(false),
+  archiveNumber: integer("archive_number"),
   ...createdAtColumn,
   ...updatedAtColumn,
   ...createdByColumn,
@@ -261,7 +282,8 @@ export const disclosures = pgTable("disclosures", {
 
 export const disclosureNotes = pgTable("disclosure_notes", {
   id: uuid("id").primaryKey().defaultRandom(),
-  note: text("note"),
+  noteAudio: text("note_audio"),
+  noteText: text("note_text"),
   disclosureId: uuid("disclosure_id")
     .notNull()
     .references(() => disclosures.id),
@@ -270,18 +292,22 @@ export const disclosureNotes = pgTable("disclosure_notes", {
   ...updatedAtColumn,
 });
 
-// export const notifications = pgTable("notifications", {
-//   id: uuid("id").primaryKey().defaultRandom(),
-//   type: notification_type_enum("type").notNull(),
-//   from: uuid("from")
-//     .notNull()
-//     .references(() => employees.id),
-//   to: uuid("to")
-//     .notNull()
-//     .references(() => employees.id),
-//   text: text("text"),
-//   recordId: uuid("record_id"),
-// });
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  type: notification_type_enum("type").notNull(),
+  from: uuid("from")
+    .notNull()
+    .references(() => employees.id),
+  to: uuid("to")
+    .notNull()
+    .references(() => employees.id),
+  text: text("text"),
+  recordId: uuid("record_id"),
+  readAt: timestamp("read_at", {
+    mode: "string",
+    withTimezone: true,
+  }),
+});
 
 export const systemBroadcasts = pgTable("system_broadcasts", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -325,6 +351,26 @@ export const disclosuresToRatings = pgTable("disclosures_to_ratings", {
   isCustom: boolean("is_custom").notNull().default(false),
   customRating: text("custom_rating"),
   note: text("note"),
+  ...createdAtColumn,
+  ...updatedAtColumn,
+  ...createdByColumn,
+  ...updatedByColumn,
+});
+
+export const disclosureConsultations = pgTable("disclosure_consultations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  disclosureId: uuid("disclosure_id")
+    .notNull()
+    .references(() => disclosures.id),
+  disclosureRatingId: uuid("disclosure_rating_id").references(
+    () => disclosuresToRatings.id,
+  ),
+  consultationStatus: consultation_status_enum("consultation_status")
+    .notNull()
+    .default("pending"),
+  consultedBy: uuid("consulted_by").references(() => employees.id),
+  consultationNote: text("consultation_note"),
+  consultationAudio: text("consultation_audio"),
   ...createdAtColumn,
   ...updatedAtColumn,
   ...createdByColumn,
@@ -572,3 +618,45 @@ export const disclosureNoteRelations = relations(
     }),
   }),
 );
+
+export const disclosureConsultationRelations = relations(
+  disclosureConsultations,
+  ({ one }) => ({
+    disclosure: one(disclosures, {
+      fields: [disclosureConsultations.disclosureId],
+      references: [disclosures.id],
+    }),
+    disclosureRating: one(disclosuresToRatings, {
+      fields: [disclosureConsultations.disclosureRatingId],
+      references: [disclosuresToRatings.id],
+    }),
+    consultedBy: one(employees, {
+      fields: [disclosureConsultations.consultedBy],
+      references: [employees.id],
+      relationName: "consultedBy",
+    }),
+    createdBy: one(employees, {
+      fields: [disclosureConsultations.createdBy],
+      references: [employees.id],
+      relationName: "createdBy",
+    }),
+    updatedBy: one(employees, {
+      fields: [disclosureConsultations.updatedBy],
+      references: [employees.id],
+      relationName: "updatedBy",
+    }),
+  }),
+);
+
+export const notificationRelations = relations(notifications, ({ one }) => ({
+  fromEmployee: one(employees, {
+    fields: [notifications.from],
+    references: [employees.id],
+    relationName: "fromEmployee",
+  }),
+  toEmployee: one(employees, {
+    fields: [notifications.to],
+    references: [employees.id],
+    relationName: "toEmployee",
+  }),
+}));

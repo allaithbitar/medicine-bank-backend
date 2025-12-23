@@ -59,3 +59,21 @@ export const getReadableDbErrorMessage = (
 export function getRandomArrayItem<T>(items: T[]) {
   return items[Math.floor(Math.random() * items.length)];
 }
+
+export const saveAudioFile = async (file: File) => {
+  let audioName =
+    Bun.randomUUIDv7() + file.name.slice(file.name.lastIndexOf("."));
+  const buffer = await file.arrayBuffer();
+
+  await Bun.write(`public/audio/${audioName}`, buffer, {
+    createPath: true,
+  });
+  return audioName;
+};
+
+export const deleteAudioFile = async (name: string) => {
+  const oldAudioFile = Bun.file(`public/audio/${name}`);
+  if (oldAudioFile) {
+    await oldAudioFile.delete();
+  }
+};

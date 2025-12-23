@@ -28,6 +28,9 @@ import { SystemBroadcastService } from "../services/system-broadcast.service";
 import { MeetingService } from "../services/meeting.service";
 import { MeetingRepo } from "../repos/meeting.repo";
 import { AuditLogRepo } from "../repos/audit-log.repo";
+import { DisclosureConsultationRepo } from "../repos/disclosure-consultation.repo";
+import { NotificationRepo } from "../repos/notification.repo";
+import { NotificationService } from "../services/notification.service";
 
 const DiContainer = new Container();
 
@@ -75,7 +78,11 @@ DiContainer.bind<SystemBroadcastService>(SystemBroadcastService)
   .inRequestScope();
 
 DiContainer.bind<MeetingRepo>(MeetingRepo).toSelf().inRequestScope();
-DiContainer.bind<MeetingService>(MeetingService).toSelf().inRequestScope();
 DiContainer.bind<AuditLogRepo>(AuditLogRepo).toSelf().inRequestScope();
+DiContainer.bind<DisclosureConsultationRepo>(DisclosureConsultationRepo)
+  .toSelf()
+  .inRequestScope();
+DiContainer.bind<NotificationRepo>(NotificationRepo).toSelf().inRequestScope();
+DiContainer.bind<NotificationService>(NotificationService).toSelf().inRequestScope();
 
 export default DiContainer;

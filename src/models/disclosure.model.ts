@@ -1,5 +1,6 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-typebox";
 import {
+  disclosureConsultations,
   disclosureNotes,
   disclosures,
   disclosuresToRatings,
@@ -46,6 +47,7 @@ export const searchDisclosuresModel = t.Composite([
     "scoutId",
     "createdAt",
     "status",
+    "type",
   ]),
   t.Object({
     // patientIds: t.Optional(t.Array(t.String({ format: "uuid" }))),
@@ -69,6 +71,9 @@ export const searchDisclosuresModel = t.Composite([
 
     status: t.Optional(
       t.Array(disclosureInsertModel.properties.status, { default: [] }),
+    ),
+    type: t.Optional(
+      t.Array(disclosureInsertModel.properties.type, { default: [] }),
     ),
 
     undelivered: t.Optional(t.Boolean()),
@@ -133,26 +138,92 @@ export const getDisclosureVisitsModel = t.Composite([
 // NOTES
 export const disclosureNoteSelectModel = createSelectSchema(disclosureNotes);
 
-export const disclosureNoteInsertModel = createInsertSchema(disclosureNotes, {
-  note: t.String({ minLength: 10 }),
-});
+export const disclosureNoteInsertModel = createInsertSchema(disclosureNotes);
 
-export const addDisclosureNoteModel = t.Omit(disclosureNoteInsertModel, [
-  "id",
-  "createdAt",
-  "createdBy",
-  "updatedAt",
+export const addDisclosureNoteModel = t.Composite([
+  t.Omit(disclosureNoteInsertModel, [
+    "id",
+    "createdAt",
+    "createdBy",
+    "updatedAt",
+    "noteAudio",
+  ]),
+  t.Partial(
+    t.Object({
+      audioFile: t.File(),
+    }),
+  ),
 ]);
-
 export const updateDisclosureNoteModel = t.Composite([
   t.Pick(disclosureNoteSelectModel, ["id"]),
   addDisclosureNoteModel,
+  t.Partial(
+    t.Object({
+      deleteAudioFile: t.String(),
+    }),
+  ),
 ]);
 
 export const getDisclosureNotesModel = t.Composite([
   paginationModel,
   t.Pick(disclosureNoteInsertModel, ["disclosureId"]),
   t.Object({ query: t.Optional(t.String()) }),
+]);
+
+// CONSULTATIONS
+export const disclosureConsultationInsertModel = createInsertSchema(
+  disclosureConsultations,
+);
+
+export const disclosureConsultationSelectModel = createSelectSchema(
+  disclosureConsultations,
+);
+
+export const addDisclosureConsultationModel = t.Composite([
+  t.Omit(disclosureConsultationInsertModel, [
+    "id",
+    "createdAt",
+    "updatedAt",
+    "createdBy",
+    "updatedBy",
+    "consultationAudio",
+  ]),
+  t.Partial(
+    t.Object({
+      consultationAudioFile: t.File(),
+    }),
+  ),
+]);
+
+export const updateDisclosureConsultationModel = t.Composite([
+  t.Required(t.Pick(disclosureConsultationSelectModel, ["id"])),
+  t.Omit(addDisclosureConsultationModel, ["id"]),
+  t.Partial(
+    t.Object({
+      deleteAudioFile: t.String(),
+    }),
+  ),
+]);
+
+export const completeDisclosureConsultationModel = t.Composite([
+  t.Required(t.Pick(disclosureConsultationSelectModel, ["id"])),
+  t.Object({
+    disclosureRating: t.Omit(addDisclosureRatingModel, ["disclosureId"]),
+  }),
+]);
+
+export const getDisclosureConsultationsModel = t.Composite([
+  paginationModel,
+  t.Object({
+    consultationStatus: t.Optional(
+      disclosureConsultationInsertModel.properties.consultationStatus,
+    ),
+    consultedBy: t.Optional(t.String({ format: "uuid" })),
+    createdBy: t.Optional(t.String({ format: "uuid" })),
+    createdAtStart: t.Optional(t.String({ format: "date-time" })),
+    createdAtEnd: t.Optional(t.String({ format: "date-time" })),
+    disclosureId: t.Optional(t.String({ format: "date-time" })),
+  }),
 ]);
 
 // AUDIT LOG

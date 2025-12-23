@@ -23,6 +23,7 @@ import {
   isDbError,
   transformDbError,
 } from "./db/helpers";
+import { staticPlugin } from "@elysiajs/static";
 
 import { ElysiaLoggerContext } from "@bogeychan/elysia-logger/dist/types";
 import cors from "@elysiajs/cors";
@@ -43,6 +44,7 @@ import { MedicinesController } from "./controllers/medicine.controller";
 import { AppointmentsController } from "./controllers/appointments.controller";
 import { SystemBroadcastsController } from "./controllers/system-broadcasts.controller";
 import { MeetingsController } from "./controllers/meetings.controller";
+import { NotificationsController } from "./controllers/notifications.controller";
 
 const app = new Elysia({
   serve: {
@@ -75,6 +77,7 @@ const app = new Elysia({
       },
     }),
   )
+  .use(staticPlugin())
   .onError(({ error, set }) => {
     let message = { en: "", ar: "", details: "", code: "" } as TSystemError;
 
@@ -113,11 +116,31 @@ const app = new Elysia({
 
     return { success: false, data: null, errorMessage: message };
   })
-  .onAfterHandle(({ response }) => ({
-    success: true,
-    data: response ?? null,
-    errorMessage: null,
-  }))
+  .onAfterHandle(({ response }) => {
+    const responseContentType =
+      ((response as Response)?.headers as Headers)?.get("content-type") ?? "";
+
+    if (
+      responseContentType?.includes("audio") ||
+      responseContentType?.includes("video")
+    ) {
+      ((response as Response)?.headers as Headers).set(
+        "Cross-Origin-Resource-Policy",
+        "cross-origin",
+      );
+      ((response as Response)?.headers as Headers).set(
+        "Accept-Ranges",
+        "bytes",
+      );
+
+      return response;
+    }
+    return {
+      success: true,
+      data: response ?? null,
+      errorMessage: null,
+    };
+  })
   .use(AuthController)
   .use(EmployeesController)
   .use(PatientsController)
@@ -133,6 +156,7 @@ const app = new Elysia({
   .use(AppointmentsController)
   .use(SystemBroadcastsController)
   .use(MeetingsController)
+  .use(NotificationsController)
   .use(SeedController)
   .get("/", async () => {
     return "pong";

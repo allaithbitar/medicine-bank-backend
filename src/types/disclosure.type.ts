@@ -1,16 +1,21 @@
 import { Static } from "elysia";
 import {
+  addDisclosureConsultationModel,
   addDisclosureModel,
   addDisclosureNoteModel,
   addDisclosureRatingModel,
   addDisclosureVisitModel,
+  completeDisclosureConsultationModel,
+  disclosureConsultationSelectModel,
   disclosureSelectModel,
   getDisclosureAuditLogsModel,
+  getDisclosureConsultationsModel,
   getDisclosureNotesModel,
   getDisclosureRatingsModel,
   getDisclosureVisitsModel,
   moveDisclosuresModel,
   searchDisclosuresModel,
+  updateDisclosureConsultationModel,
   updateDisclosureModel,
   updateDisclosureNoteModel,
   updateDisclosureRatingModel,
@@ -56,13 +61,61 @@ export type TGetDisclosureNotesDto = Static<typeof getDisclosureNotesModel>;
 export type TAddDisclosureNoteDto = Static<typeof addDisclosureNoteModel> &
   TCreatedBy;
 
+export type TAddDisclosureNoteEntityDto = Omit<
+  TAddDisclosureNoteDto,
+  "audioFile"
+> & { noteAudio?: string };
+
 export type TUpdateDisclosureNoteDto = Static<
   typeof updateDisclosureNoteModel
 > &
   TUpdatedBy;
+
+export type TUpdateDisclosureNoteEntityDto = Omit<
+  TUpdateDisclosureNoteDto,
+  "audioFile" | "updatedBy" | "deleteAudioFile"
+> & {
+  noteAudio?: string;
+};
 
 export type TGetDisclosureAuditLogsDto = Static<
   typeof getDisclosureAuditLogsModel
 >;
 
 export type TMoveDisclosuresDto = Static<typeof moveDisclosuresModel>;
+
+// CONSULTATIONS
+export type TDisclosureConsultation = Static<
+  typeof disclosureConsultationSelectModel
+>;
+
+export type TAddDisclosureConsultationDto = Static<
+  typeof addDisclosureConsultationModel
+> &
+  TCreatedBy;
+
+export type TAddDisclosureConsultationEntityDto = Omit<
+  Static<typeof addDisclosureConsultationModel> &
+    TCreatedBy & { consultationAudio?: string },
+  "consultationAudioFile"
+>;
+
+export type TUpdateDisclosureConsultationDto = Static<
+  typeof updateDisclosureConsultationModel
+> &
+  TUpdatedBy;
+
+export type TUpdateDisclosureConsultationEntityDto = Omit<
+  TUpdateDisclosureConsultationDto,
+  "consultationAudioFile" | "deleteAudioFile"
+> &
+  TUpdatedBy & { consultationAudio?: string | null };
+
+export type TGetDisclosureConsultationsDto = Static<
+  typeof getDisclosureConsultationsModel
+>;
+
+export type TCompleteDisclosureConsultationsDto = Static<
+  typeof completeDisclosureConsultationModel
+> &
+  TCreatedBy;
