@@ -100,7 +100,6 @@ export const broadcast_audience_enum = pgEnum("broadcast_audience_enum", [
 
 export const audit_table_enum = pgEnum("audit_table_enum", [
   "disclosures",
-  "disclosures_to_ratings",
   "disclosure_notes",
   "disclosure_consultations",
 ]);
@@ -278,6 +277,11 @@ export const disclosures = pgTable("disclosures", {
   visitReason: text("visit_reason"),
   visitNote: text("visit_note"),
   //
+  ratingId: uuid("rating_id").references(() => ratings.id),
+  isCustomRating: boolean("is_custom_rating").notNull().default(false),
+  customRating: text("custom_rating"),
+  ratingNote: text("rating_note"),
+  //
   ...createdAtColumn,
   ...updatedAtColumn,
   ...createdByColumn,
@@ -332,31 +336,12 @@ export const meetings = pgTable("meetings", {
   ...createdAtColumn,
 });
 
-
-
-export const disclosuresToRatings = pgTable("disclosures_to_ratings", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  disclosureId: uuid("disclosure_id")
-    .notNull()
-    .references(() => disclosures.id),
-  ratingId: uuid("rating_id").references(() => ratings.id),
-  isCustom: boolean("is_custom").notNull().default(false),
-  customRating: text("custom_rating"),
-  note: text("note"),
-  ...createdAtColumn,
-  ...updatedAtColumn,
-  ...createdByColumn,
-  ...updatedByColumn,
-});
-
 export const disclosureConsultations = pgTable("disclosure_consultations", {
   id: uuid("id").primaryKey().defaultRandom(),
   disclosureId: uuid("disclosure_id")
     .notNull()
     .references(() => disclosures.id),
-  disclosureRatingId: uuid("disclosure_rating_id").references(
-    () => disclosuresToRatings.id,
-  ),
+
   consultationStatus: consultation_status_enum("consultation_status")
     .notNull()
     .default("pending"),
@@ -499,7 +484,10 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
     fields: [disclosures.priorityId],
     references: [priorityDegrees.id],
   }),
-  ratings: many(disclosuresToRatings),
+  rating: one(ratings, {
+    fields: [disclosures.ratingId],
+    references: [ratings.id],
+  }),
   appointments: many(appointments),
   createdBy: one(employees, {
     fields: [disclosures.createdBy],
@@ -512,8 +500,6 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
     relationName: "updatedBy",
   }),
 }));
-
-
 
 // export const disclosuresToVisistsRelations = relations(
 //   disclosuresToVisists,
@@ -528,28 +514,6 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
 //     }),
 //   }),
 // );
-
-export const disclosuresToRatingsRelations = relations(
-  disclosuresToRatings,
-  ({ one }) => ({
-    disclosure: one(disclosures, {
-      fields: [disclosuresToRatings.disclosureId],
-      references: [disclosures.id],
-    }),
-    rating: one(ratings, {
-      fields: [disclosuresToRatings.ratingId],
-      references: [ratings.id],
-    }),
-    createdBy: one(employees, {
-      fields: [disclosuresToRatings.createdBy],
-      references: [employees.id],
-    }),
-    updatedBy: one(employees, {
-      fields: [disclosuresToRatings.updatedBy],
-      references: [employees.id],
-    }),
-  }),
-);
 
 export const patientPhoneNumbersRelations = relations(
   patientsPhoneNumbers,
@@ -604,10 +568,7 @@ export const disclosureConsultationRelations = relations(
       fields: [disclosureConsultations.disclosureId],
       references: [disclosures.id],
     }),
-    disclosureRating: one(disclosuresToRatings, {
-      fields: [disclosureConsultations.disclosureRatingId],
-      references: [disclosuresToRatings.id],
-    }),
+
     consultedBy: one(employees, {
       fields: [disclosureConsultations.consultedBy],
       references: [employees.id],

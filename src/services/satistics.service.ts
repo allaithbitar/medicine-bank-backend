@@ -2,10 +2,9 @@ import "reflect-metadata";
 import { inject, injectable } from "inversify";
 import { TGetSatisticsDto } from "../types/satistics.type";
 import { TDbContext } from "../db/drizzle";
-import { and, count, eq, gte, lte } from "drizzle-orm";
+import { and, count, eq, gte, lte, isNotNull } from "drizzle-orm";
 import {
   disclosures,
-  disclosuresToRatings,
   ratings,
 } from "../db/schema";
 
@@ -52,21 +51,22 @@ export class SatisticsService {
     const ratingResults = systemRatings.map(async (r) => {
       const _ratings = await this.db
         .select({
-          id: disclosuresToRatings.id,
-          createdAt: disclosuresToRatings.createdAt,
+          id: disclosures.id,
+          createdAt: disclosures.createdAt,
         })
-        .from(disclosuresToRatings)
+        .from(disclosures)
         .where(
           and(
-            gte(disclosuresToRatings.createdAt, fromDate),
-            lte(disclosuresToRatings.createdAt, toDate),
-            eq(disclosuresToRatings.ratingId, r.id),
+            gte(disclosures.createdAt, fromDate),
+            lte(disclosures.createdAt, toDate),
+            eq(disclosures.ratingId, r.id),
+            eq(disclosures.isCustomRating, false),
             employeeId
-              ? eq(disclosuresToRatings.createdBy, employeeId)
+              ? eq(disclosures.createdBy, employeeId)
               : undefined,
           ),
         )
-        .orderBy(disclosuresToRatings.createdAt);
+        .orderBy(disclosures.createdAt);
 
       const groupedByDate = _ratings.reduce(
         (acc, curr) => {
@@ -88,21 +88,22 @@ export class SatisticsService {
 
     const _customRatings = await this.db
       .select({
-        id: disclosuresToRatings.id,
-        createdAt: disclosuresToRatings.createdAt,
+        id: disclosures.id,
+        createdAt: disclosures.createdAt,
       })
-      .from(disclosuresToRatings)
+      .from(disclosures)
       .where(
         and(
-          gte(disclosuresToRatings.createdAt, fromDate),
-          lte(disclosuresToRatings.createdAt, toDate),
-          eq(disclosuresToRatings.isCustom, true),
+          gte(disclosures.createdAt, fromDate),
+          lte(disclosures.createdAt, toDate),
+          eq(disclosures.isCustomRating, true),
+          isNotNull(disclosures.customRating),
           employeeId
-            ? eq(disclosuresToRatings.createdBy, employeeId)
+            ? eq(disclosures.createdBy, employeeId)
             : undefined,
         ),
       )
-      .orderBy(disclosuresToRatings.createdAt);
+      .orderBy(disclosures.createdAt);
     const groupedByDate = _customRatings.reduce(
       (acc, curr) => {
         const currentDate = curr.createdAt.split(" ")[0];

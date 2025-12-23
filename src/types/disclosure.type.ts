@@ -3,20 +3,17 @@ import {
   addDisclosureConsultationModel,
   addDisclosureModel,
   addDisclosureNoteModel,
-  addDisclosureRatingModel,
   completeDisclosureConsultationModel,
   disclosureConsultationSelectModel,
   disclosureSelectModel,
   getDisclosureAuditLogsModel,
   getDisclosureConsultationsModel,
   getDisclosureNotesModel,
-  getDisclosureRatingsModel,
   moveDisclosuresModel,
   searchDisclosuresModel,
   updateDisclosureConsultationModel,
   updateDisclosureModel,
   updateDisclosureNoteModel,
-  updateDisclosureRatingModel,
   // updateVisitModel,
 } from "../models/disclosure.model";
 
@@ -31,15 +28,7 @@ export type TUpdateDisclosureDto = Static<typeof updateDisclosureModel> &
 
 export type TFilterDisclosuresDto = Static<typeof searchDisclosuresModel>;
 
-export type TGetDisclosureRatingsDto = Static<typeof getDisclosureRatingsModel>;
 
-export type TAddDisclosureRatingDto = Static<typeof addDisclosureRatingModel> &
-  TCreatedBy;
-
-export type TUpdateDisclosureRatingDto = Static<
-  typeof updateDisclosureRatingModel
-> &
-  TUpdatedBy;
 
 // export type TUpdateVisitDto = Static<typeof updateVisitModel> & TUpdatedBy;
 

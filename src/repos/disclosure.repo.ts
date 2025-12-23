@@ -3,20 +3,16 @@ import { TDbContext } from "../db/drizzle";
 import {
   disclosureNotes,
   disclosures,
-  disclosuresToRatings,
 } from "../db/schema";
 import {
   TAddDisclosureDto,
   TAddDisclosureNoteDto,
   TAddDisclosureNoteEntityDto,
-  TAddDisclosureRatingDto,
   TFilterDisclosuresDto,
   TGetDisclosureNotesDto,
-  TGetDisclosureRatingsDto,
   TUpdateDisclosureDto,
   TUpdateDisclosureNoteDto,
   TUpdateDisclosureNoteEntityDto,
-  TUpdateDisclosureRatingDto,
 } from "../types/disclosure.type";
 import {
   and,
@@ -53,14 +49,11 @@ export class DisclosureRepo {
     createdAtEnd,
     createdAtStart,
     scoutIds,
-    ratingIds,
     patientId,
     priorityIds,
     undelivered,
     status,
   }: TFilterDisclosuresDto) {
-    let ratingsFilter = undefined;
-
     let scoutesFilter = undefined;
 
     let priorityFilter = undefined;
@@ -81,19 +74,7 @@ export class DisclosureRepo {
       ? inArray(disclosures.status, status)
       : undefined;
 
-    if (ratingIds?.length) {
-      const _ids = await this.db.query.disclosuresToRatings.findMany({
-        where: inArray(disclosuresToRatings.ratingId, ratingIds),
-        columns: { disclosureId: true },
-      });
-
-      ratingsFilter = _ids.length
-        ? inArray(
-            disclosures.id,
-            _ids.map((i) => i.disclosureId!),
-          )
-        : undefined;
-    }
+    
 
     if (scoutIds?.length) {
       scoutesFilter = inArray(disclosures.scoutId, scoutIds);
@@ -115,7 +96,6 @@ export class DisclosureRepo {
     }
 
     return {
-      ratingsFilter,
       scoutesFilter,
       createdAtStartFilter,
       createdAtEndFilter,
@@ -131,7 +111,6 @@ export class DisclosureRepo {
       createdAtEndFilter,
       createdAtStartFilter,
       scoutesFilter,
-      ratingsFilter,
       statusFilter,
       patientFilter,
       priorityFilter,
@@ -146,7 +125,6 @@ export class DisclosureRepo {
           createdAtEndFilter,
           createdAtStartFilter,
           scoutesFilter,
-          ratingsFilter,
           statusFilter,
           patientFilter,
           priorityFilter,
@@ -165,7 +143,6 @@ export class DisclosureRepo {
       createdAtEndFilter,
       createdAtStartFilter,
       scoutesFilter,
-      ratingsFilter,
       statusFilter,
       patientFilter,
       priorityFilter,
@@ -178,7 +155,6 @@ export class DisclosureRepo {
         createdAtEndFilter,
         createdAtStartFilter,
         scoutesFilter,
-        ratingsFilter,
         statusFilter,
         patientFilter,
         priorityFilter,
@@ -220,112 +196,7 @@ export class DisclosureRepo {
 
   // RATINGS
 
-  private getRatingsFilters({
-    disclosureId,
-    isCustom,
-  }: TGetDisclosureRatingsDto) {
-    const disclosureIdFilter = eq(
-      disclosuresToRatings.disclosureId,
-      disclosureId,
-    );
-
-    const isCustomFitler =
-      typeof isCustom !== "undefined"
-        ? eq(disclosuresToRatings.isCustom, isCustom)
-        : undefined;
-
-    // const customRatingFilter = customRating
-    //   ? ilike(disclosuresToRatings.customRating, `%${customRating}%`)
-    //   : undefined;
-
-    return {
-      disclosureIdFilter,
-      isCustomFitler,
-      // customRatingFilter,
-    };
-  }
-
-  private async getRatingsCount(dto: TGetDisclosureRatingsDto) {
-    const { disclosureIdFilter, isCustomFitler } = this.getRatingsFilters(dto);
-
-    const [{ value: totalCount }] = await this.db
-      .select({ value: count() })
-      .from(disclosuresToRatings)
-      .where(and(disclosureIdFilter, isCustomFitler));
-    return totalCount;
-  }
-
-  async getDislosureRatings({
-    pageNumber = DEFAULT_PAGE_NUMBER,
-    pageSize = DEFAULT_PAGE_SIZE,
-    ...rest
-  }: TGetDisclosureRatingsDto) {
-    const totalCount = await this.getRatingsCount(rest);
-    const { disclosureIdFilter, isCustomFitler } = this.getRatingsFilters(rest);
-
-    const result = await this.db.query.disclosuresToRatings.findMany({
-      where: and(disclosureIdFilter, isCustomFitler),
-      limit: pageSize,
-      offset: pageSize * pageNumber,
-      with: {
-        rating: true,
-        createdBy: ACTIONER_WITH,
-        updatedBy: ACTIONER_WITH,
-      },
-      orderBy: desc(disclosuresToRatings.createdAt),
-    });
-    return {
-      items: result,
-      totalCount,
-      pageSize,
-      pageNumber,
-    };
-  }
-
-  async getDisclosureRating(id: string) {
-    return (
-      (await this.db.query.disclosuresToRatings.findFirst({
-        where: eq(disclosuresToRatings.id, id),
-        with: {
-          rating: true,
-          createdBy: ACTIONER_WITH,
-          updatedBy: ACTIONER_WITH,
-        },
-      })) ?? null
-    );
-  }
-
-  async addDisclosureRating(dto: TAddDisclosureRatingDto, tx?: TDbContext) {
-    return await (tx ?? this.db)
-      .insert(disclosuresToRatings)
-      .values(dto)
-      .returning();
-  }
-
-  async updateDislosureRating(
-    { id, ...rest }: TUpdateDisclosureRatingDto,
-    tx?: TDbContext,
-  ) {
-    return await (tx ?? this.db)
-      .update(disclosuresToRatings)
-      .set(rest)
-      .where(eq(disclosuresToRatings.id, id))
-      .returning();
-  }
-
-
-
-  async getDisclosuresRatings() {
-    return await this.db.query.disclosuresToRatings.findMany({
-      with: { rating: true },
-    });
-  }
-
-  async getDislosureRating(id: string) {
-    return await this.db.query.disclosuresToRatings.findFirst({
-      where: eq(disclosuresToRatings.id, id),
-    });
-  }
+  
 
 
 
@@ -416,27 +287,20 @@ export class DisclosureRepo {
   }
 
   async moveDisclosures(fromScoutId: string, toScoutId: string) {
-    // Disclosures with no ratings
+    // Disclosures with no ratings (ratingId is null)
     const disclosuresWithoutRatings = await this.db
       .select({ id: disclosures.id })
       .from(disclosures)
-      .leftJoin(
-        disclosuresToRatings,
-        eq(disclosures.id, disclosuresToRatings.disclosureId),
-      )
       .where(
         and(
           eq(disclosures.scoutId, fromScoutId),
-          isNull(disclosuresToRatings.id),
+          isNull(disclosures.ratingId),
         ),
-      )
-      .groupBy(disclosures.id);
+      );
 
     const disclosureIds = disclosuresWithoutRatings.map((d) => d.id);
 
     if (disclosureIds.length === 0) return [];
-
-
 
     // Update the scoutId
     const updated = await this.db

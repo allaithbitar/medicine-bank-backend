@@ -5,18 +5,15 @@ import {
   TAddDisclosureConsultationDto,
   TAddDisclosureDto,
   TAddDisclosureNoteDto,
-  TAddDisclosureRatingDto,
   TCompleteDisclosureConsultationsDto,
   TDisclosure,
   TFilterDisclosuresDto,
   TGetDisclosureAuditLogsDto,
   TGetDisclosureConsultationsDto,
   TGetDisclosureNotesDto,
-  TGetDisclosureRatingsDto,
   TMoveDisclosuresDto,
   TUpdateDisclosureConsultationDto,
   TUpdateDisclosureNoteDto,
-  TUpdateDisclosureRatingDto,
 } from "../types/disclosure.type";
 import {
   ERROR_CODES,
@@ -24,7 +21,7 @@ import {
   NotFoundError,
 } from "../constants/errors";
 import { TDbContext } from "../db/drizzle";
-import { auditLogs, disclosures, disclosuresToRatings } from "../db/schema";
+import { auditLogs, disclosures } from "../db/schema";
 import { eq, InferInsertModel } from "drizzle-orm";
 import { AuditLogRepo } from "../repos/audit-log.repo";
 import { deleteAudioFile, saveAudioFile } from "../db/helpers";
@@ -167,116 +164,7 @@ export class DisclosureService {
     });
   }
 
-  getDisclosureRatings(dto: TGetDisclosureRatingsDto) {
-    return this.disclosureRepo.getDislosureRatings(dto);
-  }
-
-  async getDisclosureRating(id: string) {
-    const result = await this.disclosureRepo.getDisclosureRating(id);
-    if (!result) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
-    return result;
-  }
-
-  async addDisclosureRating(dto: TAddDisclosureRatingDto) {
-    return await this.db.transaction(async (tx) => {
-      const [addedRating] = await this.disclosureRepo.addDisclosureRating(
-        dto,
-        tx as any,
-      );
-      if (addedRating) {
-        await this.auditLogRepo.create(
-          [
-            {
-              recordId: addedRating.id,
-              table: "disclosures_to_ratings",
-              action: "INSERT",
-              createdBy: addedRating.createdBy,
-            },
-          ],
-          tx as any,
-        );
-      }
-      return addedRating;
-    });
-  }
-
-  async updateDisclosureRating(dto: TUpdateDisclosureRatingDto) {
-    await this.db.transaction(async (tx) => {
-      const auditsToAdd: InferInsertModel<typeof auditLogs>[] = [];
-
-      const oldRating = await this.disclosureRepo.getDislosureRating(dto.id);
-
-      if (!oldRating) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
-
-      const [updatedRating] = await this.disclosureRepo.updateDislosureRating(
-        dto,
-        tx as any,
-      );
-
-      if (updatedRating) {
-        const auditCreatedAt = new Date().toISOString();
-
-        if (oldRating.ratingId !== updatedRating.ratingId) {
-          auditsToAdd.push({
-            recordId: updatedRating.id,
-            table: "disclosures_to_ratings",
-            action: "UPDATE",
-            column: disclosuresToRatings.ratingId.name,
-            newValue: updatedRating.ratingId,
-            oldValue: oldRating.ratingId,
-            createdBy: updatedRating.updatedBy,
-            createdAt: auditCreatedAt,
-          });
-        }
-
-        if (oldRating.isCustom !== updatedRating.isCustom) {
-          auditsToAdd.push({
-            recordId: updatedRating.id,
-            table: "disclosures_to_ratings",
-            action: "UPDATE",
-            column: disclosuresToRatings.isCustom.name,
-            newValue: String(updatedRating.isCustom),
-            oldValue: String(oldRating.isCustom),
-            createdBy: updatedRating.updatedBy,
-            createdAt: auditCreatedAt,
-          });
-        }
-
-        if (oldRating.customRating !== updatedRating.customRating) {
-          auditsToAdd.push({
-            recordId: updatedRating.id,
-            table: "disclosures_to_ratings",
-            action: "UPDATE",
-            column: disclosuresToRatings.customRating.name,
-            newValue: updatedRating.customRating,
-            oldValue: oldRating.customRating,
-            createdBy: updatedRating.updatedBy,
-            createdAt: auditCreatedAt,
-          });
-        }
-
-        if (oldRating.note !== updatedRating.note) {
-          auditsToAdd.push({
-            recordId: updatedRating.id,
-            table: "disclosures_to_ratings",
-            action: "UPDATE",
-            column: disclosuresToRatings.note.name,
-            newValue: updatedRating.note,
-            oldValue: oldRating.note,
-            createdBy: updatedRating.updatedBy,
-            createdAt: auditCreatedAt,
-          });
-        }
-
-        if (auditsToAdd.length)
-          await this.auditLogRepo.create(auditsToAdd, tx as any);
-      }
-    });
-  }
-
-  async getDisclosuresRatings() {
-    return await this.disclosureRepo.getDisclosuresRatings();
-  }
+  
 
   async getDisclosureNotes(dto: TGetDisclosureNotesDto) {
     return await this.disclosureRepo.getDisclosureNotes(dto);
@@ -484,25 +372,33 @@ export class DisclosureService {
   }
 
   async completeConsultation(dto: TCompleteDisclosureConsultationsDto) {
-    const { id, disclosureRating, createdBy } = dto;
+    const { id, ratingId, isCustomRating, customRating, ratingNote, createdBy } = dto;
     const consultation = await this.consultationRepo.getById(id);
     if (!consultation) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
     await this.db.transaction(async (tx) => {
-      const addDisclosureRating = await this.addDisclosureRating({
-        ...disclosureRating,
-        disclosureId: consultation.disclosureId,
-        createdBy: consultation.createdBy!,
-      });
+      // Update the disclosure with rating information directly
+      await this.disclosureRepo.update(
+        {
+          id: consultation.disclosureId,
+          ratingId,
+          isCustomRating,
+          customRating,
+          ratingNote,
+          updatedBy: createdBy,
+        },
+        tx as any,
+      );
+      
       await this.consultationRepo.update(
         {
           ...consultation,
-          disclosureRatingId: addDisclosureRating.id,
           consultationStatus: "completed",
           consultedBy: createdBy,
           updatedBy: createdBy,
         },
         tx as any,
       );
+      
       await this.notificationRepo.create({
         from: dto.createdBy,
         to: consultation.createdBy!,

@@ -6,7 +6,6 @@ import {
   areasToEmployees,
   cities,
   disclosures,
-  disclosuresToRatings,
   employees,
   patients,
   patientsPhoneNumbers,
@@ -20,7 +19,6 @@ import { getRandomArrayItem } from "../db/helpers";
 import { TAddPatientDto, TPatient } from "../types/patient.type";
 import {
   TAddDisclosureDto,
-  TAddDisclosureRatingDto,
   TDisclosure,
 } from "../types/disclosure.type";
 import { eq, InferInsertModel } from "drizzle-orm";
@@ -242,7 +240,6 @@ export const SeedController = new Elysia({
         // patients
         //
 
-        await db.delete(disclosuresToRatings);
         await db.delete(disclosures);
         await db.delete(patientsPhoneNumbers);
         await db.delete(patients);
@@ -321,23 +318,14 @@ export const SeedController = new Elysia({
           (p) => {
             const disclosureToAdd: {
               disclosure: InferInsertModel<typeof disclosures>;
-              ratings: InferInsertModel<typeof disclosuresToRatings>[];
             }[] = [];
 
             p.disclosures.forEach(
               ({ logs, createdAt, note, scoutName, priorityDegreeName }) => {
-                if (p.name === "اسراء سقا بنت احمد") {
-                  console.log(p.disclosures, p);
-                }
-
                 const disclosure: InferInsertModel<typeof disclosures> =
                   {} as any;
-                const disclosureRatings: InferInsertModel<
-                  typeof disclosuresToRatings
-                >[] = [];
 
                 logs.forEach((disclosureLog) => {
-                  disclosure.createdAt = createdAt;
                   disclosure.createdAt = createdAt;
                   disclosure.initialNote = note;
                   disclosure.status = "active";
@@ -367,30 +355,25 @@ export const SeedController = new Elysia({
                       disclosure.visitReason = disclosureLog.details;
                       disclosure.visitNote = disclosureLog.note;
 
-                      disclosureRatings.push({
-                        createdAt: new Date(disclosureLog.date).toISOString(),
-                        disclosureId: "",
-                        isCustom:
-                          disclosureLog.result.type ===
-                          allDataResultTypes.FINISHED,
-                        customRating:
-                          disclosureLog.result.type ===
-                          allDataResultTypes.FINISHED
-                            ? disclosureLog.note
-                            : null,
-                        note: [
-                          allDataResultTypes.A,
-                          allDataResultTypes.B,
-                          allDataResultTypes.C,
-                          allDataResultTypes.X,
-                        ].includes(disclosureLog.result.type)
-                          ? disclosureLog.note
-                          : null,
-                        ratingId:
-                          allRatings.find(
-                            (r) => r.code === disclosureLog.result.type,
-                          )?.id ?? null,
-                      });
+                      // Set rating directly on disclosure
+                      const isCustomRating = disclosureLog.result.type === allDataResultTypes.FINISHED;
+                      const customRating = isCustomRating ? disclosureLog.note : null;
+                      const ratingNote = [
+                        allDataResultTypes.A,
+                        allDataResultTypes.B,
+                        allDataResultTypes.C,
+                        allDataResultTypes.X,
+                      ].includes(disclosureLog.result.type)
+                        ? disclosureLog.note
+                        : null;
+                      const ratingId = allRatings.find(
+                        (r) => r.code === disclosureLog.result.type,
+                      )?.id ?? null;
+
+                      disclosure.isCustomRating = isCustomRating;
+                      disclosure.customRating = customRating;
+                      disclosure.ratingNote = ratingNote;
+                      disclosure.ratingId = ratingId;
                       break;
                     }
                   }
@@ -398,7 +381,6 @@ export const SeedController = new Elysia({
 
                 disclosureToAdd.push({
                   disclosure,
-                  ratings: disclosureRatings,
                 });
               },
             );
@@ -447,16 +429,10 @@ export const SeedController = new Elysia({
               if (patientDisclosures.length) {
                 await Promise.all(
                   patientDisclosures.map(async (d) => {
-                    const [{ id: disclosureId }] = await tx
+                    await tx
                       .insert(disclosures)
                       .values({ ...d.disclosure, patientId })
                       .returning({ id: disclosures.id });
-
-                    if (d.ratings.length) {
-                      await tx
-                        .insert(disclosuresToRatings)
-                        .values(d.ratings.map((r) => ({ ...r, disclosureId })));
-                    }
                   }),
                 );
               }

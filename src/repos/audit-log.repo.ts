@@ -13,7 +13,6 @@ import {
 import {
   auditLogs,
   disclosures,
-  disclosuresToRatings,
   employees,
   priorityDegrees,
   ratings,
@@ -51,14 +50,6 @@ export class AuditLogRepo {
             sql`(SELECT id FROM disclosure_notes WHERE disclosure_id = ${disclosureId})`,
           ),
         ),
-        and(
-          eq(auditLogs.table, "disclosures_to_ratings"),
-          inArray(
-            auditLogs.recordId,
-            sql`(SELECT id FROM disclosures_to_ratings WHERE disclosure_id = ${disclosureId})`,
-          ),
-        ),
-        
       ),
       dateFilter,
     );
@@ -147,28 +138,7 @@ export class AuditLogRepo {
           }
           break;
         }
-        case "disclosures_to_ratings": {
-          switch (auditRecord.column) {
-            case disclosuresToRatings.note.name:
-            case disclosuresToRatings.isCustom.name:
-            case disclosuresToRatings.customRating.name: {
-              break;
-            }
-
-            case disclosuresToRatings.ratingId.name: {
-              oldRecordValue = await this.db.query.ratings.findFirst({
-                where: eq(ratings.id, auditRecord.oldValue!),
-                columns: ACTIONER_WITH.columns,
-              });
-              newRecordValue = await this.db.query.ratings.findFirst({
-                where: eq(ratings.id, auditRecord.newValue!),
-                columns: ACTIONER_WITH.columns,
-              });
-              break;
-            }
-          }
-          break;
-        }
+        
 
         default:
           break;

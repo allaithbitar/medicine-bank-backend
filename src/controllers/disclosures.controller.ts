@@ -4,19 +4,16 @@ import {
   addDisclosureConsultationModel,
   addDisclosureModel,
   addDisclosureNoteModel,
-  addDisclosureRatingModel,
   completeDisclosureConsultationModel,
   disclosureSelectModel,
   getDisclosureAuditLogsModel,
   getDisclosureConsultationsModel,
   getDisclosureNotesModel,
-  getDisclosureRatingsModel,
   moveDisclosuresModel,
   searchDisclosuresModel,
   updateDisclosureConsultationModel,
   updateDisclosureModel,
   updateDisclosureNoteModel,
-  updateDisclosureRatingModel,
 } from "../models/disclosure.model";
 import { DisclosureService } from "../services/disclosure.service";
 import { AuthGuard } from "../guards/auth.guard";
@@ -69,49 +66,7 @@ export const DisclosuresController = new Elysia({
       },
     )
 
-    .get(
-      "/ratings",
-      ({ query, disclosureService }) =>
-        disclosureService.getDisclosureRatings(query),
-
-      {
-        query: getDisclosureRatingsModel,
-      },
-    )
-
-    .get(
-      "/ratings/:id",
-      ({ params, disclosureService }) =>
-        disclosureService.getDisclosureRating(params.id),
-
-      {
-        params: t.Object({
-          id: t.String({ format: "uuid" }),
-        }),
-      },
-    )
-
-    .post(
-      "/ratings",
-      ({ body, disclosureService, user }) =>
-        disclosureService.addDisclosureRating({ ...body, createdBy: user.id }),
-
-      {
-        body: addDisclosureRatingModel,
-      },
-    )
-    .put(
-      "/ratings",
-      ({ body, disclosureService, user }) =>
-        disclosureService.updateDisclosureRating({
-          ...body,
-          updatedBy: user.id,
-        }),
-
-      {
-        body: updateDisclosureRatingModel,
-      },
-    )
+    
     .get(
       "consultations",
       ({ query, disclosureService }) =>
@@ -211,18 +166,7 @@ export const DisclosuresController = new Elysia({
       },
     )
 
-    .put(
-      "/ratings",
-      ({ body, disclosureService, user }) =>
-        disclosureService.updateDisclosureRating({
-          ...body,
-          updatedBy: user.id,
-        }),
-
-      {
-        body: updateDisclosureRatingModel,
-      },
-    )
+    
     .get(
       "/audit-log",
       ({ query, disclosureService }) =>

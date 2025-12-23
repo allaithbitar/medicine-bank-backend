@@ -101,8 +101,7 @@ export class DisclosureConsultationRepo {
       limit: pageSize,
       offset: pageSize * pageNumber,
       with: {
-        disclosure: true,
-        disclosureRating: {
+        disclosure: {
           with: { rating: true },
         },
         consultedBy: ACTIONER_WITH,
@@ -128,8 +127,9 @@ export class DisclosureConsultationRepo {
     return await this.db.query.disclosureConsultations.findFirst({
       where: eq(disclosureConsultations.id, id),
       with: {
-        disclosure: true,
-        disclosureRating: true,
+        disclosure: {
+          with: { rating: true },
+        },
         consultedBy: ACTIONER_WITH,
         createdBy: ACTIONER_WITH,
         updatedBy: ACTIONER_WITH,

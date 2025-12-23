@@ -3,7 +3,6 @@ import {
   disclosureConsultations,
   disclosureNotes,
   disclosures,
-  disclosuresToRatings,
 } from "../db/schema";
 import { t } from "elysia";
 import { paginationModel } from "./common.model";
@@ -12,8 +11,7 @@ export const disclosureInsertModel = createInsertSchema(disclosures);
 
 export const disclosureSelectModel = createSelectSchema(disclosures);
 
-export const ratingToDisclosureInsertModel =
-  createInsertSchema(disclosuresToRatings);
+
 
 export const addDisclosureModel = t.Omit(disclosureInsertModel, [
   "id",
@@ -56,9 +54,7 @@ export const searchDisclosuresModel = t.Composite([
 
     patientId: t.Optional(t.String({ format: "uuid" })),
 
-    ratingIds: t.Optional(
-      t.Array(t.String({ format: "uuid" }), { default: [] }),
-    ),
+    
 
     priorityIds: t.Optional(
       t.Array(t.String({ format: "uuid" }), { default: [] }),
@@ -79,24 +75,7 @@ export const searchDisclosuresModel = t.Composite([
   }),
 ]);
 
-export const addDisclosureRatingModel = t.Omit(ratingToDisclosureInsertModel, [
-  "id",
-  "createdAt",
-  "updatedAt",
-  "createdBy",
-  "updatedBy",
-]);
 
-export const updateDisclosureRatingModel = t.Composite([
-  t.Required(t.Pick(ratingToDisclosureInsertModel, ["id"])),
-
-  t.Omit(addDisclosureRatingModel, ["id"]),
-]);
-
-export const getDisclosureRatingsModel = t.Composite([
-  paginationModel,
-  t.Pick(ratingToDisclosureInsertModel, ["disclosureId", "isCustom"]),
-]);
 
 // export const updateVisitModel = t.Composite([
 //   t.Pick(disclosureSelectModel, ["id"]),
@@ -180,7 +159,10 @@ export const updateDisclosureConsultationModel = t.Composite([
 export const completeDisclosureConsultationModel = t.Composite([
   t.Required(t.Pick(disclosureConsultationSelectModel, ["id"])),
   t.Object({
-    disclosureRating: t.Omit(addDisclosureRatingModel, ["disclosureId"]),
+    ratingId: t.Optional(t.String({ format: "uuid" })),
+    isCustomRating: t.Optional(t.Boolean()),
+    customRating: t.Optional(t.String()),
+    ratingNote: t.Optional(t.String()),
   }),
 ]);
 
