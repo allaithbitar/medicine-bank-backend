@@ -21,8 +21,7 @@ import { FamilyMemberRepo } from "../repos/family-member.repo";
 import { FamilyMemberService } from "../services/family-member.service";
 import { MedicineRepo } from "../repos/medicine.repo";
 import { MedicineService } from "../services/medicine.service";
-import { AppointmentRepo } from "../repos/appointment.repo";
-import { AppointmentService } from "../services/appointment.service";
+
 import { SystemBroadcastRepo } from "../repos/system-broadcast.repo";
 import { SystemBroadcastService } from "../services/system-broadcast.service";
 import { MeetingService } from "../services/meeting.service";
@@ -66,10 +65,7 @@ DiContainer.bind<FamilyMemberService>(FamilyMemberService)
   .inRequestScope();
 DiContainer.bind<MedicineRepo>(MedicineRepo).toSelf().inRequestScope();
 DiContainer.bind<MedicineService>(MedicineService).toSelf().inRequestScope();
-DiContainer.bind<AppointmentRepo>(AppointmentRepo).toSelf().inRequestScope();
-DiContainer.bind<AppointmentService>(AppointmentService)
-  .toSelf()
-  .inRequestScope();
+
 DiContainer.bind<SystemBroadcastRepo>(SystemBroadcastRepo)
   .toSelf()
   .inRequestScope();
