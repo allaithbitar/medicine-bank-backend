@@ -99,6 +99,13 @@
       "when": 1766493029444,
       "tag": "0013_dapper_shard",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1766498585146,
+      "tag": "0014_first_pride",
+      "breakpoints": true
     }
   ]
 }
