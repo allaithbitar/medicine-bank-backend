@@ -8,6 +8,8 @@ import {
   TCompleteDisclosureConsultationsDto,
   TDisclosure,
   TFilterDisclosuresDto,
+  TGetDateAppointmentsDto,
+  TGetDisclosureAppointmentsDto,
   TGetDisclosureAuditLogsDto,
   TGetDisclosureConsultationsDto,
   TGetDisclosureNotesDto,
@@ -366,5 +368,13 @@ export class DisclosureService {
         tx as any,
       );
     });
+  }
+
+  async getAppointments(dto: TGetDisclosureAppointmentsDto) {
+    return this.disclosureRepo.getAppointments(dto);
+  }
+
+  async getDateAppointments(dto: TGetDateAppointmentsDto) {
+    return this.disclosureRepo.getDateAppointments(dto);
   }
 }

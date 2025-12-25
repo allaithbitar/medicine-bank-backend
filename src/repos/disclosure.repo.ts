@@ -5,6 +5,8 @@ import {
   TAddDisclosureDto,
   TAddDisclosureNoteEntityDto,
   TFilterDisclosuresDto,
+  TGetDateAppointmentsDto,
+  TGetDisclosureAppointmentsDto,
   TGetDisclosureNotesDto,
   TUpdateDisclosureDto,
   TUpdateDisclosureNoteEntityDto,
@@ -20,6 +22,7 @@ import {
   isNotNull,
   isNull,
   lte,
+  SQL,
 } from "drizzle-orm";
 import {
   ACTIONER_WITH,
@@ -152,47 +155,11 @@ export class DisclosureRepo {
     };
   }
 
-  private async getCount(dto: TFilterDisclosuresDto) {
-    const {
-      createdAtEndFilter,
-      createdAtStartFilter,
-      scoutesFilter,
-      statusFilter,
-      patientFilter,
-      priorityFilter,
-      undeliveredFilter,
-      appointmentDateFilter,
-      archiveNumberFilter,
-      isCustomRatingFilter,
-      isAppointmentCompletedFilter,
-      ratingFilter,
-      isReceivedFilter,
-      typeFilter,
-      visitResultFilter,
-    } = await this.getFilters(dto);
-
+  private async getCount(where: any) {
     const [{ value: totalCount }] = await this.db
       .select({ value: count() })
       .from(disclosures)
-      .where(
-        and(
-          createdAtEndFilter,
-          createdAtStartFilter,
-          scoutesFilter,
-          statusFilter,
-          patientFilter,
-          priorityFilter,
-          undeliveredFilter,
-          appointmentDateFilter,
-          archiveNumberFilter,
-          isCustomRatingFilter,
-          isAppointmentCompletedFilter,
-          ratingFilter,
-          isReceivedFilter,
-          typeFilter,
-          visitResultFilter,
-        ),
-      );
+      .where(where);
     return totalCount;
   }
 
@@ -201,49 +168,17 @@ export class DisclosureRepo {
     pageSize = DEFAULT_PAGE_SIZE,
     ...rest
   }: TFilterDisclosuresDto = {}) {
-    const {
-      createdAtEndFilter,
-      createdAtStartFilter,
-      scoutesFilter,
-      statusFilter,
-      patientFilter,
-      priorityFilter,
-      undeliveredFilter,
-      appointmentDateFilter,
-      archiveNumberFilter,
-      isCustomRatingFilter,
-      isAppointmentCompletedFilter,
-      ratingFilter,
-      isReceivedFilter,
-      typeFilter,
-      visitResultFilter,
-    } = await this.getFilters(rest);
+    const filters = await this.getFilters(rest);
 
     const result = await this.db.query.disclosures.findMany({
       with: withClause,
-      where: and(
-        createdAtEndFilter,
-        createdAtStartFilter,
-        scoutesFilter,
-        statusFilter,
-        patientFilter,
-        priorityFilter,
-        undeliveredFilter,
-        appointmentDateFilter,
-        archiveNumberFilter,
-        isCustomRatingFilter,
-        isAppointmentCompletedFilter,
-        ratingFilter,
-        isReceivedFilter,
-        typeFilter,
-        visitResultFilter,
-      ),
+      where: and(...Object.values(filters)),
       limit: pageSize,
       offset: pageSize * pageNumber,
       orderBy: desc(disclosures.createdAt),
     });
 
-    const totalCount = await this.getCount(rest);
+    const totalCount = await this.getCount(and(...Object.values(filters)));
 
     return { items: result, totalCount, pageSize, pageNumber };
   }
@@ -381,5 +316,87 @@ export class DisclosureRepo {
       .returning();
 
     return updated;
+  }
+
+  async getAppointments(dto: TGetDisclosureAppointmentsDto) {
+    const result = await this.db
+      .select({
+        id: disclosures.id,
+        appointmentDate: disclosures.appointmentDate,
+        isAppointmentCompleted: disclosures.isAppointmentCompleted,
+      })
+      .from(disclosures)
+      .where(
+        and(
+          isNotNull(disclosures.appointmentDate),
+          gte(disclosures.appointmentDate, dto.fromDate),
+          lte(disclosures.appointmentDate, dto.toDate),
+          dto.scoutId ? eq(disclosures.scoutId, dto.scoutId) : undefined,
+          dto.uncompletedOnly
+            ? eq(disclosures.isAppointmentCompleted, false)
+            : undefined,
+        ),
+      )
+      .orderBy(disclosures.appointmentDate);
+
+    return result.reduce(
+      (acc, curr) => {
+        if (!acc[curr.appointmentDate!]) acc[curr.appointmentDate!] = [];
+        acc[curr.appointmentDate!].push({
+          id: curr.id,
+          isAppointmentCompleted: curr.isAppointmentCompleted,
+        });
+        return acc;
+      },
+      {} as Record<
+        string,
+        {
+          id: string;
+          isAppointmentCompleted: boolean;
+        }[]
+      >,
+    );
+
+    // return await this.db.query.disclosures.findMany({
+    //   columns: {
+    //     id: true,
+    //     appointmentDate: true,
+    //     isAppointmentCompleted: true,
+    //   },
+    //   where: and(
+    //     gte(disclosures.appointmentDate, dto.fromDate),
+    //     lte(disclosures.appointmentDate, dto.toDate),
+    //     dto.scoutId ? eq(disclosures.scoutId, dto.scoutId) : undefined,
+    //     dto.uncompletedOnly
+    //       ? eq(disclosures.isAppointmentCompleted, false)
+    //       : undefined,
+    //   ),
+    // });
+  }
+
+  async getDateAppointments({
+    pageSize = DEFAULT_PAGE_SIZE,
+    pageNumber = DEFAULT_PAGE_NUMBER,
+    ...dto
+  }: TGetDateAppointmentsDto) {
+    return await this.db.query.disclosures.findMany({
+      columns: {
+        id: true,
+        appointmentDate: true,
+        isAppointmentCompleted: true,
+        patientId: true,
+      },
+      where: and(
+        eq(disclosures.appointmentDate, dto.date),
+        dto.scoutId ? eq(disclosures.scoutId, dto.scoutId) : undefined,
+        dto.uncompletedOnly
+          ? eq(disclosures.isAppointmentCompleted, false)
+          : undefined,
+      ),
+      limit: pageSize,
+      with: {
+        patient: ACTIONER_WITH,
+      },
+    });
   }
 }

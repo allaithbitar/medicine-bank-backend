@@ -196,3 +196,18 @@ export const moveDisclosuresModel = t.Object({
   fromScoutId: t.String({ format: "uuid" }),
   toScoutId: t.String({ format: "uuid" }),
 });
+
+export const getDisclosureAppointmentsModel = t.Object({
+  fromDate: t.String({ format: "date" }),
+  toDate: t.String({ format: "date" }),
+  scoutId: t.Optional(t.String({ format: "uuid" })),
+  uncompletedOnly: t.Optional(t.Boolean()),
+});
+
+export const getDateAppointmentsModel = t.Composite([
+  paginationModel,
+  t.Omit(getDisclosureAppointmentsModel, ["fromDate", "toDate"]),
+  t.Object({
+    date: t.String({ format: "date" }),
+  }),
+]);

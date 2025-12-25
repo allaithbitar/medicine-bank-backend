@@ -6,6 +6,8 @@ import {
   completeDisclosureConsultationModel,
   disclosureConsultationSelectModel,
   disclosureSelectModel,
+  getDateAppointmentsModel,
+  getDisclosureAppointmentsModel,
   getDisclosureAuditLogsModel,
   getDisclosureConsultationsModel,
   getDisclosureNotesModel,
@@ -96,3 +98,9 @@ export type TCompleteDisclosureConsultationsDto = Static<
   typeof completeDisclosureConsultationModel
 > &
   TUpdatedBy;
+
+export type TGetDisclosureAppointmentsDto = Static<
+  typeof getDisclosureAppointmentsModel
+>;
+
+export type TGetDateAppointmentsDto = Static<typeof getDateAppointmentsModel>;

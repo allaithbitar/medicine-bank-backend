@@ -6,6 +6,8 @@ import {
   addDisclosureNoteModel,
   completeDisclosureConsultationModel,
   disclosureSelectModel,
+  getDateAppointmentsModel,
+  getDisclosureAppointmentsModel,
   getDisclosureAuditLogsModel,
   getDisclosureConsultationsModel,
   getDisclosureNotesModel,
@@ -198,6 +200,22 @@ export const DisclosuresController = new Elysia({
       {
         body: moveDisclosuresModel,
         roles: ["manager", "supervisor"],
+      },
+    )
+    .get(
+      "/appointments",
+      ({ query, disclosureService }) =>
+        disclosureService.getAppointments(query),
+      {
+        query: getDisclosureAppointmentsModel,
+      },
+    )
+    .get(
+      "/appointments/date",
+      ({ query, disclosureService }) =>
+        disclosureService.getDateAppointments(query),
+      {
+        query: getDateAppointmentsModel,
       },
     ),
 );
