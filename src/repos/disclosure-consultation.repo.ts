@@ -101,9 +101,6 @@ export class DisclosureConsultationRepo {
       limit: pageSize,
       offset: pageSize * pageNumber,
       with: {
-        disclosure: {
-          with: { rating: true },
-        },
         consultedBy: ACTIONER_WITH,
         createdBy: ACTIONER_WITH,
         updatedBy: ACTIONER_WITH,
@@ -163,4 +160,3 @@ export class DisclosureConsultationRepo {
     return totalCount;
   }
 }
-

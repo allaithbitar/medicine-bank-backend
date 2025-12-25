@@ -77,94 +77,49 @@ export class DisclosureService {
 
       const auditCreatedAt = new Date().toISOString();
 
-      // STATUS
-      if (oldDisclosure.status !== updatedDisclosure.status) {
-        auditsToAdd.push({
-          recordId: id,
-          column: disclosures.status.name,
-          action: "UPDATE",
-          createdBy: updatedBy,
-          newValue: updatedDisclosure.status,
-          oldValue: oldDisclosure.status,
-          table: "disclosures",
-          createdAt: auditCreatedAt,
-        });
-      }
+      const auditProperties: (keyof typeof oldDisclosure)[] = [
+        "type",
+        "scoutId",
+        "priorityId",
+        "initialNote",
+        "details",
+        // VISIT
+        "visitResult",
+        "visitReason",
+        "visitNote",
+        // RATING
+        "ratingId",
+        "ratingNote",
+        "isCustomRating",
+        "customRating",
+        // APPOINTMENT
+        "appointmentDate",
+        "isAppointmentCompleted",
+        // RECEVIED AND ARCHIVE NUMBER
+        "status",
+        "isReceived",
+        "archiveNumber",
+      ];
 
-      // SCOUT
-      if (oldDisclosure.scoutId !== updatedDisclosure.scoutId) {
-        auditsToAdd.push({
-          recordId: id,
-          column: disclosures.scoutId.name,
-          action: "UPDATE",
-          createdBy: updatedBy,
-          newValue: updatedDisclosure.scoutId,
-          oldValue: oldDisclosure.scoutId,
-          table: "disclosures",
-          createdAt: auditCreatedAt,
-        });
-      }
-
-      // PRIORITY
-      if (oldDisclosure.priorityId !== updatedDisclosure.priorityId) {
-        auditsToAdd.push({
-          recordId: id,
-          column: disclosures.priorityId.name,
-          action: "UPDATE",
-          createdBy: updatedBy,
-          newValue: updatedDisclosure.priorityId,
-          oldValue: oldDisclosure.priorityId,
-          table: "disclosures",
-          createdAt: auditCreatedAt,
-        });
-      }
-
-      // Visit
-      if (oldDisclosure.visitNote !== updatedDisclosure.visitNote) {
-        auditsToAdd.push({
-          recordId: id,
-          column: disclosures.visitNote.name,
-          action: "UPDATE",
-          createdBy: updatedBy,
-          newValue: updatedDisclosure.visitNote,
-          oldValue: oldDisclosure.visitNote,
-          table: "disclosures",
-          createdAt: auditCreatedAt,
-        });
-      }
-
-      if (oldDisclosure.visitReason !== updatedDisclosure.visitReason) {
-        auditsToAdd.push({
-          recordId: id,
-          column: disclosures.visitReason.name,
-          action: "UPDATE",
-          createdBy: updatedBy,
-          newValue: updatedDisclosure.visitReason,
-          oldValue: oldDisclosure.visitReason,
-          table: "disclosures",
-          createdAt: auditCreatedAt,
-        });
-      }
-
-      if (oldDisclosure.visitResult !== updatedDisclosure.visitResult) {
-        auditsToAdd.push({
-          recordId: id,
-          column: disclosures.visitResult.name,
-          action: "UPDATE",
-          createdBy: updatedBy,
-          newValue: updatedDisclosure.visitResult,
-          oldValue: oldDisclosure.visitResult,
-          table: "disclosures",
-          createdAt: auditCreatedAt,
-        });
-      }
+      auditProperties.forEach((property) => {
+        if (oldDisclosure[property] !== updatedDisclosure[property]) {
+          auditsToAdd.push({
+            recordId: id,
+            column: disclosures[property].name,
+            action: "UPDATE",
+            createdBy: updatedBy,
+            newValue: String(updatedDisclosure[property]),
+            oldValue: String(oldDisclosure[property]),
+            table: "disclosures",
+            createdAt: auditCreatedAt,
+          });
+        }
+      });
 
       if (auditsToAdd.length)
         await this.auditLogRepo.create(auditsToAdd, tx as any);
     });
   }
-
-  
 
   async getDisclosureNotes(dto: TGetDisclosureNotesDto) {
     return await this.disclosureRepo.getDisclosureNotes(dto);
@@ -372,38 +327,44 @@ export class DisclosureService {
   }
 
   async completeConsultation(dto: TCompleteDisclosureConsultationsDto) {
-    const { id, ratingId, isCustomRating, customRating, ratingNote, createdBy } = dto;
+    const {
+      id,
+      ratingId,
+      isCustomRating,
+      customRating,
+      ratingNote,
+      updatedBy,
+    } = dto;
     const consultation = await this.consultationRepo.getById(id);
     if (!consultation) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
     await this.db.transaction(async (tx) => {
       // Update the disclosure with rating information directly
-      await this.disclosureRepo.update(
-        {
-          id: consultation.disclosureId,
-          ratingId,
-          isCustomRating,
-          customRating,
-          ratingNote,
-          updatedBy: createdBy,
-        },
-        tx as any,
-      );
-      
+      await this.updateDisclosure(consultation.disclosureId, updatedBy, {
+        ratingId,
+        isCustomRating,
+        customRating,
+        ratingNote,
+        updatedBy,
+      });
+
       await this.consultationRepo.update(
         {
           ...consultation,
           consultationStatus: "completed",
-          consultedBy: createdBy,
-          updatedBy: createdBy,
+          consultedBy: updatedBy,
+          updatedBy,
         },
         tx as any,
       );
-      
-      await this.notificationRepo.create({
-        from: dto.createdBy,
-        to: consultation.createdBy!,
-        type: "consultation_completed",
-      });
+
+      await this.notificationRepo.create(
+        {
+          from: updatedBy,
+          to: consultation.createdBy!,
+          type: "consultation_completed",
+        },
+        tx as any,
+      );
     });
   }
 }

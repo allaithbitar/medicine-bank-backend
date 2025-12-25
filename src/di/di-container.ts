@@ -30,6 +30,7 @@ import { AuditLogRepo } from "../repos/audit-log.repo";
 import { DisclosureConsultationRepo } from "../repos/disclosure-consultation.repo";
 import { NotificationRepo } from "../repos/notification.repo";
 import { NotificationService } from "../services/notification.service";
+import { AutocompleteRepo } from "../repos/autocomplete.repo";
 
 const DiContainer = new Container();
 
@@ -79,6 +80,9 @@ DiContainer.bind<DisclosureConsultationRepo>(DisclosureConsultationRepo)
   .toSelf()
   .inRequestScope();
 DiContainer.bind<NotificationRepo>(NotificationRepo).toSelf().inRequestScope();
-DiContainer.bind<NotificationService>(NotificationService).toSelf().inRequestScope();
+DiContainer.bind<NotificationService>(NotificationService)
+  .toSelf()
+  .inRequestScope();
+DiContainer.bind<AutocompleteRepo>(AutocompleteRepo).toSelf().inRequestScope();
 
 export default DiContainer;

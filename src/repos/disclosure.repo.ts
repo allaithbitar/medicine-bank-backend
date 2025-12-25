@@ -1,17 +1,12 @@
 import { inject, injectable } from "inversify";
 import { TDbContext } from "../db/drizzle";
-import {
-  disclosureNotes,
-  disclosures,
-} from "../db/schema";
+import { disclosureNotes, disclosures } from "../db/schema";
 import {
   TAddDisclosureDto,
-  TAddDisclosureNoteDto,
   TAddDisclosureNoteEntityDto,
   TFilterDisclosuresDto,
   TGetDisclosureNotesDto,
   TUpdateDisclosureDto,
-  TUpdateDisclosureNoteDto,
   TUpdateDisclosureNoteEntityDto,
 } from "../types/disclosure.type";
 import {
@@ -25,7 +20,6 @@ import {
   isNotNull,
   isNull,
   lte,
-  or,
 } from "drizzle-orm";
 import {
   ACTIONER_WITH,
@@ -37,8 +31,9 @@ const withClause = {
   priority: true,
   createdBy: ACTIONER_WITH,
   patient: true,
-  scout: true,
+  scout: ACTIONER_WITH,
   updatedBy: ACTIONER_WITH,
+  rating: true,
 } as const;
 
 @injectable()
@@ -53,6 +48,14 @@ export class DisclosureRepo {
     priorityIds,
     undelivered,
     status,
+    appointmentDate,
+    archiveNumber,
+    isAppointmentCompleted,
+    isCustomRating,
+    isReceived,
+    ratingIds,
+    type,
+    visitResult,
   }: TFilterDisclosuresDto) {
     let scoutesFilter = undefined;
 
@@ -74,8 +77,6 @@ export class DisclosureRepo {
       ? inArray(disclosures.status, status)
       : undefined;
 
-    
-
     if (scoutIds?.length) {
       scoutesFilter = inArray(disclosures.scoutId, scoutIds);
     }
@@ -95,6 +96,43 @@ export class DisclosureRepo {
         : isNotNull(disclosures.scoutId);
     }
 
+    let appointmentDateFilter = appointmentDate
+      ? eq(disclosures.appointmentDate, appointmentDate)
+      : undefined;
+
+    let archiveNumberFilter = archiveNumber
+      ? eq(disclosures.archiveNumber, archiveNumber)
+      : undefined;
+
+    let isCustomRatingFilter =
+      typeof isCustomRating !== "undefined"
+        ? eq(disclosures.isCustomRating, isCustomRating)
+        : undefined;
+
+    let isAppointmentCompletedFilter = isAppointmentCompleted
+      ? eq(disclosures.isAppointmentCompleted, isAppointmentCompleted)
+      : undefined;
+
+    let ratingFilter = ratingIds?.length
+      ? inArray(disclosures.ratingId, ratingIds)
+      : undefined;
+
+    let isReceivedFilter =
+      typeof isReceived !== "undefined"
+        ? eq(disclosures.isReceived, isReceived)
+        : undefined;
+
+    let typeFilter = type ? inArray(disclosures.type, type) : undefined;
+
+    let visitResultFilter = visitResult
+      ? eq(disclosures.visitResult, visitResult)
+      : undefined;
+
+    //
+    // isReceived,
+    //    ratingId,
+    //    type,
+    //    visitResult,
     return {
       scoutesFilter,
       createdAtStartFilter,
@@ -103,6 +141,14 @@ export class DisclosureRepo {
       patientFilter,
       priorityFilter,
       undeliveredFilter,
+      appointmentDateFilter,
+      archiveNumberFilter,
+      isCustomRatingFilter,
+      isAppointmentCompletedFilter,
+      ratingFilter,
+      isReceivedFilter,
+      typeFilter,
+      visitResultFilter,
     };
   }
 
@@ -115,6 +161,14 @@ export class DisclosureRepo {
       patientFilter,
       priorityFilter,
       undeliveredFilter,
+      appointmentDateFilter,
+      archiveNumberFilter,
+      isCustomRatingFilter,
+      isAppointmentCompletedFilter,
+      ratingFilter,
+      isReceivedFilter,
+      typeFilter,
+      visitResultFilter,
     } = await this.getFilters(dto);
 
     const [{ value: totalCount }] = await this.db
@@ -129,6 +183,14 @@ export class DisclosureRepo {
           patientFilter,
           priorityFilter,
           undeliveredFilter,
+          appointmentDateFilter,
+          archiveNumberFilter,
+          isCustomRatingFilter,
+          isAppointmentCompletedFilter,
+          ratingFilter,
+          isReceivedFilter,
+          typeFilter,
+          visitResultFilter,
         ),
       );
     return totalCount;
@@ -147,6 +209,14 @@ export class DisclosureRepo {
       patientFilter,
       priorityFilter,
       undeliveredFilter,
+      appointmentDateFilter,
+      archiveNumberFilter,
+      isCustomRatingFilter,
+      isAppointmentCompletedFilter,
+      ratingFilter,
+      isReceivedFilter,
+      typeFilter,
+      visitResultFilter,
     } = await this.getFilters(rest);
 
     const result = await this.db.query.disclosures.findMany({
@@ -159,6 +229,14 @@ export class DisclosureRepo {
         patientFilter,
         priorityFilter,
         undeliveredFilter,
+        appointmentDateFilter,
+        archiveNumberFilter,
+        isCustomRatingFilter,
+        isAppointmentCompletedFilter,
+        ratingFilter,
+        isReceivedFilter,
+        typeFilter,
+        visitResultFilter,
       ),
       limit: pageSize,
       offset: pageSize * pageNumber,
@@ -195,10 +273,6 @@ export class DisclosureRepo {
   }
 
   // RATINGS
-
-  
-
-
 
   // NOTES
 
@@ -292,10 +366,7 @@ export class DisclosureRepo {
       .select({ id: disclosures.id })
       .from(disclosures)
       .where(
-        and(
-          eq(disclosures.scoutId, fromScoutId),
-          isNull(disclosures.ratingId),
-        ),
+        and(eq(disclosures.scoutId, fromScoutId), isNull(disclosures.ratingId)),
       );
 
     const disclosureIds = disclosuresWithoutRatings.map((d) => d.id);

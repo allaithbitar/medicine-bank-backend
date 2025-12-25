@@ -66,7 +66,6 @@ export const DisclosuresController = new Elysia({
       },
     )
 
-    
     .get(
       "consultations",
       ({ query, disclosureService }) =>
@@ -115,14 +114,13 @@ export const DisclosuresController = new Elysia({
       ({ body, disclosureService, user }) => {
         return disclosureService.completeConsultation({
           ...body,
-          createdBy: user.id,
+          updatedBy: user.id,
         });
       },
       {
         body: completeDisclosureConsultationModel,
       },
     )
-
 
     .get(
       "/notes",
@@ -166,7 +164,6 @@ export const DisclosuresController = new Elysia({
       },
     )
 
-    
     .get(
       "/audit-log",
       ({ query, disclosureService }) =>

@@ -283,7 +283,9 @@ export const disclosures = pgTable("disclosures", {
   ratingNote: text("rating_note"),
   //
   appointmentDate: date("appointment_date", { mode: "string" }),
-  isAppointmentCompleted: boolean("is_appointment_completed").default(false),
+  isAppointmentCompleted: boolean("is_appointment_completed")
+    .notNull()
+    .default(false),
   //
   ...createdAtColumn,
   ...updatedAtColumn,
@@ -374,8 +376,6 @@ export const auditLogs = pgTable("audit_logs", {
   ...createdAtColumn,
   ...createdByColumn,
 });
-
-
 
 // RELATIONS //
 
@@ -522,8 +522,6 @@ export const auditLogRelations = relations(auditLogs, ({ one }) => ({
     references: [employees.id],
   }),
 }));
-
-
 
 export const disclosureNoteRelations = relations(
   disclosureNotes,

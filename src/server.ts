@@ -45,6 +45,7 @@ import { MedicinesController } from "./controllers/medicine.controller";
 import { SystemBroadcastsController } from "./controllers/system-broadcasts.controller";
 import { MeetingsController } from "./controllers/meetings.controller";
 import { NotificationsController } from "./controllers/notifications.controller";
+import { AutocompleteController } from "./controllers/autocomplete.controller";
 
 const app = new Elysia({
   serve: {
@@ -73,7 +74,7 @@ const app = new Elysia({
   .use(
     swagger({
       documentation: {
-        tags: [{ name: "Auth" }, { name: "Products" }, { name: "Images" }],
+        tags: [{ name: "Auth" }],
       },
     }),
   )
@@ -157,6 +158,7 @@ const app = new Elysia({
   .use(SystemBroadcastsController)
   .use(MeetingsController)
   .use(NotificationsController)
+  .use(AutocompleteController)
   .use(SeedController)
   .get("/", async () => {
     return "pong";

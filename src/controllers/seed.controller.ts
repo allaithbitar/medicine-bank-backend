@@ -4,7 +4,11 @@ import { TDbContext } from "../db/drizzle";
 import {
   areas,
   areasToEmployees,
+  auditLogs,
   cities,
+  disclosure_type_enum,
+  disclosureConsultations,
+  disclosureNotes,
   disclosures,
   employees,
   patients,
@@ -17,15 +21,13 @@ import { employeeInsertModel } from "../models/employee.model";
 import { faker } from "@faker-js/faker";
 import { getRandomArrayItem } from "../db/helpers";
 import { TAddPatientDto, TPatient } from "../types/patient.type";
-import {
-  TAddDisclosureDto,
-  TDisclosure,
-} from "../types/disclosure.type";
+import { TAddDisclosureDto, TDisclosure } from "../types/disclosure.type";
 import { eq, InferInsertModel } from "drizzle-orm";
 import oldDbDisclosures from "../old_db_disclosures.json";
 import oldDbEmployees from "../old_db_employees.json";
 import oldDbAreas from "../old_db_areas.json";
 import { rowsToExcel } from "../libs/xlsx";
+import { TAuditLog, TInsertAuditLog } from "../types/audit-log.type";
 
 export const SeedController = new Elysia({
   name: "Seed.Controller",
@@ -228,6 +230,14 @@ export const SeedController = new Elysia({
           NOT_FINISHED_PLUS: "+حجة",
           FINISHED: "تم",
         };
+        const oldDisclosureTypes: Record<
+          string,
+          (typeof disclosure_type_enum.enumValues)[number]
+        > = {
+          "1": "help",
+          "2": "new",
+          "3": "return",
+        };
 
         const allDataResultTypes = {
           A: "A",
@@ -240,6 +250,9 @@ export const SeedController = new Elysia({
         // patients
         //
 
+        await db.delete(auditLogs);
+        await db.delete(disclosureConsultations);
+        await db.delete(disclosureNotes);
         await db.delete(disclosures);
         await db.delete(patientsPhoneNumbers);
         await db.delete(patients);
@@ -264,6 +277,10 @@ export const SeedController = new Elysia({
                 createdAt: string;
                 scoutName: string;
                 priorityDegreeName: string;
+                appointmentDate: string;
+                isAppointmentCompleted: boolean;
+                isReceived: boolean;
+                type: string;
               }[];
             }
         > = {};
@@ -284,6 +301,10 @@ export const SeedController = new Elysia({
                   note: d.details,
                   scoutName: d.user.name.trim(),
                   priorityDegreeName: d.priority.color,
+                  appointmentDate: d.check_date,
+                  isAppointmentCompleted: d.patientIsCame,
+                  isReceived: d.userIsReceived,
+                  type: oldDisclosureTypes[d.type.id],
                 },
               ],
             };
@@ -308,6 +329,10 @@ export const SeedController = new Elysia({
                   note: d.details,
                   scoutName: d.user.name.trim(),
                   priorityDegreeName: d.priority.color,
+                  appointmentDate: d.check_date,
+                  isAppointmentCompleted: d.patientIsCame,
+                  isReceived: d.userIsReceived,
+                  type: oldDisclosureTypes[d.type.id],
                 },
               ],
             };
@@ -318,27 +343,45 @@ export const SeedController = new Elysia({
           (p) => {
             const disclosureToAdd: {
               disclosure: InferInsertModel<typeof disclosures>;
+              logsToAdd: TInsertAuditLog[][];
             }[] = [];
 
             p.disclosures.forEach(
-              ({ logs, createdAt, note, scoutName, priorityDegreeName }) => {
+              ({
+                logs,
+                createdAt,
+                note,
+                scoutName,
+                priorityDegreeName,
+                appointmentDate,
+                isAppointmentCompleted,
+                isReceived,
+                type,
+              }) => {
                 const disclosure: InferInsertModel<typeof disclosures> =
                   {} as any;
 
-                logs.forEach((disclosureLog) => {
-                  disclosure.createdAt = createdAt;
-                  disclosure.initialNote = note;
-                  disclosure.status = "active";
-                  disclosure.scoutId =
-                    allEmployees.find((e) => e.name === scoutName)?.id ?? null;
+                disclosure.type = type as any;
+                disclosure.appointmentDate = appointmentDate;
+                disclosure.isAppointmentCompleted =
+                  isAppointmentCompleted ?? false;
+                disclosure.isReceived = isReceived ?? false;
+                disclosure.createdAt = createdAt;
+                disclosure.initialNote = note;
+                disclosure.status = "active";
+                disclosure.scoutId =
+                  allEmployees.find((e) => e.name === scoutName)?.id ?? null;
 
-                  disclosure.priorityId =
-                    allPriorityDegrees.find(
-                      (d) => d.name === priorityDegreeName,
-                    )?.id ?? "";
+                disclosure.priorityId =
+                  allPriorityDegrees.find((d) => d.name === priorityDegreeName)
+                    ?.id ?? "";
 
-                  disclosure.patientId = "";
+                disclosure.patientId = "";
 
+                const logsToAdd: TInsertAuditLog[][] = [];
+
+                logs.forEach((disclosureLog, idx) => {
+                  const disclosureLogsToAdd: TInsertAuditLog[] = [];
                   switch (disclosureLog.result.name) {
                     case oldDataVisitStatues.NOT_DONE:
                       disclosure.visitResult = "not_completed";
@@ -352,12 +395,14 @@ export const SeedController = new Elysia({
                     }
                     case oldDataVisitStatues.FINISHED: {
                       disclosure.visitResult = "completed";
-                      disclosure.visitReason = disclosureLog.details;
-                      disclosure.visitNote = disclosureLog.note;
 
                       // Set rating directly on disclosure
-                      const isCustomRating = disclosureLog.result.type === allDataResultTypes.FINISHED;
-                      const customRating = isCustomRating ? disclosureLog.note : null;
+                      const isCustomRating =
+                        disclosureLog.result.type ===
+                        allDataResultTypes.FINISHED;
+                      const customRating = isCustomRating
+                        ? disclosureLog.note
+                        : null;
                       const ratingNote = [
                         allDataResultTypes.A,
                         allDataResultTypes.B,
@@ -366,9 +411,10 @@ export const SeedController = new Elysia({
                       ].includes(disclosureLog.result.type)
                         ? disclosureLog.note
                         : null;
-                      const ratingId = allRatings.find(
-                        (r) => r.code === disclosureLog.result.type,
-                      )?.id ?? null;
+                      const ratingId =
+                        allRatings.find(
+                          (r) => r.code === disclosureLog.result.type,
+                        )?.id ?? null;
 
                       disclosure.isCustomRating = isCustomRating;
                       disclosure.customRating = customRating;
@@ -377,10 +423,99 @@ export const SeedController = new Elysia({
                       break;
                     }
                   }
+
+                  if (disclosure.visitResult !== "not_completed") {
+                    disclosureLogsToAdd.push({
+                      table: "disclosures",
+                      createdAt: disclosureLog.date,
+                      action: "UPDATE",
+                      column: disclosures.visitResult.name,
+                      createdBy: disclosure.scoutId,
+                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                      newValue: disclosure.visitResult,
+                    });
+                  }
+                  if (disclosure.visitReason) {
+                    disclosureLogsToAdd.push({
+                      table: "disclosures",
+                      createdAt: disclosureLog.date,
+                      action: "UPDATE",
+                      column: disclosures.visitReason.name,
+                      createdBy: disclosure.scoutId,
+                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                      newValue: disclosure.visitReason,
+                    });
+                  }
+
+                  if (disclosure.visitNote) {
+                    disclosureLogsToAdd.push({
+                      table: "disclosures",
+                      createdAt: disclosureLog.date,
+                      action: "UPDATE",
+                      column: disclosures.visitNote.name,
+                      createdBy: disclosure.scoutId,
+                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                      newValue: disclosure.visitNote,
+                    });
+                  }
+
+                  // disclosure.isCustomRating = isCustomRating;
+                  //                   disclosure.customRating = customRating;
+                  //                   disclosure.ratingNote = ratingNote;
+                  //                   disclosure.ratingId = ratingId;
+
+                  if (disclosure.customRating) {
+                    disclosureLogsToAdd.push({
+                      table: "disclosures",
+                      createdAt: disclosureLog.date,
+                      action: "UPDATE",
+                      column: disclosures.isCustomRating.name,
+                      createdBy: disclosure.scoutId,
+                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                      newValue: String(disclosure.isCustomRating),
+                    });
+
+                    disclosureLogsToAdd.push({
+                      table: "disclosures",
+                      createdAt: disclosureLog.date,
+                      action: "UPDATE",
+                      column: disclosures.customRating.name,
+                      createdBy: disclosure.scoutId,
+                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                      newValue: disclosure.customRating,
+                    });
+                  }
+                  if (disclosure.ratingId) {
+                    disclosureLogsToAdd.push({
+                      table: "disclosures",
+                      createdAt: disclosureLog.date,
+                      action: "UPDATE",
+                      column: disclosures.ratingId.name,
+                      createdBy: disclosure.scoutId,
+                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                      newValue: disclosure.ratingId,
+                    });
+                  }
+
+                  if (disclosure.ratingNote) {
+                    disclosureLogsToAdd.push({
+                      table: "disclosures",
+                      createdAt: disclosureLog.date,
+                      action: "UPDATE",
+                      column: disclosures.ratingNote.name,
+                      createdBy: disclosure.scoutId,
+                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                      newValue: disclosure.ratingNote,
+                    });
+                  }
+                  if (disclosureLogsToAdd.length) {
+                    logsToAdd.push(disclosureLogsToAdd);
+                  }
                 });
 
                 disclosureToAdd.push({
                   disclosure,
+                  logsToAdd,
                 });
               },
             );
@@ -389,7 +524,7 @@ export const SeedController = new Elysia({
         );
 
         // return paitentsWithDisclosuresMapped;
-        // return
+
         await Promise.all(
           paitentsWithDisclosuresMapped.map(async (p) => {
             const {
@@ -406,7 +541,7 @@ export const SeedController = new Elysia({
                     ? rest.name
                         .split("(#)")
                         .map((n, idx) => `(${idx + 1})_` + n)
-                        .join(" ") + " ( مكرر يرجى الإطلاع )"
+                        .join(" ") + " ( مكرر ي��جى ا��إطلاع )"
                     : rest.name,
                   address: rest.address?.includes("(#)")
                     ? rest.address
@@ -429,10 +564,19 @@ export const SeedController = new Elysia({
               if (patientDisclosures.length) {
                 await Promise.all(
                   patientDisclosures.map(async (d) => {
-                    await tx
+                    const ids = await tx
                       .insert(disclosures)
                       .values({ ...d.disclosure, patientId })
                       .returning({ id: disclosures.id });
+                    ids.map(async ({ id: disclosureId }) =>
+                      d.logsToAdd.map(async (logs) => {
+                        await tx
+                          .insert(auditLogs)
+                          .values(
+                            logs.map((l) => ({ ...l, recordId: disclosureId })),
+                          );
+                      }),
+                    );
                   }),
                 );
               }
@@ -524,11 +668,10 @@ export const SeedController = new Elysia({
       })
 
       .get("syncOldEmployees", async ({ db }) => {
+        await db.delete(employees);
         const appAreas = await db.query.areas.findMany();
-        console.log({ appAreas });
 
         const employeesToAdd: TAddEmployeeDto[] = [];
-
         for (const e of oldDbEmployees) {
           employeesToAdd.push({
             name: e.name.trim(),

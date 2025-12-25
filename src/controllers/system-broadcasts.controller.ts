@@ -6,7 +6,6 @@ import {
 } from "../models/system-broadcast.model";
 import DiContainer from "../di/di-container";
 import { SystemBroadcastService } from "../services/system-broadcast.service";
-import { AuthGuard } from "../guards/auth.guard";
 
 export const SystemBroadcastsController = new Elysia({
   name: "SystemBroadcasts.Controller",

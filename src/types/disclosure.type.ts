@@ -28,8 +28,6 @@ export type TUpdateDisclosureDto = Static<typeof updateDisclosureModel> &
 
 export type TFilterDisclosuresDto = Static<typeof searchDisclosuresModel>;
 
-
-
 // export type TUpdateVisitDto = Static<typeof updateVisitModel> & TUpdatedBy;
 
 // export type
@@ -97,4 +95,4 @@ export type TGetDisclosureConsultationsDto = Static<
 export type TCompleteDisclosureConsultationsDto = Static<
   typeof completeDisclosureConsultationModel
 > &
-  TCreatedBy;
+  TUpdatedBy;

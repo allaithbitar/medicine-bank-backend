@@ -11,8 +11,6 @@ export const disclosureInsertModel = createInsertSchema(disclosures);
 
 export const disclosureSelectModel = createSelectSchema(disclosures);
 
-
-
 export const addDisclosureModel = t.Omit(disclosureInsertModel, [
   "id",
   "createdAt",
@@ -45,37 +43,43 @@ export const searchDisclosuresModel = t.Composite([
     "createdAt",
     "status",
     "type",
+    "createdBy",
+    "customRating",
+    "details",
+    "initialNote",
+    "ratingNote",
+    "updatedBy",
+    "visitNote",
+    "visitReason",
+    "ratingId",
   ]),
-  t.Object({
-    // patientIds: t.Optional(t.Array(t.String({ format: "uuid" }))),
-    scoutIds: t.Optional(
-      t.Array(t.String({ format: "uuid" }), { default: [] }),
-    ),
+  t.Partial(
+    t.Object({
+      // patientIds: t.Optional(t.Array(t.String({ format: "uuid" }))),
+      scoutIds: t.Array(t.String({ format: "uuid" })),
 
-    patientId: t.Optional(t.String({ format: "uuid" })),
+      patientId: t.String({ format: "uuid" }),
 
-    
+      priorityIds: t.Array(t.String({ format: "uuid" })),
 
-    priorityIds: t.Optional(
-      t.Array(t.String({ format: "uuid" }), { default: [] }),
-    ),
+      ratingIds: t.Array(t.String({ format: "uuid" })),
 
-    createdAtStart: t.Optional(t.String({ format: "date-time" })),
+      createdAtStart: t.String({ format: "date-time" }),
 
-    createdAtEnd: t.Optional(t.String({ format: "date-time" })),
+      createdAtEnd: t.String({ format: "date-time" }),
 
-    status: t.Optional(
-      t.Array(disclosureInsertModel.properties.status, { default: [] }),
-    ),
-    type: t.Optional(
-      t.Array(disclosureInsertModel.properties.type, { default: [] }),
-    ),
+      status: t.Array(disclosureInsertModel.properties.status),
 
-    undelivered: t.Optional(t.Boolean()),
-  }),
+      type: t.Array(disclosureInsertModel.properties.type),
+
+      undelivered: t.Boolean(),
+
+      isCustomRating: t.Boolean(),
+
+      isReceived: t.Boolean(),
+    }),
+  ),
 ]);
-
-
 
 // export const updateVisitModel = t.Composite([
 //   t.Pick(disclosureSelectModel, ["id"]),
@@ -168,16 +172,17 @@ export const completeDisclosureConsultationModel = t.Composite([
 
 export const getDisclosureConsultationsModel = t.Composite([
   paginationModel,
-  t.Object({
-    consultationStatus: t.Optional(
-      disclosureConsultationInsertModel.properties.consultationStatus,
-    ),
-    consultedBy: t.Optional(t.String({ format: "uuid" })),
-    createdBy: t.Optional(t.String({ format: "uuid" })),
-    createdAtStart: t.Optional(t.String({ format: "date-time" })),
-    createdAtEnd: t.Optional(t.String({ format: "date-time" })),
-    disclosureId: t.Optional(t.String({ format: "date-time" })),
-  }),
+  t.Partial(
+    t.Object({
+      consultationStatus:
+        disclosureConsultationInsertModel.properties.consultationStatus,
+      consultedBy: t.String({ format: "uuid" }),
+      createdBy: t.String({ format: "uuid" }),
+      createdAtStart: t.String({ format: "date-time" }),
+      createdAtEnd: t.String({ format: "date-time" }),
+      disclosureId: t.String({ format: "uuid" }),
+    }),
+  ),
 ]);
 
 // AUDIT LOG
