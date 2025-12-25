@@ -2,17 +2,8 @@ import "reflect-metadata";
 import { inject, injectable } from "inversify";
 import { TGetSatisticsDto } from "../types/satistics.type";
 import { TDbContext } from "../db/drizzle";
-import {
-  and,
-  count,
-  eq,
-  gte,
-  lte,
-  isNotNull,
-  countDistinct,
-} from "drizzle-orm";
+import { and, count, eq, gte, lte, countDistinct } from "drizzle-orm";
 import { auditLogs, disclosures, ratings } from "../db/schema";
-import { isNotEmpty } from "elysia/dist/utils";
 
 @injectable()
 export class SatisticsService {
@@ -88,7 +79,10 @@ export class SatisticsService {
     employeeId,
   }: TGetSatisticsDto) {
     let completedVisits = await this.db
-      .select({ id: auditLogs.id, createdAt: auditLogs.createdAt })
+      .selectDistinctOn([auditLogs.recordId], {
+        recordId: auditLogs.recordId,
+        createdAt: auditLogs.createdAt,
+      })
       .from(auditLogs)
       .where(
         and(
@@ -100,10 +94,13 @@ export class SatisticsService {
           employeeId ? eq(auditLogs.createdBy, employeeId) : undefined,
         ),
       )
-      .orderBy(auditLogs.createdAt);
+      .orderBy(auditLogs.recordId, auditLogs.createdAt);
 
     let uncompletedVisits = await this.db
-      .select({ id: auditLogs.id, createdAt: auditLogs.createdAt })
+      .selectDistinctOn([auditLogs.recordId], {
+        recordId: auditLogs.recordId,
+        createdAt: auditLogs.createdAt,
+      })
       .from(auditLogs)
       .where(
         and(
@@ -115,10 +112,13 @@ export class SatisticsService {
           employeeId ? eq(auditLogs.createdBy, employeeId) : undefined,
         ),
       )
-      .orderBy(auditLogs.createdAt);
+      .orderBy(auditLogs.recordId, auditLogs.createdAt);
 
     let cantBeCompletedVisits = await this.db
-      .select({ id: auditLogs.id, createdAt: auditLogs.createdAt })
+      .selectDistinctOn([auditLogs.recordId], {
+        recordId: auditLogs.recordId,
+        createdAt: auditLogs.createdAt,
+      })
       .from(auditLogs)
       .where(
         and(
@@ -130,15 +130,17 @@ export class SatisticsService {
           employeeId ? eq(auditLogs.createdBy, employeeId) : undefined,
         ),
       )
-      .orderBy(auditLogs.createdAt);
+      .orderBy(auditLogs.recordId, auditLogs.createdAt);
 
     const groupedByCompletedVisits = completedVisits.reduce(
       (acc, curr) => {
-        const currentDate = curr.createdAt.split(" ")[0];
+        const currentDate = new Date(curr.createdAt)
+          .toISOString()
+          .split("T")[0];
         if (!acc[currentDate]) {
-          acc[currentDate] = [curr.id];
+          acc[currentDate] = [curr.recordId!];
         } else {
-          acc[currentDate].push(curr.id);
+          acc[currentDate].push(curr.recordId!);
         }
         return acc;
       },
@@ -180,7 +182,9 @@ export class SatisticsService {
 
       const groupedByDate = _ratings.reduce(
         (acc, curr) => {
-          const currentDate = curr.createdAt.split(" ")[0];
+          const currentDate = new Date(curr.createdAt)
+            .toISOString()
+            .split("T")[0];
           if (!acc[currentDate]) {
             acc[currentDate] = [curr.id];
           } else {
@@ -215,7 +219,9 @@ export class SatisticsService {
       .orderBy(auditLogs.recordId, auditLogs.createdAt);
     const groupedByDate = _customRatings.reduce(
       (acc, curr) => {
-        const currentDate = curr.createdAt.split(" ")[0];
+        const currentDate = new Date(curr.createdAt)
+          .toISOString()
+          .split("T")[0];
         if (!acc[currentDate]) {
           acc[currentDate] = [curr.id];
         } else {
@@ -236,7 +242,9 @@ export class SatisticsService {
 
     const groupedByAddedDisclosures = addedDisclosures.reduce(
       (acc, curr) => {
-        const currentDate = curr.createdAt.split(" ")[0];
+        const currentDate = new Date(curr.createdAt)
+          .toISOString()
+          .split("T")[0];
         if (!acc[currentDate]) {
           acc[currentDate] = [curr.id];
         } else {
@@ -249,11 +257,13 @@ export class SatisticsService {
 
     const groupedByUncompletedVisits = uncompletedVisits.reduce(
       (acc, curr) => {
-        const currentDate = curr.createdAt.split(" ")[0];
+        const currentDate = new Date(curr.createdAt)
+          .toISOString()
+          .split("T")[0];
         if (!acc[currentDate]) {
-          acc[currentDate] = [curr.id];
+          acc[currentDate] = [curr.recordId!];
         } else {
-          acc[currentDate].push(curr.id);
+          acc[currentDate].push(curr.recordId!);
         }
         return acc;
       },
@@ -262,11 +272,13 @@ export class SatisticsService {
 
     const groupedByCantBeCompletedVisits = cantBeCompletedVisits.reduce(
       (acc, curr) => {
-        const currentDate = curr.createdAt.split(" ")[0];
+        const currentDate = new Date(curr.createdAt)
+          .toISOString()
+          .split("T")[0];
         if (!acc[currentDate]) {
-          acc[currentDate] = [curr.id];
+          acc[currentDate] = [curr.recordId!];
         } else {
-          acc[currentDate].push(curr.id);
+          acc[currentDate].push(curr.recordId!);
         }
         return acc;
       },
