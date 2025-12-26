@@ -37,6 +37,7 @@ export const emplyee_role_enum = pgEnum("emplyee_role_enum", [
 
 export const disclosure_status_enum = pgEnum("disclosure_status_enum", [
   "active",
+  "suspended",
   "archived",
 ]);
 
