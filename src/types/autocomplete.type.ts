@@ -1,6 +1,16 @@
 import { Static } from "elysia";
-import { autocompleteModel } from "../models/autocomplete.model";
+import {
+  areasAutocompleteModel,
+  autocompleteModel,
+  employeesAutocompleteModel,
+} from "../models/autocomplete.model";
 
 export type TAutocompleteDto<T> = Static<typeof autocompleteModel> & {
   columns?: Record<keyof T, boolean>;
 };
+
+export type TAreasAutocompleteDto = Static<typeof areasAutocompleteModel>;
+
+export type TEmployeesAutocompleteDto = Static<
+  typeof employeesAutocompleteModel
+>;

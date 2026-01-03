@@ -3,35 +3,36 @@ import { TDbContext } from "../db/drizzle";
 import { areas, cities, employees, patients } from "../db/schema";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 import { TPaginatedResponse } from "../types/common.types";
-import { TAutocompleteDto } from "../types/autocomplete.type";
-import { and, count, ilike } from "drizzle-orm";
+import {
+  TAreasAutocompleteDto,
+  TAutocompleteDto,
+  TEmployeesAutocompleteDto,
+} from "../types/autocomplete.type";
+import { and, count, eq, inArray, SQL } from "drizzle-orm";
+import { searchArabic } from "../db/helpers";
 
 @injectable()
 export class AutocompleteRepo {
   constructor(@inject("db") private db: TDbContext) {}
 
-  private getFilters<X, V extends keyof X>(
-    query: string | undefined = undefined,
-    table: X,
-    queryColumns: V[],
-  ) {
-    const filters = query
-      ? and(...queryColumns.map((c) => ilike(table[c] as any, `%${query}%`)))
-      : undefined;
-    return filters;
-  }
+  // private getFilters<X, V extends keyof X>(
+  //   query: string | undefined = undefined,
+  //   table: X,
+  //   queryColumns: V[],
+  // ) {
+  //   const filters = query
+  //     ? and(...queryColumns.map((c) => ilike(table[c] as any, `%${query}%`)))
+  //     : undefined;
+  //   return filters;
+  // }
 
-  private async getCount<X, V extends keyof X>(
-    query: string | undefined = undefined,
-    table: X,
-    queryColumns: V[],
-  ) {
-    const filters = this.getFilters(query, table, queryColumns);
+  private async getCount<X>(where: SQL<unknown> | undefined, table: X) {
+    // const filters = this.getFilters(query, table, queryColumns);
 
     const [{ value: totalCount }] = await this.db
       .select({ value: count() })
       .from(table as any)
-      .where(filters);
+      .where(where);
 
     return totalCount;
   }
@@ -54,10 +55,11 @@ export class AutocompleteRepo {
     query,
     columns,
   }: TAutocompleteDto<typeof cities>): Promise<TPaginatedResponse<any>> {
-    const totalCount = await this.getCount(query, cities, ["name"]);
-    const filters = this.getFilters(query, cities, ["name"]);
+    const queryFilter = query ? searchArabic(cities.name, query) : undefined;
+    const where = and(queryFilter);
+    const totalCount = await this.getCount(where, cities);
     const result = await this.db.query.cities.findMany({
-      where: filters,
+      where,
       limit: pageSize,
       offset: pageSize * pageNumber,
       columns: {
@@ -74,12 +76,15 @@ export class AutocompleteRepo {
     pageNumber = DEFAULT_PAGE_NUMBER,
     pageSize = DEFAULT_PAGE_SIZE,
     query,
+    cityId,
     columns,
-  }: TAutocompleteDto<typeof areas>): Promise<TPaginatedResponse<any>> {
-    const totalCount = await this.getCount(query, areas, ["name"]);
-    const filters = this.getFilters(query, areas, ["name"]);
+  }: TAreasAutocompleteDto): Promise<TPaginatedResponse<any>> {
+    const queryFilter = query ? searchArabic(areas.name, query) : undefined;
+    const cityFilter = cityId ? eq(areas.cityId, cityId) : undefined;
+    const where = and(queryFilter, cityFilter);
+    const totalCount = await this.getCount(where, areas);
     const result = await this.db.query.areas.findMany({
-      where: filters,
+      where,
       limit: pageSize,
       offset: pageSize * pageNumber,
       columns: {
@@ -98,10 +103,11 @@ export class AutocompleteRepo {
     query,
     columns,
   }: TAutocompleteDto<typeof patients>): Promise<TPaginatedResponse<any>> {
-    const totalCount = await this.getCount(query, patients, ["name"]);
-    const filters = this.getFilters(query, patients, ["name"]);
+    const queryFilter = query ? searchArabic(patients.name, query) : undefined;
+    const where = and(queryFilter);
+    const totalCount = await this.getCount(where, patients);
     const result = await this.db.query.patients.findMany({
-      where: filters,
+      where,
       limit: pageSize,
       offset: pageSize * pageNumber,
       columns: {
@@ -118,12 +124,15 @@ export class AutocompleteRepo {
     pageNumber = DEFAULT_PAGE_NUMBER,
     pageSize = DEFAULT_PAGE_SIZE,
     query,
+    role,
     columns,
-  }: TAutocompleteDto<typeof employees>): Promise<TPaginatedResponse<any>> {
-    const totalCount = await this.getCount(query, employees, ["name"]);
-    const filters = this.getFilters(query, employees, ["name"]);
+  }: TEmployeesAutocompleteDto): Promise<TPaginatedResponse<any>> {
+    const queryFilter = query ? searchArabic(employees.name, query) : undefined;
+    const roleFilter = role?.length ? inArray(employees.role, role) : undefined;
+    const where = and(queryFilter, roleFilter);
+    const totalCount = await this.getCount(where, employees);
     const result = await this.db.query.employees.findMany({
-      where: filters,
+      where,
       limit: pageSize,
       offset: pageSize * pageNumber,
       columns: {

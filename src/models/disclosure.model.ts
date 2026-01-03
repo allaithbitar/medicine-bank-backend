@@ -51,6 +51,7 @@ export const searchDisclosuresModel = t.Composite([
     "updatedBy",
     "visitNote",
     "visitReason",
+    "visitResult",
     "ratingId",
   ]),
   t.Partial(
@@ -72,7 +73,13 @@ export const searchDisclosuresModel = t.Composite([
 
       type: t.Array(disclosureInsertModel.properties.type),
 
+      visitResult: t.Array(disclosureInsertModel.properties.visitResult),
+
       undelivered: t.Boolean(),
+
+      unvisited: t.Boolean(),
+
+      unrated: t.Boolean(),
 
       isCustomRating: t.Boolean(),
 

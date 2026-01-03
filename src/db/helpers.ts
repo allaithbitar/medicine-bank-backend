@@ -13,6 +13,7 @@ import {
   PG_ERROR_CODES,
   Unhandled_Db_Error,
 } from "../constants/pg-errors";
+import { Column, SQL, sql, SQLWrapper } from "drizzle-orm";
 
 export const isDbError = (error: any): error is DatabaseError => {
   if ("cause" in error && "code" in error.cause) {
@@ -77,3 +78,11 @@ export const deleteAudioFile = async (name: string) => {
     await oldAudioFile.delete();
   }
 };
+
+export function searchArabic(source: Column, text: string): SQL {
+  let normalizedText = text
+    .replace(/\s+/g, " ") // Collapse multiple spaces
+    .trim();
+  normalizedText = `%${normalizedText}%`;
+  return sql`normalize_arabic(${source}) ILIKE normalize_arabic(${normalizedText})`;
+}

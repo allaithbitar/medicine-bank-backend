@@ -27,8 +27,21 @@ export const updatePatientModel = t.Composite([
 
 export const filterPatientsModel = t.Composite([
   paginationModel,
-  t.Object({
-    query: t.Optional(t.String()),
-    areaIds: t.Optional(t.Array(t.String({ format: "uuid" }), { default: [] })),
-  }),
+  t.Partial(t.Omit(addPatientModel, ["phoneNumbers", "areaId"])),
+  t.Partial(
+    t.Object({
+      phone: t.String(),
+      areaIds: t.Array(t.String({ format: "uuid" })),
+    }),
+  ),
 ]);
+
+export const validatePatientNationalNumberModel = t.Object({
+  patientId: t.Optional(t.String()),
+  nationalNumber: t.String({ minLength: 11, maxLength: 11 }),
+});
+
+export const validatePatientPhoneNumbers = t.Object({
+  patientId: t.Optional(t.String()),
+  phoneNumbers: t.Array(t.String()),
+});

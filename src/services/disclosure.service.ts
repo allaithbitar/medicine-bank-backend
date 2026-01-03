@@ -377,4 +377,8 @@ export class DisclosureService {
   async getDateAppointments(dto: TGetDateAppointmentsDto) {
     return this.disclosureRepo.getDateAppointments(dto);
   }
+
+  async getLastDisclosureByPatientId(patientId: string) {
+    return this.disclosureRepo.getLastDisclosureByPatientId(patientId);
+  }
 }

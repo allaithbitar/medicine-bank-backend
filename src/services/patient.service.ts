@@ -5,6 +5,8 @@ import {
   TAddPatientDto,
   TFilterPatientsDto,
   TUpdatePatientDto,
+  TValidatePatientNationalNumberDto,
+  TValidatePatientPhoneNumbersDto,
 } from "../types/patient.type";
 @injectable()
 export class PatientService {
@@ -24,5 +26,13 @@ export class PatientService {
 
   updatePatient(dto: TUpdatePatientDto) {
     return this.pateintRepo.update(dto);
+  }
+
+  validateNationalNumber(dto: TValidatePatientNationalNumberDto) {
+    return this.pateintRepo.validateNationalNumber(dto);
+  }
+
+  validatePhoneNumbers(dto: TValidatePatientPhoneNumbersDto) {
+    return this.pateintRepo.validatePhoneNumbers(dto);
   }
 }

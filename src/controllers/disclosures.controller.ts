@@ -38,15 +38,26 @@ export const DisclosuresController = new Elysia({
         body: searchDisclosuresModel,
       },
     )
-    .get(
-      ":id",
-      ({ params, disclosureService }) =>
-        disclosureService.getDisclosureById(params.id),
+     .get(
+       ":id",
+       ({ params, disclosureService }) =>
+         disclosureService.getDisclosureById(params.id),
 
-      {
-        params: t.Pick(disclosureSelectModel, ["id"]),
-      },
-    )
+       {
+         params: t.Pick(disclosureSelectModel, ["id"]),
+       },
+     )
+     .get(
+       "last/:patientId",
+       ({ params, disclosureService }) =>
+         disclosureService.getLastDisclosureByPatientId(params.patientId),
+
+       {
+         params: t.Object({
+           patientId: t.String({ format: "uuid" }),
+         }),
+       },
+     )
     .post(
       "",
       ({ body, disclosureService, user }) => {

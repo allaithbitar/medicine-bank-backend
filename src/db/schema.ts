@@ -11,6 +11,7 @@ import {
   real,
   integer,
   json,
+  index,
 } from "drizzle-orm/pg-core";
 
 const createdAtColumn = {
@@ -171,8 +172,8 @@ export const patients = pgTable("patients", {
   birthDate: date("birth_date", { mode: "string" }),
   gender: gender_enum("gender").default("male"),
   job: text("job"),
-  address: text("address").notNull().default(""),
-  about: text("about").notNull().default(""),
+  address: text("address"),
+  about: text("about"),
   areaId: uuid("area_id").references(() => areas.id, {
     onDelete: "set null",
   }),
@@ -187,7 +188,7 @@ export const familyMembers = pgTable("family_members", {
   name: text("name").notNull(),
   birthDate: date("birth_date", { mode: "string" }),
   gender: gender_enum("gender"),
-  // maritalStatus: martial_status_enum("marital_status"),
+  nationalNumber: text("national_number"),
   kinshep: kinshep_enum("kinshep"),
   jobOrSchool: text("job_or_school"),
   note: text("note"),
@@ -235,13 +236,17 @@ export const patientMedicines = pgTable("patient_medicines", {
 //   available: boolean("available").default(true),
 // });
 
-export const patientsPhoneNumbers = pgTable("patients_phone_numbers", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  patientId: uuid("patient_id")
-    .notNull()
-    .references(() => patients.id, { onDelete: "cascade" }),
-  phone: text("phone").notNull(),
-});
+export const patientsPhoneNumbers = pgTable(
+  "patients_phone_numbers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    patientId: uuid("patient_id")
+      .notNull()
+      .references(() => patients.id, { onDelete: "cascade" }),
+    phone: text("phone").notNull(),
+  },
+  (table) => [index("phone_patient_id_idx").on(table.patientId)],
+);
 
 export const priorityDegrees = pgTable("priority_degrees", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -274,7 +279,7 @@ export const disclosures = pgTable("disclosures", {
   isReceived: boolean("is_received").notNull().default(false),
   archiveNumber: integer("archive_number"),
   //
-  visitResult: visit_result_enum("visit_result").default("not_completed"),
+  visitResult: visit_result_enum("visit_result"),
   visitReason: text("visit_reason"),
   visitNote: text("visit_note"),
   //

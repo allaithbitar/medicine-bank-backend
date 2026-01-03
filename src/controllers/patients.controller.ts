@@ -5,6 +5,8 @@ import {
   patientSelectModel,
   filterPatientsModel,
   updatePatientModel,
+  validatePatientNationalNumberModel,
+  validatePatientPhoneNumbers,
 } from "../models/patient.model";
 import { PatientService } from "../services/patient.service";
 import { AuthGuard } from "../guards/auth.guard";
@@ -45,6 +47,22 @@ export const PatientsController = new Elysia({
         patientService.updatePatient({ ...body, updatedBy: user.id }),
       {
         body: updatePatientModel,
+        roles: ["manager", "supervisor"],
+      },
+    )
+    .post(
+      "validate/national-number",
+      ({ body, patientService }) => patientService.validateNationalNumber(body),
+      {
+        body: validatePatientNationalNumberModel,
+        roles: ["manager", "supervisor"],
+      },
+    )
+    .post(
+      "validate/phone-numbers",
+      ({ body, patientService }) => patientService.validatePhoneNumbers(body),
+      {
+        body: validatePatientPhoneNumbers,
         roles: ["manager", "supervisor"],
       },
     ),

@@ -7,7 +7,11 @@ import {
 import DiContainer from "../di/di-container";
 import { SystemBroadcastService } from "../services/system-broadcast.service";
 import { AutocompleteRepo } from "../repos/autocomplete.repo";
-import { autocompleteModel } from "../models/autocomplete.model";
+import {
+  areasAutocompleteModel,
+  autocompleteModel,
+  employeesAutocompleteModel,
+} from "../models/autocomplete.model";
 
 export const AutocompleteController = new Elysia({
   name: "Autocomplete.Controller",
@@ -31,7 +35,7 @@ export const AutocompleteController = new Elysia({
       ({ autocompleteRepo, body }) =>
         autocompleteRepo.getPaginatedAreas(body as any),
       {
-        body: autocompleteModel,
+        body: areasAutocompleteModel,
       },
     )
     .post(
@@ -47,7 +51,7 @@ export const AutocompleteController = new Elysia({
       ({ autocompleteRepo, body }) =>
         autocompleteRepo.getPaginatedEmployees(body as any),
       {
-        body: autocompleteModel,
+        body: employeesAutocompleteModel,
       },
     ),
 );

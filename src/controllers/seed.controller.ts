@@ -380,138 +380,183 @@ export const SeedController = new Elysia({
 
                 const logsToAdd: TInsertAuditLog[][] = [];
 
-                logs.forEach((disclosureLog, idx) => {
-                  const disclosureLogsToAdd: TInsertAuditLog[] = [];
-                  switch (disclosureLog.result.name) {
-                    case oldDataVisitStatues.NOT_DONE:
-                      disclosure.visitResult = "not_completed";
-                      break;
-                    case oldDataVisitStatues.NOT_FINISHED:
-                    case oldDataVisitStatues.NOT_FINISHED_PLUS: {
-                      disclosure.visitResult = "cant_be_completed";
-                      disclosure.visitReason = disclosureLog.details;
-                      disclosure.visitNote = disclosureLog.note;
-                      break;
+                logs
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      new Date(a.date).getTime() - new Date(b.date).getTime(),
+                  )
+                  .forEach((disclosureLog, idx, arr) => {
+                    const isLast = idx === arr.length - 1;
+
+                    let currentLogsResult: Pick<
+                      TDisclosure,
+                      | "visitResult"
+                      | "visitReason"
+                      | "visitNote"
+                      | "ratingId"
+                      | "ratingNote"
+                      | "isCustomRating"
+                      | "customRating"
+                      | "status"
+                    > = {
+                      customRating: null,
+                      isCustomRating: false,
+                      ratingId: null,
+                      ratingNote: null,
+                      visitNote: null,
+                      visitReason: null,
+                      visitResult: null,
+                      status: "active",
+                    };
+
+                    const disclosureLogsToAdd: TInsertAuditLog[] = [];
+
+                    switch (disclosureLog.result.name) {
+                      case oldDataVisitStatues.NOT_DONE:
+                        break;
+
+                      case oldDataVisitStatues.NOT_FINISHED: {
+                        currentLogsResult.visitResult = "not_completed";
+                        currentLogsResult.visitReason = disclosureLog.details;
+                        currentLogsResult.visitNote = disclosureLog.note;
+                        break;
+                      }
+
+                      case oldDataVisitStatues.NOT_FINISHED_PLUS: {
+                        currentLogsResult.visitResult = "cant_be_completed";
+                        currentLogsResult.visitReason = disclosureLog.details;
+                        currentLogsResult.visitNote = disclosureLog.note;
+                        if (isLast) {
+                          currentLogsResult.status = "suspended";
+                        }
+                        break;
+                      }
+                      case oldDataVisitStatues.FINISHED: {
+                        currentLogsResult.visitResult = "completed";
+
+                        // Set rating directly on disclosure
+                        const isCustomRating =
+                          disclosureLog.result.type ===
+                          allDataResultTypes.FINISHED;
+                        const customRating = isCustomRating
+                          ? disclosureLog.note
+                          : null;
+                        const ratingNote = [
+                          allDataResultTypes.A,
+                          allDataResultTypes.B,
+                          allDataResultTypes.C,
+                          allDataResultTypes.X,
+                        ].includes(disclosureLog.result.type)
+                          ? disclosureLog.note
+                          : null;
+                        const ratingId =
+                          allRatings.find(
+                            (r) => r.code === disclosureLog.result.type,
+                          )?.id ?? null;
+
+                        currentLogsResult.isCustomRating = isCustomRating;
+                        currentLogsResult.customRating = customRating;
+                        currentLogsResult.ratingNote = ratingNote;
+                        currentLogsResult.ratingId = ratingId;
+                        break;
+                      }
                     }
-                    case oldDataVisitStatues.FINISHED: {
-                      disclosure.visitResult = "completed";
 
-                      // Set rating directly on disclosure
-                      const isCustomRating =
-                        disclosureLog.result.type ===
-                        allDataResultTypes.FINISHED;
-                      const customRating = isCustomRating
-                        ? disclosureLog.note
-                        : null;
-                      const ratingNote = [
-                        allDataResultTypes.A,
-                        allDataResultTypes.B,
-                        allDataResultTypes.C,
-                        allDataResultTypes.X,
-                      ].includes(disclosureLog.result.type)
-                        ? disclosureLog.note
-                        : null;
-                      const ratingId =
-                        allRatings.find(
-                          (r) => r.code === disclosureLog.result.type,
-                        )?.id ?? null;
-
-                      disclosure.isCustomRating = isCustomRating;
-                      disclosure.customRating = customRating;
-                      disclosure.ratingNote = ratingNote;
-                      disclosure.ratingId = ratingId;
-                      break;
+                    if (
+                      currentLogsResult.visitResult &&
+                      currentLogsResult.visitResult !== "not_completed"
+                    ) {
+                      disclosureLogsToAdd.push({
+                        table: "disclosures",
+                        createdAt: disclosureLog.date,
+                        action: "UPDATE",
+                        column: disclosures.visitResult.name,
+                        createdBy: disclosure.scoutId,
+                        // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                        newValue: currentLogsResult.visitResult,
+                      });
                     }
-                  }
+                    if (currentLogsResult.visitReason) {
+                      disclosureLogsToAdd.push({
+                        table: "disclosures",
+                        createdAt: disclosureLog.date,
+                        action: "UPDATE",
+                        column: disclosures.visitReason.name,
+                        createdBy: disclosure.scoutId,
+                        // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                        newValue: currentLogsResult.visitReason,
+                      });
+                    }
 
-                  if (disclosure.visitResult !== "not_completed") {
-                    disclosureLogsToAdd.push({
-                      table: "disclosures",
-                      createdAt: disclosureLog.date,
-                      action: "UPDATE",
-                      column: disclosures.visitResult.name,
-                      createdBy: disclosure.scoutId,
-                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
-                      newValue: disclosure.visitResult,
-                    });
-                  }
-                  if (disclosure.visitReason) {
-                    disclosureLogsToAdd.push({
-                      table: "disclosures",
-                      createdAt: disclosureLog.date,
-                      action: "UPDATE",
-                      column: disclosures.visitReason.name,
-                      createdBy: disclosure.scoutId,
-                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
-                      newValue: disclosure.visitReason,
-                    });
-                  }
+                    if (currentLogsResult.visitNote) {
+                      disclosureLogsToAdd.push({
+                        table: "disclosures",
+                        createdAt: disclosureLog.date,
+                        action: "UPDATE",
+                        column: disclosures.visitNote.name,
+                        createdBy: disclosure.scoutId,
+                        // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                        newValue: currentLogsResult.visitNote,
+                      });
+                    }
 
-                  if (disclosure.visitNote) {
-                    disclosureLogsToAdd.push({
-                      table: "disclosures",
-                      createdAt: disclosureLog.date,
-                      action: "UPDATE",
-                      column: disclosures.visitNote.name,
-                      createdBy: disclosure.scoutId,
-                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
-                      newValue: disclosure.visitNote,
-                    });
-                  }
+                    // disclosure.isCustomRating = isCustomRating;
+                    //                   disclosure.customRating = customRating;
+                    //                   disclosure.ratingNote = ratingNote;
+                    //                   disclosure.ratingId = ratingId;
 
-                  // disclosure.isCustomRating = isCustomRating;
-                  //                   disclosure.customRating = customRating;
-                  //                   disclosure.ratingNote = ratingNote;
-                  //                   disclosure.ratingId = ratingId;
+                    if (currentLogsResult.customRating) {
+                      disclosureLogsToAdd.push({
+                        table: "disclosures",
+                        createdAt: disclosureLog.date,
+                        action: "UPDATE",
+                        column: disclosures.isCustomRating.name,
+                        createdBy: disclosure.scoutId,
+                        // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                        newValue: String(currentLogsResult.isCustomRating),
+                      });
 
-                  if (disclosure.customRating) {
-                    disclosureLogsToAdd.push({
-                      table: "disclosures",
-                      createdAt: disclosureLog.date,
-                      action: "UPDATE",
-                      column: disclosures.isCustomRating.name,
-                      createdBy: disclosure.scoutId,
-                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
-                      newValue: String(disclosure.isCustomRating),
-                    });
+                      disclosureLogsToAdd.push({
+                        table: "disclosures",
+                        createdAt: disclosureLog.date,
+                        action: "UPDATE",
+                        column: disclosures.customRating.name,
+                        createdBy: disclosure.scoutId,
+                        // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                        newValue: currentLogsResult.customRating,
+                      });
+                    }
+                    if (currentLogsResult.ratingId) {
+                      disclosureLogsToAdd.push({
+                        table: "disclosures",
+                        createdAt: disclosureLog.date,
+                        action: "UPDATE",
+                        column: disclosures.ratingId.name,
+                        createdBy: disclosure.scoutId,
+                        // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                        newValue: currentLogsResult.ratingId,
+                      });
+                    }
 
-                    disclosureLogsToAdd.push({
-                      table: "disclosures",
-                      createdAt: disclosureLog.date,
-                      action: "UPDATE",
-                      column: disclosures.customRating.name,
-                      createdBy: disclosure.scoutId,
-                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
-                      newValue: disclosure.customRating,
-                    });
-                  }
-                  if (disclosure.ratingId) {
-                    disclosureLogsToAdd.push({
-                      table: "disclosures",
-                      createdAt: disclosureLog.date,
-                      action: "UPDATE",
-                      column: disclosures.ratingId.name,
-                      createdBy: disclosure.scoutId,
-                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
-                      newValue: disclosure.ratingId,
-                    });
-                  }
-
-                  if (disclosure.ratingNote) {
-                    disclosureLogsToAdd.push({
-                      table: "disclosures",
-                      createdAt: disclosureLog.date,
-                      action: "UPDATE",
-                      column: disclosures.ratingNote.name,
-                      createdBy: disclosure.scoutId,
-                      // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
-                      newValue: disclosure.ratingNote,
-                    });
-                  }
-                  if (disclosureLogsToAdd.length) {
-                    logsToAdd.push(disclosureLogsToAdd);
-                  }
-                });
+                    if (currentLogsResult.ratingNote) {
+                      disclosureLogsToAdd.push({
+                        table: "disclosures",
+                        createdAt: disclosureLog.date,
+                        action: "UPDATE",
+                        column: disclosures.ratingNote.name,
+                        createdBy: disclosure.scoutId,
+                        // oldValue: logsToAdd[idx - 1]?.newValue ?? undefined,
+                        newValue: currentLogsResult.ratingNote,
+                      });
+                    }
+                    if (disclosureLogsToAdd.length) {
+                      logsToAdd.push(disclosureLogsToAdd);
+                    }
+                    if (isLast) {
+                      Object.assign(disclosure, currentLogsResult);
+                    }
+                  });
 
                 disclosureToAdd.push({
                   disclosure,

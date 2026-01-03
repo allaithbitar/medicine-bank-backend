@@ -22,7 +22,6 @@ import {
   isNotNull,
   isNull,
   lte,
-  SQL,
 } from "drizzle-orm";
 import {
   ACTIONER_WITH,
@@ -59,6 +58,7 @@ export class DisclosureRepo {
     ratingIds,
     type,
     visitResult,
+    unvisited,
   }: TFilterDisclosuresDto) {
     let scoutesFilter = undefined;
 
@@ -67,6 +67,8 @@ export class DisclosureRepo {
     let patientFilter = undefined;
 
     let undeliveredFilter = undefined;
+
+    let unvisitedFilter = undefined;
 
     const createdAtStartFilter = createdAtStart
       ? gte(disclosures.createdAt, createdAtStart)
@@ -80,6 +82,8 @@ export class DisclosureRepo {
       ? inArray(disclosures.status, status)
       : undefined;
 
+    let typeFilter;
+
     if (scoutIds?.length) {
       scoutesFilter = inArray(disclosures.scoutId, scoutIds);
     }
@@ -92,11 +96,17 @@ export class DisclosureRepo {
       patientFilter = eq(disclosures.patientId, patientId);
     }
 
+    if (type?.length) {
+      typeFilter = inArray(disclosures.type, type);
+    }
+
     // if (typeof undelivered !== "undefined") {
     if (undelivered) {
-      undeliveredFilter = undelivered
-        ? isNull(disclosures.scoutId)
-        : isNotNull(disclosures.scoutId);
+      undeliveredFilter = isNull(disclosures.scoutId);
+    }
+
+    if (unvisited) {
+      unvisitedFilter = isNull(disclosures.visitResult);
     }
 
     let appointmentDateFilter = appointmentDate
@@ -112,9 +122,10 @@ export class DisclosureRepo {
         ? eq(disclosures.isCustomRating, isCustomRating)
         : undefined;
 
-    let isAppointmentCompletedFilter = isAppointmentCompleted
-      ? eq(disclosures.isAppointmentCompleted, isAppointmentCompleted)
-      : undefined;
+    let isAppointmentCompletedFilter =
+      typeof isAppointmentCompleted !== "undefined"
+        ? eq(disclosures.isAppointmentCompleted, isAppointmentCompleted)
+        : undefined;
 
     let ratingFilter = ratingIds?.length
       ? inArray(disclosures.ratingId, ratingIds)
@@ -125,10 +136,9 @@ export class DisclosureRepo {
         ? eq(disclosures.isReceived, isReceived)
         : undefined;
 
-    let typeFilter = type ? inArray(disclosures.type, type) : undefined;
-
-    let visitResultFilter = visitResult
-      ? eq(disclosures.visitResult, visitResult)
+    const noramlizedVisitResult = visitResult?.filter((v) => !!v);
+    let visitResultFilter = noramlizedVisitResult?.length
+      ? inArray(disclosures.visitResult, noramlizedVisitResult)
       : undefined;
 
     //
@@ -152,6 +162,7 @@ export class DisclosureRepo {
       isReceivedFilter,
       typeFilter,
       visitResultFilter,
+      unvisitedFilter,
     };
   }
 
@@ -202,7 +213,12 @@ export class DisclosureRepo {
 
   async getByIdWithIncludes(id: string) {
     return await this.db.query.disclosures.findFirst({
-      with: withClause,
+      with: {
+        ...withClause,
+        patient: {
+          with: { phones: true, area: true },
+        },
+      },
       where: eq(disclosures.id, id),
     });
   }
@@ -397,6 +413,20 @@ export class DisclosureRepo {
       with: {
         patient: ACTIONER_WITH,
       },
+    });
+  }
+
+  async getLastDisclosureByPatientId(patientId: string) {
+    return await this.db.query.disclosures.findFirst({
+      with: {
+        createdBy: ACTIONER_WITH,
+        priority: true,
+        rating: true,
+        scout: ACTIONER_WITH,
+        updatedBy: ACTIONER_WITH,
+      },
+      where: eq(disclosures.patientId, patientId),
+      orderBy: desc(disclosures.createdAt),
     });
   }
 }

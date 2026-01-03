@@ -3,11 +3,14 @@ import {
   TAddPatientDto,
   TFilterPatientsDto,
   TUpdatePatientDto,
+  TValidatePatientNationalNumberDto,
+  TValidatePatientPhoneNumbersDto,
 } from "../types/patient.type";
 import { TDbContext } from "../db/drizzle";
 import { patients, patientsPhoneNumbers } from "../db/schema";
-import { and, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, ne, SQL } from "drizzle-orm";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
+import { searchArabic } from "../db/helpers";
 
 @injectable()
 export class PatientRepo {
@@ -43,43 +46,77 @@ export class PatientRepo {
     });
   }
 
-  private getFilters({ query, areaIds }: TFilterPatientsDto) {
-    const nameFilter = query ? ilike(patients.name, `%${query}%`) : undefined;
+  private async getFilters({
+    name,
+    about,
+    address,
+    areaIds,
+    birthDate,
+    gender,
+    job,
+    nationalNumber,
+    phone,
+  }: TFilterPatientsDto) {
+    // const nameFilter = query ? ilike(patients.name, `%${query}%`) : undefined;
 
-    const nationalNumber = query
-      ? ilike(patients.nationalNumber, `%${query}%`)
+    const nameFilter = name ? searchArabic(patients.name, name) : undefined;
+
+    const nationalNumberFilter = nationalNumber
+      ? ilike(patients.nationalNumber, `%${nationalNumber}%`)
       : undefined;
 
-    const aboutFilter = query ? ilike(patients.about, `%${query}%`) : undefined;
+    const aboutFilter = about ? ilike(patients.about, `%${about}%`) : undefined;
 
-    const addressFilter = query
-      ? ilike(patients.address, `%${query}%`)
+    const addressFilter = address
+      ? ilike(patients.address, `%${address}%`)
       : undefined;
 
     const areaFilter = areaIds?.length
       ? inArray(patients.areaId, areaIds)
       : undefined;
 
-    const queryFilter = or(
-      nameFilter,
-      nationalNumber,
-      aboutFilter,
-      addressFilter,
-    );
+    const birthDateFilter = birthDate
+      ? eq(patients.birthDate, birthDate)
+      : undefined;
+
+    const genderFilter = gender ? eq(patients.gender, gender) : undefined;
+
+    const jobFilter = job ? eq(patients.job, job) : undefined;
+
+    let phoneFilter = undefined;
+
+    if (phone) {
+      const patinetIds = await this.db
+        .select({ id: patientsPhoneNumbers.patientId })
+        .from(patientsPhoneNumbers)
+        .where(ilike(patientsPhoneNumbers.phone, `%${phone}%`));
+
+      if (patinetIds.length) {
+        phoneFilter = inArray(
+          patients.id,
+          patinetIds.map((p) => p.id),
+        );
+      }
+    }
 
     return {
-      queryFilter,
       areaFilter,
+      nameFilter,
+      nationalNumberFilter,
+      aboutFilter,
+      addressFilter,
+      birthDateFilter,
+      genderFilter,
+      jobFilter,
+      phoneFilter,
     };
   }
 
-  private async getCount(dto: TFilterPatientsDto) {
-    const { areaFilter, queryFilter } = this.getFilters(dto);
-
+  private async getCount(filters: SQL<unknown> | undefined) {
     const [{ value: totalCount }] = await this.db
       .select({ value: count() })
       .from(patients)
-      .where(and(areaFilter, queryFilter));
+      .where(filters);
 
     return totalCount;
   }
@@ -88,13 +125,15 @@ export class PatientRepo {
     pageSize = DEFAULT_PAGE_SIZE,
     pageNumber = DEFAULT_PAGE_NUMBER,
     ...rest
-  }: TFilterPatientsDto = {}) {
-    const { areaFilter, queryFilter } = this.getFilters(rest);
+  }: TFilterPatientsDto) {
+    const filters = await this.getFilters(rest);
 
-    const count = await this.getCount(rest);
+    const where = and(...Object.values(filters));
+
+    const count = await this.getCount(where);
 
     const result = await this.db.query.patients.findMany({
-      where: and(queryFilter, areaFilter),
+      where,
       with: {
         area: true,
         phones: true,
@@ -126,5 +165,36 @@ export class PatientRepo {
     });
 
     return result || null;
+  }
+
+  async validateNationalNumber(dto: TValidatePatientNationalNumberDto) {
+    const existing = await this.db.query.patients.findFirst({
+      where: and(
+        eq(patients.nationalNumber, dto.nationalNumber),
+        dto.patientId ? ne(patients.id, dto.patientId) : undefined,
+      ),
+    });
+
+    return {
+      existing,
+    };
+  }
+
+  async validatePhoneNumbers(dto: TValidatePatientPhoneNumbersDto) {
+    const existing = await this.db.query.patientsPhoneNumbers.findFirst({
+      where: and(
+        inArray(patientsPhoneNumbers.phone, dto.phoneNumbers),
+        dto.patientId
+          ? ne(patientsPhoneNumbers.patientId, dto.patientId)
+          : undefined,
+      ),
+      with: {
+        patient: true,
+      },
+    });
+
+    return {
+      existing,
+    };
   }
 }

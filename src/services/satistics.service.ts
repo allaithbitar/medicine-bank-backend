@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { inject, injectable } from "inversify";
 import { TGetSatisticsDto } from "../types/satistics.type";
 import { TDbContext } from "../db/drizzle";
-import { and, count, eq, gte, lte, countDistinct } from "drizzle-orm";
+import { and, count, eq, gte, lte, countDistinct, isNull } from "drizzle-orm";
 import { auditLogs, disclosures, ratings } from "../db/schema";
 
 @injectable()
@@ -52,16 +52,14 @@ export class SatisticsService {
       );
 
     let [{ count: uncompletedVisitsCount }] = await this.db
-      .select({ count: countDistinct(auditLogs.recordId) })
-      .from(auditLogs)
+      .select({ count: count() })
+      .from(disclosures)
       .where(
         and(
-          gte(auditLogs.createdAt, fromDate),
-          lte(auditLogs.createdAt, toDate),
-          employeeId ? eq(auditLogs.createdBy, employeeId) : undefined,
-          eq(auditLogs.table, "disclosures"),
-          eq(auditLogs.column, disclosures.visitResult.name),
-          eq(auditLogs.newValue, "not_completed"),
+          gte(disclosures.createdAt, fromDate),
+          lte(disclosures.createdAt, toDate),
+          employeeId ? eq(disclosures.scoutId, employeeId) : undefined,
+          isNull(disclosures.visitResult),
         ),
       );
 
