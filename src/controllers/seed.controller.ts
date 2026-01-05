@@ -8,6 +8,7 @@ import {
   cities,
   disclosure_type_enum,
   disclosureConsultations,
+  disclosureDetails,
   disclosureNotes,
   disclosures,
   employees,
@@ -16,18 +17,15 @@ import {
   priorityDegrees,
   ratings,
 } from "../db/schema";
-import { TAddEmployeeDto, TEmployeeEntity } from "../types/employee.type";
-import { employeeInsertModel } from "../models/employee.model";
-import { faker } from "@faker-js/faker";
-import { getRandomArrayItem } from "../db/helpers";
-import { TAddPatientDto, TPatient } from "../types/patient.type";
-import { TAddDisclosureDto, TDisclosure } from "../types/disclosure.type";
-import { eq, InferInsertModel } from "drizzle-orm";
+import { TAddEmployeeDto } from "../types/employee.type";
+import { TAddPatientDto } from "../types/patient.type";
+import { TDisclosure } from "../types/disclosure.type";
+import { InferInsertModel } from "drizzle-orm";
 import oldDbDisclosures from "../old_db_disclosures.json";
 import oldDbEmployees from "../old_db_employees.json";
 import oldDbAreas from "../old_db_areas.json";
 import { rowsToExcel } from "../libs/xlsx";
-import { TAuditLog, TInsertAuditLog } from "../types/audit-log.type";
+import { TInsertAuditLog } from "../types/audit-log.type";
 
 export const SeedController = new Elysia({
   name: "Seed.Controller",
@@ -116,107 +114,221 @@ export const SeedController = new Elysia({
           // ]);
         }); */
       })
-      .post(
-        "employees",
-        async ({ db, body }) => {
-          const areas = await db.query.areas.findMany();
-          const roles = body.roles.length
-            ? body.roles
-            : (["manager", "supervisor", "scout"] as TEmployeeEntity["role"][]);
-          await db.insert(employees).values(
-            Array.from({ length: body.count }).map((_, idx) => ({
-              name: faker.person.fullName(),
-              password: "7515",
-              phone: faker.phone
-                .number({ style: "international" })
-                .slice(0, 10),
-              role: getRandomArrayItem(roles),
-              areaId: idx / 2 === 0 ? null : getRandomArrayItem(areas).id,
+      // .post(
+      //   "employees",
+      //   async ({ db, body }) => {
+      //     const areas = await db.query.areas.findMany();
+      //     const roles = body.roles.length
+      //       ? body.roles
+      //       : (["manager", "supervisor", "scout"] as TEmployeeEntity["role"][]);
+      //     await db.insert(employees).values(
+      //       Array.from({ length: body.count }).map((_, idx) => ({
+      //         name: faker.person.fullName(),
+      //         password: "7515",
+      //         phone: faker.phone
+      //           .number({ style: "international" })
+      //           .slice(0, 10),
+      //         role: getRandomArrayItem(roles),
+      //         areaId: idx / 2 === 0 ? null : getRandomArrayItem(areas).id,
+      //       })),
+      //     );
+      //   },
+      //   {
+      //     body: t.Object({
+      //       count: t.Number(),
+      //       roles: t.Array(employeeInsertModel.properties.role),
+      //     }),
+      //   },
+      // )
+      // .post(
+      //   "beneficiaries",
+      //   async ({ db, body }) => {
+      //     const areas = await db.query.areas.findMany();
+      //
+      //     const result = Array.from({ length: body.count }).map((_, idx) => {
+      //       return db.transaction(async (_tx) => {
+      //         const [{ id }] = await _tx
+      //           .insert(patients)
+      //           .values({
+      //             name: faker.person.fullName(),
+      //             areaId: idx / 2 === 0 ? null : getRandomArrayItem(areas).id,
+      //             address: faker.location.streetAddress({
+      //               useFullAddress: true,
+      //             }),
+      //             about: faker.person.bio(),
+      //             nationalNumber: Date.now().toString().slice(0, 12),
+      //           })
+      //           .returning({ id: patients.id });
+      //
+      //         await _tx.insert(patientsPhoneNumbers).values({
+      //           patientId: id,
+      //           phone: faker.phone.number({ style: "national" }).slice(0, 11),
+      //         });
+      //       });
+      //     });
+      //     await Promise.all(result);
+      //   },
+      //   {
+      //     body: t.Object({
+      //       count: t.Number(),
+      //     }),
+      //   },
+      // )
+      // .post(
+      //   "disclosures",
+      //   async ({ db, body }) => {
+      //     const employeeIds = (
+      //       await db
+      //         .select({ id: employees.id })
+      //         .from(employees)
+      //         .where(eq(employees.role, "scout"))
+      //     ).map((e) => e.id);
+      //
+      //     const beneficiaryIds = (
+      //       await db.select({ id: patients.id }).from(patients)
+      //     ).map((e) => e.id);
+      //
+      //     const priorityIds = (
+      //       await db.select({ id: priorityDegrees.id }).from(priorityDegrees)
+      //     ).map((pd) => pd.id);
+      //
+      //     const statuses = [
+      //       "active",
+      //       "canceled",
+      //       "finished",
+      //     ] as TDisclosure["status"][];
+      //
+      //     await db.insert(disclosures).values(
+      //       Array.from({ length: body.count }).map((_, idx) => ({
+      //         employeeId:
+      //           idx / 2 === 0 ? getRandomArrayItem(employeeIds) : null,
+      //         patientId: getRandomArrayItem(beneficiaryIds),
+      //         priorityId: getRandomArrayItem(priorityIds),
+      //         status: getRandomArrayItem(statuses),
+      //       })),
+      //     );
+      //   },
+      //   {
+      //     body: t.Object({
+      //       count: t.Number(),
+      //     }),
+      //   },
+      // )
+      .get("syncPriorityDegrees", async ({ db }) => {
+        const DEGS = {
+          NORAML: "عادي",
+          ATTENTION: "انتباه",
+          MANDATORY: "ضروري",
+          URGENT: "مستعجل",
+        };
+        await db
+          .insert(priorityDegrees)
+          .values(Object.values(DEGS).map((v) => ({ name: v })));
+      })
+      .get("syncOldRatings", async ({ db }) => {
+        await db.delete(ratings);
+        const resultTypes = {
+          A: "A",
+          B: "B",
+          C: "C",
+          X: "X",
+          FINISHED: "تم",
+        };
+        await db.insert(ratings).values([
+          {
+            code: resultTypes.A,
+            name: `تقييم ${resultTypes.A}`,
+            description: "",
+          },
+          {
+            code: resultTypes.B,
+            name: `تقييم ${resultTypes.B}`,
+            description: "",
+          },
+
+          {
+            code: resultTypes.C,
+            name: `تقييم ${resultTypes.C}`,
+            description: "",
+          },
+
+          {
+            code: resultTypes.X,
+            name: `تقييم ${resultTypes.X}`,
+            description: "",
+          },
+        ]);
+      })
+      .get("syncOldAreas", async ({ db }) => {
+        await db.transaction(async (tx) => {
+          await tx.delete(areas);
+          let city = await tx.query.cities.findFirst();
+
+          if (!city) {
+            [city] = await tx
+              .insert(cities)
+              .values({ name: "حلب" })
+              .returning();
+          }
+          const areasSet = new Set<string>();
+
+          for (const a of oldDbAreas) {
+            areasSet.add(a.name.trim());
+          }
+
+          await tx.insert(areas).values(
+            Array.from(areasSet.values()).map((name) => ({
+              cityId: city.id,
+              name,
             })),
           );
-        },
-        {
-          body: t.Object({
-            count: t.Number(),
-            roles: t.Array(employeeInsertModel.properties.role),
-          }),
-        },
-      )
-      .post(
-        "beneficiaries",
-        async ({ db, body }) => {
-          const areas = await db.query.areas.findMany();
+        });
+      })
+      .get("syncOldEmployees", async ({ db }) => {
+        await db.transaction(async (tx) => {
+          await tx.delete(areasToEmployees);
+          await tx.delete(employees);
+          const areas = await tx.query.areas.findMany();
 
-          const result = Array.from({ length: body.count }).map((_, idx) => {
-            return db.transaction(async (_tx) => {
-              const [{ id }] = await _tx
-                .insert(patients)
-                .values({
-                  name: faker.person.fullName(),
-                  areaId: idx / 2 === 0 ? null : getRandomArrayItem(areas).id,
-                  address: faker.location.streetAddress({
-                    useFullAddress: true,
-                  }),
-                  about: faker.person.bio(),
-                  nationalNumber: Date.now().toString().slice(0, 12),
-                })
-                .returning({ id: patients.id });
+          const employeesToAdd: TAddEmployeeDto[] = [];
+          for (const e of oldDbEmployees) {
+            employeesToAdd.push({
+              name: e.name.trim(),
+              password: Bun.password.hashSync(e.phone),
+              phone: e.phone.trim(),
+              role:
+                e.permission_id === "1"
+                  ? "manager"
+                  : e.permission_id === "2"
+                    ? "supervisor"
+                    : "scout",
+              areaIds: e.regions
+                .map(
+                  (r: any) => areas.find((aa) => aa.name === r.name.trim())?.id,
+                )
+                .filter(Boolean),
+            });
 
-              await _tx.insert(patientsPhoneNumbers).values({
-                patientId: id,
-                phone: faker.phone.number({ style: "national" }).slice(0, 11),
+            employeesToAdd.map(async (e) => {
+              const { areaIds, ...rest } = e;
+              await tx.transaction(async (tx2) => {
+                const [{ id }] = await tx2
+                  .insert(employees)
+                  .values(rest)
+                  .returning({ id: employees.id });
+                if (areaIds?.length) {
+                  await tx2.insert(areasToEmployees).values(
+                    areaIds.map((aid) => ({
+                      areaId: aid,
+                      employeeId: id,
+                    })),
+                  );
+                }
               });
             });
-          });
-          await Promise.all(result);
-        },
-        {
-          body: t.Object({
-            count: t.Number(),
-          }),
-        },
-      )
-      .post(
-        "disclosures",
-        async ({ db, body }) => {
-          const employeeIds = (
-            await db
-              .select({ id: employees.id })
-              .from(employees)
-              .where(eq(employees.role, "scout"))
-          ).map((e) => e.id);
-
-          const beneficiaryIds = (
-            await db.select({ id: patients.id }).from(patients)
-          ).map((e) => e.id);
-
-          const priorityIds = (
-            await db.select({ id: priorityDegrees.id }).from(priorityDegrees)
-          ).map((pd) => pd.id);
-
-          const statuses = [
-            "active",
-            "canceled",
-            "finished",
-          ] as TDisclosure["status"][];
-
-          await db.insert(disclosures).values(
-            Array.from({ length: body.count }).map((_, idx) => ({
-              employeeId:
-                idx / 2 === 0 ? getRandomArrayItem(employeeIds) : null,
-              patientId: getRandomArrayItem(beneficiaryIds),
-              priorityId: getRandomArrayItem(priorityIds),
-              status: getRandomArrayItem(statuses),
-            })),
-          );
-        },
-        {
-          body: t.Object({
-            count: t.Number(),
-          }),
-        },
-      )
-
+          }
+        });
+      })
       .get("syncOldData", async ({ db }) => {
         const allEmployees = await db.query.employees.findMany();
         const allAreas = await db.query.areas.findMany();
@@ -251,6 +363,7 @@ export const SeedController = new Elysia({
         //
 
         await db.delete(auditLogs);
+        await db.delete(disclosureDetails);
         await db.delete(disclosureConsultations);
         await db.delete(disclosureNotes);
         await db.delete(disclosures);
@@ -632,127 +745,5 @@ export const SeedController = new Elysia({
         return {
           // Data migration completed successfully
         };
-      })
-      .get("syncOldAreas", async ({ db }) => {
-        const city = await db.query.cities.findFirst();
-        const areasSet = new Set<string>();
-        for (const a of oldDbAreas) {
-          areasSet.add(a.name.trim());
-        }
-
-        if (city) {
-          await db.insert(areas).values(
-            Array.from(areasSet.values()).map((name) => ({
-              cityId: city.id,
-              name,
-            })),
-          );
-        }
-      })
-      .get("syncPriorityDegrees", async ({ db }) => {
-        const DEGS = {
-          NORAML: "عادي",
-          ATTENTION: "انتباه",
-          MANDATORY: "ضروري",
-          URGENT: "مستعجل",
-        };
-        // const degs = {};
-        await db
-          .insert(priorityDegrees)
-          .values(Object.values(DEGS).map((v) => ({ name: v })));
-        // return degs;
-        // const city = await db.query.cities.findFirst();
-        // const areasSet = new Set<string>();
-        // for (const a of oldDbAreas) {
-        //   areasSet.add(a.name.trim());
-        // }
-        //
-        // if (city) {
-        //   await db.insert(areas).values(
-        //     Array.from(areasSet.values()).map((name) => ({
-        //       cityId: city.id,
-        //       name,
-        //     })),
-        //   );
-        // }
-      })
-
-      .get("syncOldRatings", async ({ db }) => {
-        await db.delete(ratings);
-        const resultTypes = {
-          A: "A",
-          B: "B",
-          C: "C",
-          X: "X",
-          FINISHED: "تم",
-        };
-        await db.insert(ratings).values([
-          {
-            code: resultTypes.A,
-            name: `تقييم ${resultTypes.A}`,
-            description: "",
-          },
-          {
-            code: resultTypes.B,
-            name: `تقييم ${resultTypes.B}`,
-            description: "",
-          },
-
-          {
-            code: resultTypes.C,
-            name: `تقييم ${resultTypes.C}`,
-            description: "",
-          },
-
-          {
-            code: resultTypes.X,
-            name: `تقييم ${resultTypes.X}`,
-            description: "",
-          },
-        ]);
-      })
-
-      .get("syncOldEmployees", async ({ db }) => {
-        await db.delete(employees);
-        const appAreas = await db.query.areas.findMany();
-
-        const employeesToAdd: TAddEmployeeDto[] = [];
-        for (const e of oldDbEmployees) {
-          employeesToAdd.push({
-            name: e.name.trim(),
-            password: Bun.password.hashSync(e.phone),
-            phone: e.phone.trim(),
-            role:
-              e.permission_id === "1"
-                ? "manager"
-                : e.permission_id === "2"
-                  ? "supervisor"
-                  : "scout",
-            areaIds: e.regions
-              .map(
-                (r: any) =>
-                  appAreas.find((aa) => aa.name === r.name.trim())?.id,
-              )
-              .filter(Boolean),
-          });
-
-          employeesToAdd.map(async (e) => {
-            const { areaIds, ...rest } = e;
-            await db.transaction(async (tx) => {
-              const [{ id }] = await tx
-                .insert(employees)
-                .values(rest)
-                .returning({ id: employees.id });
-              if (areaIds?.length) {
-                await tx.insert(areasToEmployees).values(
-                  areaIds.map((aid) => ({
-                    areaId: aid,
-                    employeeId: id,
-                  })),
-                );
-              }
-            });
-          });
-        }
       }),
   );

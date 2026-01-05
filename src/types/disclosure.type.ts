@@ -5,6 +5,7 @@ import {
   addDisclosureNoteModel,
   completeDisclosureConsultationModel,
   disclosureConsultationSelectModel,
+  disclosureDetailsInsertModel,
   disclosureSelectModel,
   getDateAppointmentsModel,
   getDisclosureAppointmentsModel,
@@ -104,3 +105,13 @@ export type TGetDisclosureAppointmentsDto = Static<
 >;
 
 export type TGetDateAppointmentsDto = Static<typeof getDateAppointmentsModel>;
+
+export type TAddDisclosureDetailsEntityDto = Static<
+  typeof disclosureDetailsInsertModel
+>;
+
+export type TAddDisclosureDetailsDto = TAddDisclosureDetailsEntityDto &
+  TCreatedBy;
+
+export type TUpdateDisclosureDetailsDto = TAddDisclosureDetailsEntityDto &
+  TUpdatedBy;

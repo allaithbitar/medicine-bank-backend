@@ -5,11 +5,13 @@ import {
   addDisclosureModel,
   addDisclosureNoteModel,
   completeDisclosureConsultationModel,
+  disclosureDetailsInsertModel,
   disclosureSelectModel,
   getDateAppointmentsModel,
   getDisclosureAppointmentsModel,
   getDisclosureAuditLogsModel,
   getDisclosureConsultationsModel,
+  getDisclosureDetailsModel,
   getDisclosureNotesModel,
   moveDisclosuresModel,
   searchDisclosuresModel,
@@ -38,26 +40,26 @@ export const DisclosuresController = new Elysia({
         body: searchDisclosuresModel,
       },
     )
-     .get(
-       ":id",
-       ({ params, disclosureService }) =>
-         disclosureService.getDisclosureById(params.id),
+    .get(
+      ":id",
+      ({ params, disclosureService }) =>
+        disclosureService.getDisclosureById(params.id),
 
-       {
-         params: t.Pick(disclosureSelectModel, ["id"]),
-       },
-     )
-     .get(
-       "last/:patientId",
-       ({ params, disclosureService }) =>
-         disclosureService.getLastDisclosureByPatientId(params.patientId),
+      {
+        params: t.Pick(disclosureSelectModel, ["id"]),
+      },
+    )
+    .get(
+      "last/:patientId",
+      ({ params, disclosureService }) =>
+        disclosureService.getLastDisclosureByPatientId(params.patientId),
 
-       {
-         params: t.Object({
-           patientId: t.String({ format: "uuid" }),
-         }),
-       },
-     )
+      {
+        params: t.Object({
+          patientId: t.String({ format: "uuid" }),
+        }),
+      },
+    )
     .post(
       "",
       ({ body, disclosureService, user }) => {
@@ -227,6 +229,33 @@ export const DisclosuresController = new Elysia({
         disclosureService.getDateAppointments(query),
       {
         query: getDateAppointmentsModel,
+      },
+    )
+    .get(
+      "/details",
+      ({ query, disclosureService }) =>
+        disclosureService.getDisclosureDetails(query.disclosureId),
+      {
+        query: getDisclosureDetailsModel,
+      },
+    )
+    .post(
+      "/details",
+      ({ body, disclosureService, user }) =>
+        disclosureService.addDisclosureDetails({ ...body, createdBy: user.id }),
+      {
+        body: disclosureDetailsInsertModel,
+      },
+    )
+    .put(
+      "/details",
+      ({ body, disclosureService, user }) =>
+        disclosureService.updateDisclosureDetails({
+          ...body,
+          updatedBy: user.id,
+        }),
+      {
+        body: disclosureDetailsInsertModel,
       },
     ),
 );

@@ -3,6 +3,7 @@ import { inject, injectable } from "inversify";
 import { DisclosureRepo } from "../repos/disclosure.repo";
 import {
   TAddDisclosureConsultationDto,
+  TAddDisclosureDetailsDto,
   TAddDisclosureDto,
   TAddDisclosureNoteDto,
   TCompleteDisclosureConsultationsDto,
@@ -15,6 +16,7 @@ import {
   TGetDisclosureNotesDto,
   TMoveDisclosuresDto,
   TUpdateDisclosureConsultationDto,
+  TUpdateDisclosureDetailsDto,
   TUpdateDisclosureNoteDto,
 } from "../types/disclosure.type";
 import {
@@ -23,7 +25,12 @@ import {
   NotFoundError,
 } from "../constants/errors";
 import { TDbContext } from "../db/drizzle";
-import { auditLogs, disclosures } from "../db/schema";
+import {
+  auditLogs,
+  disclosureDetails,
+  disclosureNotes,
+  disclosures,
+} from "../db/schema";
 import { eq, InferInsertModel } from "drizzle-orm";
 import { AuditLogRepo } from "../repos/audit-log.repo";
 import { deleteAudioFile, saveAudioFile } from "../db/helpers";
@@ -84,7 +91,6 @@ export class DisclosureService {
         "scoutId",
         "priorityId",
         "initialNote",
-        "details",
         // VISIT
         "visitResult",
         "visitReason",
@@ -112,7 +118,7 @@ export class DisclosureService {
             createdBy: updatedBy,
             newValue: String(updatedDisclosure[property]),
             oldValue: String(oldDisclosure[property]),
-            table: "disclosures",
+            table: disclosures._.name,
             createdAt: auditCreatedAt,
           });
         }
@@ -149,7 +155,7 @@ export class DisclosureService {
         await this.auditLogRepo.create([
           {
             recordId: addedNote.id,
-            table: "disclosure_notes",
+            table: disclosureNotes._.name,
             action: "INSERT",
             createdBy: addedNote.createdBy,
           },
@@ -199,7 +205,7 @@ export class DisclosureService {
         if (oldNote.noteText !== updatedNote.noteText)
           auditsToAdd.push({
             recordId: updatedNote.id,
-            table: "disclosure_notes",
+            table: disclosureNotes._.name,
             column: "note_text",
             action: "UPDATE",
             newValue: updatedNote.noteText,
@@ -209,7 +215,7 @@ export class DisclosureService {
         if (oldNote.noteAudio !== updatedNote.noteAudio) {
           auditsToAdd.push({
             recordId: updatedNote.id,
-            table: "disclosure_notes",
+            table: disclosureNotes._.name,
             column: "note_audio",
             action: "UPDATE",
             newValue: updatedNote.noteAudio,
@@ -254,7 +260,7 @@ export class DisclosureService {
             createdBy: updatedBy,
             newValue: dto.toScoutId,
             oldValue: dto.fromScoutId,
-            table: "disclosures",
+            table: disclosures._.name,
             createdAt: auditCreatedAt,
           }));
 
@@ -380,5 +386,62 @@ export class DisclosureService {
 
   async getLastDisclosureByPatientId(patientId: string) {
     return this.disclosureRepo.getLastDisclosureByPatientId(patientId);
+  }
+
+  async getDisclosureDetails(disclosureId: string) {
+    return this.disclosureRepo.getDisclosureDetails(disclosureId);
+  }
+
+  async addDisclosureDetails(dto: TAddDisclosureDetailsDto) {
+    return this.disclosureRepo.addDisclosureDetails(dto);
+  }
+
+  async updateDisclosureDetails(dto: TUpdateDisclosureDetailsDto) {
+    await this.db.transaction(async (tx) => {
+      const oldDisclosureDetails = await tx.query.disclosureDetails.findFirst({
+        where: eq(disclosureDetails.disclosureId, dto.disclosureId),
+      });
+
+      if (!oldDisclosureDetails)
+        throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+
+      const [updatedDisclosureDetails] =
+        await this.disclosureRepo.updateDisclosureDetails(dto, tx as any);
+
+      const auditCreatedAt = new Date().toISOString();
+
+      const auditsToAdd: InferInsertModel<typeof auditLogs>[] = [];
+
+      const auditProperties: (keyof typeof oldDisclosureDetails)[] = [
+        "diseasesOrSurgeries",
+        "jobOrSchool",
+        "electricity",
+        "homeCondition",
+        "homeConditionStatus",
+        "expenses",
+      ];
+
+      auditProperties.forEach((property) => {
+        if (
+          oldDisclosureDetails[property] !== updatedDisclosureDetails[property]
+        ) {
+          auditsToAdd.push({
+            recordId: dto.disclosureId,
+            column: disclosureDetails[property].name,
+            action: "UPDATE",
+            createdBy: dto.updatedBy,
+            newValue: updatedDisclosureDetails[property],
+            oldValue: oldDisclosureDetails[property],
+            table: disclosureDetails._.name,
+            createdAt: auditCreatedAt,
+          });
+        }
+      });
+
+      if (auditsToAdd.length)
+        await this.auditLogRepo.create(auditsToAdd, tx as any);
+    });
+
+    return this.disclosureRepo.updateDisclosureDetails(dto);
   }
 }

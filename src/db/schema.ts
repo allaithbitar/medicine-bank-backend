@@ -104,6 +104,7 @@ export const audit_table_enum = pgEnum("audit_table_enum", [
   "disclosures",
   "disclosure_notes",
   "disclosure_consultations",
+  "disclosure_details",
 ]);
 
 export const audit_action_type_enum = pgEnum("audit_action_type_enum", [
@@ -274,8 +275,6 @@ export const disclosures = pgTable("disclosures", {
   scoutId: uuid("scout_id").references(() => employees.id),
   initialNote: text("initial_note"),
   //
-  details: json("details"),
-  //
   isReceived: boolean("is_received").notNull().default(false),
   archiveNumber: integer("archive_number"),
   //
@@ -309,6 +308,25 @@ export const disclosureNotes = pgTable("disclosure_notes", {
   ...createdAtColumn,
   ...createdByColumn,
   ...updatedAtColumn,
+});
+
+export const disclosureDetails = pgTable("disclosure_details", {
+  disclosureId: uuid("disclosure_id")
+    .references(() => disclosures.id)
+    .primaryKey(),
+  diseasesOrSurgeries: text("diseases_or_surgeries"),
+  jobOrSchool: text("job_or_school"),
+  electricity: text("electricity"),
+  expenses: text("expenses"),
+  homeCondition: text("home_condition"),
+  homeConditionStatus: house_hold_asset_condition_enum("home_condition_status"),
+  pros: text("pros"),
+  cons: text("cons"),
+  other: text("other"),
+  ...createdAtColumn,
+  ...createdByColumn,
+  ...updatedAtColumn,
+  ...updatedByColumn,
 });
 
 export const notifications = pgTable("notifications", {
@@ -486,6 +504,11 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
     fields: [disclosures.ratingId],
     references: [ratings.id],
   }),
+  details: one(disclosureDetails, {
+    fields: [disclosures.id],
+    references: [disclosureDetails.disclosureId],
+  }),
+  notes: many(disclosureNotes),
   createdBy: one(employees, {
     fields: [disclosures.createdBy],
     references: [employees.id],
@@ -538,6 +561,26 @@ export const disclosureNoteRelations = relations(
     }),
     disclosure: one(disclosures, {
       fields: [disclosureNotes.disclosureId],
+      references: [disclosures.id],
+    }),
+  }),
+);
+
+export const disclosureDetailsRelations = relations(
+  disclosureDetails,
+  ({ one }) => ({
+    createdBy: one(employees, {
+      fields: [disclosureDetails.createdBy],
+      references: [employees.id],
+      relationName: "createdBy",
+    }),
+    updatedBy: one(employees, {
+      fields: [disclosureDetails.updatedBy],
+      references: [employees.id],
+      relationName: "updatedBy",
+    }),
+    disclosure: one(disclosures, {
+      fields: [disclosureDetails.disclosureId],
       references: [disclosures.id],
     }),
   }),

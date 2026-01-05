@@ -138,7 +138,6 @@ export class AuditLogRepo {
           }
           break;
         }
-        
 
         default:
           break;

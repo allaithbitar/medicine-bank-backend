@@ -1,13 +1,15 @@
 import { inject, injectable } from "inversify";
 import { TDbContext } from "../db/drizzle";
-import { disclosureNotes, disclosures } from "../db/schema";
+import { disclosureDetails, disclosureNotes, disclosures } from "../db/schema";
 import {
+  TAddDisclosureDetailsDto,
   TAddDisclosureDto,
   TAddDisclosureNoteEntityDto,
   TFilterDisclosuresDto,
   TGetDateAppointmentsDto,
   TGetDisclosureAppointmentsDto,
   TGetDisclosureNotesDto,
+  TUpdateDisclosureDetailsDto,
   TUpdateDisclosureDto,
   TUpdateDisclosureNoteEntityDto,
 } from "../types/disclosure.type";
@@ -312,12 +314,15 @@ export class DisclosureRepo {
   }
 
   async moveDisclosures(fromScoutId: string, toScoutId: string) {
-    // Disclosures with no ratings (ratingId is null)
     const disclosuresWithoutRatings = await this.db
       .select({ id: disclosures.id })
       .from(disclosures)
       .where(
-        and(eq(disclosures.scoutId, fromScoutId), isNull(disclosures.ratingId)),
+        and(
+          eq(disclosures.scoutId, fromScoutId),
+          isNull(disclosures.ratingId),
+          isNull(disclosures.customRating),
+        ),
       );
 
     const disclosureIds = disclosuresWithoutRatings.map((d) => d.id);
@@ -427,6 +432,24 @@ export class DisclosureRepo {
       },
       where: eq(disclosures.patientId, patientId),
       orderBy: desc(disclosures.createdAt),
+    });
+  }
+
+  async addDisclosureDetails(dto: TAddDisclosureDetailsDto) {
+    await this.db.insert(disclosureDetails).values(dto);
+  }
+
+  async updateDisclosureDetails(
+    dto: TUpdateDisclosureDetailsDto,
+    tx?: TDbContext,
+  ) {
+    return await (tx || this.db).update(disclosureDetails).set(dto).returning();
+  }
+
+  async getDisclosureDetails(disclosureId: string) {
+    return await this.db.query.disclosureDetails.findFirst({
+      where: eq(disclosureDetails.disclosureId, disclosureId),
+      with: { createdBy: ACTIONER_WITH, updatedBy: ACTIONER_WITH },
     });
   }
 }

@@ -1,6 +1,7 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-typebox";
 import {
   disclosureConsultations,
+  disclosureDetails,
   disclosureNotes,
   disclosures,
 } from "../db/schema";
@@ -217,4 +218,14 @@ export const getDateAppointmentsModel = t.Composite([
   t.Object({
     date: t.String({ format: "date" }),
   }),
+]);
+
+export const disclosureDetailsInsertModel =
+  createInsertSchema(disclosureDetails);
+
+export const disclosureDetailsSelectModel =
+  createSelectSchema(disclosureDetails);
+
+export const getDisclosureDetailsModel = t.Pick(disclosureDetailsSelectModel, [
+  "disclosureId",
 ]);
