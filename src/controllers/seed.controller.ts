@@ -308,25 +308,22 @@ export const SeedController = new Elysia({
                 )
                 .filter(Boolean),
             });
-
-            employeesToAdd.map(async (e) => {
-              const { areaIds, ...rest } = e;
-              await tx.transaction(async (tx2) => {
-                const [{ id }] = await tx2
-                  .insert(employees)
-                  .values(rest)
-                  .returning({ id: employees.id });
-                if (areaIds?.length) {
-                  await tx2.insert(areasToEmployees).values(
-                    areaIds.map((aid) => ({
-                      areaId: aid,
-                      employeeId: id,
-                    })),
-                  );
-                }
-              });
-            });
           }
+          employeesToAdd.map(async (e) => {
+            const { areaIds, ...rest } = e;
+            const [{ id }] = await tx
+              .insert(employees)
+              .values(rest)
+              .returning({ id: employees.id });
+            if (areaIds?.length) {
+              await tx.insert(areasToEmployees).values(
+                areaIds.map((aid) => ({
+                  areaId: aid,
+                  employeeId: id,
+                })),
+              );
+            }
+          });
         });
       })
       .get("syncOldData", async ({ db }) => {
