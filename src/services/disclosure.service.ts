@@ -25,12 +25,7 @@ import {
   NotFoundError,
 } from "../constants/errors";
 import { TDbContext } from "../db/drizzle";
-import {
-  auditLogs,
-  disclosureDetails,
-  disclosureNotes,
-  disclosures,
-} from "../db/schema";
+import { auditLogs, disclosureDetails, disclosures } from "../db/schema";
 import { eq, InferInsertModel } from "drizzle-orm";
 import { AuditLogRepo } from "../repos/audit-log.repo";
 import { deleteAudioFile, saveAudioFile } from "../db/helpers";
@@ -118,7 +113,7 @@ export class DisclosureService {
             createdBy: updatedBy,
             newValue: String(updatedDisclosure[property]),
             oldValue: String(oldDisclosure[property]),
-            table: disclosures._.name,
+            table: "disclosures",
             createdAt: auditCreatedAt,
           });
         }
@@ -155,7 +150,7 @@ export class DisclosureService {
         await this.auditLogRepo.create([
           {
             recordId: addedNote.id,
-            table: disclosureNotes._.name,
+            table: "disclosure_notes",
             action: "INSERT",
             createdBy: addedNote.createdBy,
           },
@@ -205,7 +200,7 @@ export class DisclosureService {
         if (oldNote.noteText !== updatedNote.noteText)
           auditsToAdd.push({
             recordId: updatedNote.id,
-            table: disclosureNotes._.name,
+            table: "disclosure_notes",
             column: "note_text",
             action: "UPDATE",
             newValue: updatedNote.noteText,
@@ -215,7 +210,7 @@ export class DisclosureService {
         if (oldNote.noteAudio !== updatedNote.noteAudio) {
           auditsToAdd.push({
             recordId: updatedNote.id,
-            table: disclosureNotes._.name,
+            table: "disclosure_notes",
             column: "note_audio",
             action: "UPDATE",
             newValue: updatedNote.noteAudio,
@@ -260,7 +255,7 @@ export class DisclosureService {
             createdBy: updatedBy,
             newValue: dto.toScoutId,
             oldValue: dto.fromScoutId,
-            table: disclosures._.name,
+            table: "disclosures",
             createdAt: auditCreatedAt,
           }));
 
@@ -416,9 +411,14 @@ export class DisclosureService {
         "diseasesOrSurgeries",
         "jobOrSchool",
         "electricity",
-        "homeCondition",
-        "homeConditionStatus",
         "expenses",
+        "houseOwnership",
+        "houseOwnershipNote",
+        "houseCondition",
+        "houseConditionNote",
+        "pros",
+        "cons",
+        "other",
       ];
 
       auditProperties.forEach((property) => {
@@ -432,7 +432,7 @@ export class DisclosureService {
             createdBy: dto.updatedBy,
             newValue: updatedDisclosureDetails[property],
             oldValue: oldDisclosureDetails[property],
-            table: disclosureDetails._.name,
+            table: "disclosure_details",
             createdAt: auditCreatedAt,
           });
         }

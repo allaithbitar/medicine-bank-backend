@@ -70,6 +70,13 @@ export const house_hold_asset_condition_enum = pgEnum(
   ["very_good", "good", "medium", "bad", "very_bad", "not_working"],
 );
 
+export const house_ownership_status = pgEnum("house_ownership_status_enum ", [
+  "owned",
+  "rent",
+  "loan",
+  "mortage",
+]);
+
 export const visit_result_enum = pgEnum("visit_status_enum", [
   "not_completed",
   "cant_be_completed",
@@ -318,8 +325,10 @@ export const disclosureDetails = pgTable("disclosure_details", {
   jobOrSchool: text("job_or_school"),
   electricity: text("electricity"),
   expenses: text("expenses"),
-  homeCondition: text("home_condition"),
-  homeConditionStatus: house_hold_asset_condition_enum("home_condition_status"),
+  houseOwnership: house_ownership_status("house_ownership"),
+  houseOwnershipNote: text("house_ownership_note"),
+  houseCondition: house_hold_asset_condition_enum("house_condition"),
+  houseConditionNote: text("house_condition_note"),
   pros: text("pros"),
   cons: text("cons"),
   other: text("other"),
