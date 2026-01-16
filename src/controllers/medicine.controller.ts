@@ -1,10 +1,12 @@
-import Elysia from "elysia";
+import Elysia, { t } from "elysia";
 import DiContainer from "../di/di-container";
 import {
   addMedicineModel,
   addPatientMedicineModel,
   filterMedicinesModel,
   filterPatientMedicinesModel,
+  medicineSelectModel,
+  patientMedicineSelectModel,
   updateMedicineModel,
   updatePatientMedicineModel,
 } from "../models/medicine.model";
@@ -25,6 +27,13 @@ export const MedicinesController = new Elysia({
       ({ medicineService, query }) => medicineService.getMedicines(query),
       {
         query: filterMedicinesModel,
+      },
+    )
+    .get(
+      ":id",
+      ({ medicineService, params }) => medicineService.getMedicine(params.id),
+      {
+        params: t.Pick(medicineSelectModel, ["id"]),
       },
     )
 
@@ -50,6 +59,14 @@ export const MedicinesController = new Elysia({
         medicineService.getPatientMedicines(query),
       {
         query: filterPatientMedicinesModel,
+      },
+    )
+    .get(
+      "patient/:id",
+      ({ medicineService, params }) =>
+        medicineService.getPatientMedicine(params.id),
+      {
+        params: t.Pick(patientMedicineSelectModel, ["id"]),
       },
     )
     .post(

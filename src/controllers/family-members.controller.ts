@@ -1,6 +1,7 @@
-import Elysia from "elysia";
+import Elysia, { t } from "elysia";
 import {
   addFamilyMemberModel,
+  familyMemberSelectModel,
   filterFamilyMembersModel,
   updateFamilyMemberModel,
 } from "../models/family-member.model";
@@ -25,6 +26,14 @@ export const FamilyMembersController = new Elysia({
           familyMemberService.getFamilyMembers(query),
         {
           query: filterFamilyMembersModel,
+        },
+      )
+      .get(
+        ":id",
+        ({ familyMemberService, params }) =>
+          familyMemberService.getFamilyMember(params.id),
+        {
+          params: t.Pick(familyMemberSelectModel, ["id"]),
         },
       )
 

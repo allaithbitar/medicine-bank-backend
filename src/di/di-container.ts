@@ -75,6 +75,7 @@ DiContainer.bind<SystemBroadcastService>(SystemBroadcastService)
   .inRequestScope();
 
 DiContainer.bind<MeetingRepo>(MeetingRepo).toSelf().inRequestScope();
+DiContainer.bind<MeetingService>(MeetingService).toSelf().inRequestScope();
 DiContainer.bind<AuditLogRepo>(AuditLogRepo).toSelf().inRequestScope();
 DiContainer.bind<DisclosureConsultationRepo>(DisclosureConsultationRepo)
   .toSelf()

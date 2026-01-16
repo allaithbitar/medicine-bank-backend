@@ -18,6 +18,10 @@ export class MedicineService {
     return this.medicineRepo.getMedicinesPaginated(dto);
   }
 
+  getMedicine(id: string) {
+    return this.medicineRepo.getMedicineById(id);
+  }
+
   async addMedicine(dto: TAddMedicineDto) {
     await this.medicineRepo.createMedicine(dto);
   }
@@ -30,6 +34,10 @@ export class MedicineService {
 
   getPatientMedicines(dto: TFilterPatientMedicinesDto) {
     return this.medicineRepo.getPatientMedicinesPaginated(dto);
+  }
+
+  getPatientMedicine(id: string) {
+    return this.medicineRepo.getPatientMedicineById(id);
   }
 
   async addPatientMedicine(dto: TAddPatientMedicineDto) {

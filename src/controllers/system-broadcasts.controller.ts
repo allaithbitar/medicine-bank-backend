@@ -1,7 +1,8 @@
-import Elysia from "elysia";
+import Elysia, { t } from "elysia";
 import {
   addSystemBroadcastModel,
   filterSystemBroadcastsModel,
+  systemBroadcastSelectModel,
   updateSystemBroadcastModel,
 } from "../models/system-broadcast.model";
 import DiContainer from "../di/di-container";
@@ -24,6 +25,15 @@ export const SystemBroadcastsController = new Elysia({
         body: filterSystemBroadcastsModel,
       },
     )
+    .get(
+      ":id",
+      ({ systemBroadcastService, params }) =>
+        systemBroadcastService.getSystemBroadcast(params.id),
+      {
+        params: t.Pick(systemBroadcastSelectModel, ["id"]),
+      },
+    )
+
     .post(
       "",
       ({ body, systemBroadcastService }) =>

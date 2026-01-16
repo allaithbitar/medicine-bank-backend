@@ -10,6 +10,7 @@ import {
 } from "../types/area.type";
 import { TPaginatedResponse } from "../types/common.types";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
+import { ERROR_CODES, NotFoundError } from "../constants/errors";
 
 @injectable()
 export class AreaRepo {
@@ -50,6 +51,16 @@ export class AreaRepo {
     });
 
     return { items: result, totalCount, pageNumber, pageSize };
+  }
+
+  async findById(id: string): Promise<TArea> {
+    const res = await this.db.query.areas.findFirst({
+      where: eq(areas.id, id),
+    });
+    if (!res) {
+      throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    }
+    return res;
   }
 
   async create(dto: TAddAreaDto, tx?: TDbContext) {

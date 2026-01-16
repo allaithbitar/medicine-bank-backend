@@ -16,6 +16,10 @@ export class FamilyMemberService {
     return this.familyMemberRepo.findManyPaginated(dto);
   }
 
+  getFamilyMember(id: string) {
+    return this.familyMemberRepo.findById(id);
+  }
+
   async addFamilyMember(dto: TAddFamilyMemberDto) {
     await this.familyMemberRepo.create(dto);
   }

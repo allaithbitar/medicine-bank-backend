@@ -1,8 +1,9 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import DiContainer from "../di/di-container";
 import {
   addPriorityDegreeModel,
   filterPriorityDegreesModel,
+  priorityDegreeSelectModel,
   updatePriorityDegreeModel,
 } from "../models/priority-degree.model";
 import { PriorityDegreeService } from "../services/priority-degree.service";
@@ -23,6 +24,14 @@ export const PriorityDegreesController = new Elysia({
         prorityDegreeService.getPriorityDegrees(query),
       {
         query: filterPriorityDegreesModel,
+      },
+    )
+    .get(
+      ":id",
+      ({ params, prorityDegreeService }) =>
+        prorityDegreeService.getPriorityDegree(params.id),
+      {
+        params: t.Pick(priorityDegreeSelectModel, ["id"]),
       },
     )
     .post(

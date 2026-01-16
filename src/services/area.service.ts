@@ -14,6 +14,10 @@ export class AreaService {
     return this.areaRepo.findManyPaginated(dto);
   }
 
+  getArea(id: string) {
+    return this.areaRepo.findById(id);
+  }
+
   addArea(dto: TAddAreaDto) {
     return this.areaRepo.create(dto);
   }

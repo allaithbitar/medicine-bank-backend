@@ -15,6 +15,7 @@ import {
   TUpdateMedicineDto,
   TUpdatePatientMedicineDto,
 } from "../types/medicine.type";
+import { ERROR_CODES, NotFoundError } from "../constants/errors";
 
 @injectable()
 export class MedicineRepo {
@@ -64,6 +65,17 @@ export class MedicineRepo {
     });
 
     return { items: result, totalCount, pageNumber, pageSize };
+  }
+
+  async getMedicineById(id: string): Promise<TMedicine> {
+    const res = await this.db.query.medicines.findFirst({
+      where: eq(medicines.id, id),
+    });
+
+    if (!res) {
+      throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    }
+    return res;
   }
 
   async createMedicine(dto: TAddMedicineDto, tx?: TDbContext) {
@@ -165,6 +177,18 @@ export class MedicineRepo {
     });
 
     return { items: result, totalCount, pageNumber, pageSize };
+  }
+
+  async getPatientMedicineById(id: string): Promise<TPatientMedicine> {
+    const res = await this.db.query.patientMedicines.findFirst({
+      where: eq(patientMedicines.id, id),
+      with: { medicine: true },
+    });
+
+    if (!res) {
+      throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    }
+    return res;
   }
 
   async createPatientMedicine(dto: TAddPatientMedicineDto, tx?: TDbContext) {

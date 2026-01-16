@@ -10,6 +10,7 @@ import {
   TFilterFamilyMembersDto,
   TUpdateFamilyMemberDto,
 } from "../types/family-member.type";
+import { ERROR_CODES, NotFoundError } from "../constants/errors";
 
 @injectable()
 export class FamilyMemberRepo {
@@ -48,6 +49,16 @@ export class FamilyMemberRepo {
     });
 
     return { items: result, totalCount, pageNumber, pageSize };
+  }
+
+  async findById(id: string): Promise<TFamilyMember> {
+    const res = await this.db.query.familyMembers.findFirst({
+      where: eq(familyMembers.id, id),
+    });
+    if (!res) {
+      throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    }
+    return res;
   }
 
   async create(dto: TAddFamilyMemberDto, tx?: TDbContext) {

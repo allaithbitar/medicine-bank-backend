@@ -8,6 +8,7 @@ import {
   TPriorityDegree,
   TUpdatePriorityDegreeDto,
 } from "../types/priority-degree.type";
+import { ERROR_CODES, NotFoundError } from "../constants/errors";
 
 @injectable()
 export class PriorityDegreeRepo {
@@ -32,6 +33,16 @@ export class PriorityDegreeRepo {
     });
 
     return result;
+  }
+
+  async findById(id: string): Promise<TPriorityDegree> {
+    const res = await this.db.query.priorityDegrees.findFirst({
+      where: eq(priorityDegrees.id, id),
+    });
+    if (!res) {
+      throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    }
+    return res;
   }
 
   async create(dto: TAddPriorityDegreeDto, tx?: TDbContext) {

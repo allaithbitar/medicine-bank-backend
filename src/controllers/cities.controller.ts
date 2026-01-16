@@ -1,7 +1,8 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import DiContainer from "../di/di-container";
 import {
   addCityModel,
+  citySelectModel,
   filterCitiesModel,
   updateCityModel,
 } from "../models/city.model";
@@ -25,6 +26,15 @@ export const CitiesController = new Elysia({
         query: filterCitiesModel,
       },
     )
+    .get(
+      ":id",
+      async ({ cityServcie, params }) => cityServcie.getCity(params.id),
+
+      {
+        params: t.Pick(citySelectModel, ["id"]),
+      },
+    )
+
     .post(
       "",
       async ({ cityServcie, body }) => cityServcie.addCity(body),

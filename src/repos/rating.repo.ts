@@ -8,6 +8,7 @@ import {
   TUpdateRatingDto,
 } from "../types/rating.type";
 import { ratings } from "../db/schema";
+import { ERROR_CODES, NotFoundError } from "../constants/errors";
 
 @injectable()
 export class RatingRepo {
@@ -38,6 +39,16 @@ export class RatingRepo {
     });
 
     return result;
+  }
+
+  async findById(id: string): Promise<TRating> {
+    const res = await this.db.query.ratings.findFirst({
+      where: eq(ratings.id, id),
+    });
+    if (!res) {
+      throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    }
+    return res;
   }
 
   async create(dto: TAddRatingDto, tx?: TDbContext) {

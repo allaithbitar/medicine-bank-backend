@@ -18,6 +18,10 @@ export class SystemBroadcastService {
     return this.systemBroadcastRepo.findManyPaginated(dto);
   }
 
+  getSystemBroadcast(id: string) {
+    return this.systemBroadcastRepo.findById(id);
+  }
+
   async addSystemBroadcast(dto: TAddSystemBroadcastDto) {
     await this.systemBroadcastRepo.create(dto);
   }

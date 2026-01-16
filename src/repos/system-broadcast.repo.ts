@@ -10,6 +10,7 @@ import {
 } from "../types/system-broadcast.type";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 import { TPaginatedResponse } from "../types/common.types";
+import { ERROR_CODES, NotFoundError } from "../constants/errors";
 
 @injectable()
 export class SystemBroadcastRepo {
@@ -54,6 +55,16 @@ export class SystemBroadcastRepo {
     });
 
     return { items: result, totalCount, pageNumber, pageSize };
+  }
+
+  async findById(id: string): Promise<TSystemBroadcast> {
+    const res = await this.db.query.systemBroadcasts.findFirst({
+      where: eq(systemBroadcasts.id, id),
+    });
+    if (!res) {
+      throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    }
+    return res;
   }
 
   async create(dto: TAddSystemBroadcastDto, tx?: TDbContext) {

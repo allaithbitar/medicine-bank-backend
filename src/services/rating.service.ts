@@ -15,6 +15,10 @@ export class RatingService {
     return this.ratingRepo.findMany(dto);
   }
 
+  getRating(id: string) {
+    return this.ratingRepo.findById(id);
+  }
+
   addRating(dto: TAddRatingDto) {
     return this.ratingRepo.create(dto);
   }

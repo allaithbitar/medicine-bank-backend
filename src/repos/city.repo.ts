@@ -10,6 +10,7 @@ import {
 import { count, eq, ilike } from "drizzle-orm";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 import { TPaginatedResponse } from "../types/common.types";
+import { ERROR_CODES, NotFoundError } from "../constants/errors";
 
 @injectable()
 export class CityRepo {
@@ -60,5 +61,15 @@ export class CityRepo {
     });
 
     return { items: result, totalCount, pageNumber, pageSize };
+  }
+
+  async findById(id: string): Promise<TCity> {
+    const res = await this.db.query.cities.findFirst({
+      where: eq(cities.id, id),
+    });
+    if (!res) {
+      throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    }
+    return res;
   }
 }

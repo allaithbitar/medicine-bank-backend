@@ -14,6 +14,10 @@ export class CityService {
     return this.cityRepo.findManyPaginated(dto);
   }
 
+  getCity(id: string) {
+    return this.cityRepo.findById(id);
+  }
+
   addCity(dto: TAddCityDto) {
     return this.cityRepo.create(dto);
   }

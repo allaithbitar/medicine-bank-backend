@@ -17,6 +17,10 @@ export class PriorityDegreeService {
     return this.priorityDegreeRepo.findMany(dto);
   }
 
+  getPriorityDegree(id: string) {
+    return this.priorityDegreeRepo.findById(id);
+  }
+
   addPriorityDegree(dto: TAddPriorityDegreeDto) {
     return this.priorityDegreeRepo.create(dto);
   }

@@ -20,6 +20,10 @@ export class MeetingService {
     return this.meetingRepo.findManyPaginated(dto);
   }
 
+  getMeeting(id: string) {
+    return this.meetingRepo.findById(id);
+  }
+
   async addMeeting(dto: TAddMeetingDto) {
     const meeting = await this.meetingRepo.create(dto);
     if (meeting) {

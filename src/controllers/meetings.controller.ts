@@ -1,7 +1,8 @@
-import Elysia from "elysia";
+import Elysia, { t } from "elysia";
 import {
   addMeetingModel,
   filterMeetingsModel,
+  meetingSelectModel,
   updateMeetingModel,
 } from "../models/meeting.model";
 import DiContainer from "../di/di-container";
@@ -13,13 +14,20 @@ export const MeetingsController = new Elysia({
   tags: ["Meetings"],
 }).group("/meetings", (app) =>
   app
-    // .use(AuthGuard)
+    .use(AuthGuard)
     .resolve(() => ({
       meetingService: DiContainer.get(MeetingService),
     }))
     .get("", ({ meetingService, query }) => meetingService.getMeetings(query), {
       query: filterMeetingsModel,
     })
+    .get(
+      ":id",
+      ({ meetingService, params }) => meetingService.getMeeting(params.id),
+      {
+        params: t.Pick(meetingSelectModel, ["id"]),
+      },
+    )
     .post("", ({ body, meetingService }) => meetingService.addMeeting(body), {
       body: addMeetingModel,
     })

@@ -10,6 +10,7 @@ import {
 } from "../types/meeting.type";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 import { TPaginatedResponse } from "../types/common.types";
+import { ERROR_CODES, NotFoundError } from "../constants/errors";
 
 @injectable()
 export class MeetingRepo {
@@ -35,6 +36,16 @@ export class MeetingRepo {
     });
 
     return { items: result, totalCount, pageNumber, pageSize };
+  }
+
+  async findById(id: string): Promise<TMeeting> {
+    const res = await this.db.query.meetings.findFirst({
+      where: eq(meetings.id, id),
+    });
+    if (!res) {
+      throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    }
+    return res;
   }
 
   async create(dto: TAddMeetingDto, tx?: TDbContext) {

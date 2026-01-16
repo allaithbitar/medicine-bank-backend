@@ -1,8 +1,9 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import DiContainer from "../di/di-container";
 import { AreaService } from "../services/area.service";
 import {
   addAreaModel,
+  areaSelectModel,
   filterAreasModel,
   updateAreaModel,
 } from "../models/area.model";
@@ -19,6 +20,9 @@ export const AreasController = new Elysia({
     }))
     .get("", ({ areaService, query }) => areaService.getAreas(query), {
       query: filterAreasModel,
+    })
+    .get(":id", ({ areaService, params }) => areaService.getArea(params.id), {
+      params: t.Pick(areaSelectModel, ["id"]),
     })
     .post("", async ({ areaService, body }) => areaService.addArea(body), {
       body: addAreaModel,
