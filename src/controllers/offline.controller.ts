@@ -19,10 +19,11 @@ import {
   disclosures,
   employees,
   patients,
+  patientsPhoneNumbers,
   priorityDegrees,
   ratings,
 } from "../db/schema";
-import { desc } from "drizzle-orm";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 
 export const OfflineController = new Elysia({
   name: "Offline.Controller",
@@ -51,24 +52,6 @@ export const OfflineController = new Elysia({
         // ratingsService,
       }) => {
         const _employees = await db.select().from(employees);
-        const _patients = await db
-          .select()
-          .from(patients)
-          .orderBy(desc(patients.createdAt))
-          .limit(100)
-          .execute();
-        const _disclosures = await db
-          .select()
-          .from(disclosures)
-          .orderBy(desc(disclosures.createdAt))
-          .limit(100)
-          .execute();
-        const _auditLogs = await db
-          .select()
-          .from(auditLogs)
-          .orderBy(desc(auditLogs.createdAt))
-          .limit(100)
-          .execute();
 
         const _priorityDegrees = await db
           .select()
@@ -81,19 +64,69 @@ export const OfflineController = new Elysia({
 
         const _areas = await db.select().from(areas).execute();
 
+        const _areasToEmployees = await db.select().from(areasToEmployees);
+
+        const _disclosures = await db
+          .select()
+          .from(disclosures)
+          .orderBy(desc(disclosures.createdAt))
+          .limit(100)
+          .execute();
+
+        const _disclosureIds = _disclosures.map((d) => d.id);
+
+        const _patientIds = _disclosures.map((d) => d.patientId);
+
+        const _patients = await db
+          .select()
+          .from(patients)
+          .orderBy(desc(patients.createdAt))
+          .where(inArray(patients.id, _patientIds))
+          .execute();
+
+        const _patientsPhoneNumbers = await db
+          .select()
+          .from(patientsPhoneNumbers)
+          .where(inArray(patientsPhoneNumbers.patientId, _patientIds))
+          .execute();
+
         const _disclosureNotes = await db
           .select()
           .from(disclosureNotes)
           .orderBy(desc(disclosureNotes.createdAt))
-          .limit(100);
+          .where(inArray(disclosureNotes.disclosureId, _disclosureIds))
+          .execute();
+
+        const _disclosureNoteIds = _disclosureNotes.map((dn) => dn.id);
 
         const _disclosureDetails = await db
           .select()
           .from(disclosureDetails)
           .orderBy(desc(disclosureDetails.createdAt))
-          .limit(100);
+          .where(inArray(disclosureDetails.disclosureId, _disclosureIds))
+          .execute();
 
-        const _areasToEmployees = await db.select().from(areasToEmployees);
+        const _auditLogs = await db
+          .select()
+          .from(auditLogs)
+          .where(
+            or(
+              and(
+                eq(auditLogs.table, "disclosure_notes"),
+                inArray(auditLogs.recordId, _disclosureNoteIds),
+              ),
+              and(
+                eq(auditLogs.table, "disclosure_details"),
+                inArray(auditLogs.recordId, _disclosureIds),
+              ),
+              and(
+                eq(auditLogs.table, "disclosures"),
+                inArray(auditLogs.recordId, _disclosureIds),
+              ),
+            ),
+          )
+          .orderBy(desc(auditLogs.createdAt))
+          .execute();
 
         return {
           employees: _employees,
@@ -107,6 +140,7 @@ export const OfflineController = new Elysia({
           areas: _areas,
           disclosureNotes: _disclosureNotes,
           disclosureDetails: _disclosureDetails,
+          patientsPhoneNumbers: _patientsPhoneNumbers,
         };
       },
     ),
