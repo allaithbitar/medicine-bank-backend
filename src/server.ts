@@ -160,6 +160,9 @@ const app = new Elysia({
   .use(NotificationsController)
   .use(AutocompleteController)
   .use(SeedController)
+  .get("/api/ping", async () => {
+    return "pong";
+  })
   .get("/", async () => {
     return "pong";
   });

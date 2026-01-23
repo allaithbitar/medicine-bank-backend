@@ -2,11 +2,12 @@ FROM oven/bun:1.2.18-alpine AS base
 
 WORKDIR /app
 
-# COPY package.json bun.lock ./
-# RUN bun install
-#
-# COPY . .
+# Install dependencies in the image for self-contained setup
+COPY package.json bun.lock ./
+RUN bun install
 
+# Source code will be mounted via volume for hot reload
+# So we don't copy ./src or other source files here
 
 ARG POSTGRES_HOST
 
