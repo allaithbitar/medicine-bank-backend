@@ -10,7 +10,6 @@ import {
   uuid,
   real,
   integer,
-  json,
   index,
 } from "drizzle-orm/pg-core";
 

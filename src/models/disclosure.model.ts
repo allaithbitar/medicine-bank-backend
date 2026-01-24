@@ -22,6 +22,9 @@ export const addDisclosureModel = t.Omit(disclosureInsertModel, [
   "finishedBy",
   "canceledAt",
   "canceledBy",
+  "archivedAt",
+  "archivedBy",
+  "archivedReason",
 ]);
 
 export const updateDisclosureModel = t.Composite([
@@ -229,3 +232,6 @@ export const disclosureDetailsSelectModel =
 export const getDisclosureDetailsModel = t.Pick(disclosureDetailsSelectModel, [
   "disclosureId",
 ]);
+
+// ARCHIVE
+export const archiveDisclosureModel = t.Pick(disclosureSelectModel, ["id"]);

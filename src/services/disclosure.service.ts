@@ -444,4 +444,119 @@ export class DisclosureService {
 
     return this.disclosureRepo.updateDisclosureDetails(dto);
   }
+
+  async archiveDisclosure(id: string, updatedBy: string) {
+    await this.db.transaction(async (tx) => {
+      const oldDisclosure = await tx.query.disclosures.findFirst({
+        where: eq(disclosures.id, id),
+      });
+
+      if (!oldDisclosure) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+
+      if (oldDisclosure.status === "archived") {
+        throw new ForbiddenError(ERROR_CODES.FORBIDDEN_ACTION);
+      }
+
+      const [{ maxArchiveNumber }] = await tx
+        .select({
+          maxArchiveNumber: disclosures.archiveNumber,
+        })
+        .from(disclosures)
+        .orderBy(disclosures.archiveNumber)
+        .limit(1);
+
+      const nextArchiveNumber = (maxArchiveNumber || 0) + 1;
+
+      await this.disclosureRepo.update(
+        {
+          id,
+          status: "archived",
+          archiveNumber: nextArchiveNumber,
+          updatedBy,
+        },
+        tx as any,
+      );
+
+      const createdAt = new Date().toISOString();
+      // Create audit log
+      await this.auditLogRepo.create(
+        [
+          {
+            recordId: id,
+            column: disclosures.archiveNumber.name,
+            action: "UPDATE",
+            createdBy: updatedBy,
+            newValue: String(nextArchiveNumber),
+            oldValue: null,
+            table: "disclosures",
+            createdAt,
+          },
+          {
+            recordId: id,
+            column: disclosures.status.name,
+            action: "UPDATE",
+            createdBy: updatedBy,
+            newValue: "archived",
+            oldValue: oldDisclosure.status,
+            table: "disclosures",
+            createdAt,
+          },
+        ],
+        tx as any,
+      );
+    });
+  }
+
+  async unarchiveDisclosure(id: string, updatedBy: string) {
+    await this.db.transaction(async (tx) => {
+      const oldDisclosure = await tx.query.disclosures.findFirst({
+        where: eq(disclosures.id, id),
+      });
+
+      if (!oldDisclosure) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+
+      if (oldDisclosure.status !== "archived") {
+        throw new ForbiddenError(ERROR_CODES.FORBIDDEN_ACTION);
+      }
+
+      await this.disclosureRepo.update(
+        {
+          id,
+          status: "active",
+          updatedBy,
+          archiveNumber: null,
+        },
+        tx as any,
+      );
+
+      // Create audit log
+      await this.auditLogRepo.create(
+        [
+          {
+            recordId: id,
+            column: disclosures.status.name,
+            action: "UPDATE",
+            createdBy: updatedBy,
+            newValue: "active",
+            oldValue: "archived",
+            table: "disclosures",
+            createdAt: new Date().toISOString(),
+          },
+          {
+            recordId: id,
+            column: disclosures.archiveNumber.name,
+            action: "UPDATE",
+            createdBy: updatedBy,
+            newValue: null,
+            oldValue: oldDisclosure.archiveNumber
+              ? String(oldDisclosure.archiveNumber)
+              : null,
+            table: "disclosures",
+            createdAt: new Date().toISOString(),
+          },
+        ],
+        tx as any,
+      );
+    });
+  }
 }
