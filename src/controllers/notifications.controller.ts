@@ -1,5 +1,8 @@
 import { Elysia, t } from "elysia";
-import { filterNotificationsModel, markAsReadModel } from "../models/notification.model";
+import {
+  filterNotificationsModel,
+  markAsReadModel,
+} from "../models/notification.model";
 import DiContainer from "../di/di-container";
 import { NotificationService } from "../services/notification.service";
 import { AuthGuard } from "../guards/auth.guard";
@@ -10,22 +13,19 @@ export const NotificationsController = new Elysia({
 }).group("/notifications", (app) =>
   app
     .use(AuthGuard)
-    .resolve(({ user }) => ({
+    .resolve(() => ({
       notificationService: DiContainer.get(NotificationService),
-      currentUserId: user!.id,
     }))
-    .get(
+    .post(
       "/search",
-      ({ body, notificationService, currentUserId }) =>
-        notificationService.getNotificationsForEmployee(currentUserId, body),
+      ({ body, notificationService, user }) =>
+        notificationService.getNotificationsForEmployee(user.id, body),
       {
         body: filterNotificationsModel,
       },
     )
-    .get(
-      "/unread-count",
-      ({ notificationService, currentUserId }) =>
-        notificationService.getUnreadCount(currentUserId),
+    .get("/unread-count", ({ notificationService, user }) =>
+      notificationService.getUnreadCount(user.id),
     )
     .get(
       "/:id",
@@ -46,3 +46,4 @@ export const NotificationsController = new Elysia({
       },
     ),
 );
+

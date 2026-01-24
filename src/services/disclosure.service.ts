@@ -30,7 +30,7 @@ import { eq, InferInsertModel } from "drizzle-orm";
 import { AuditLogRepo } from "../repos/audit-log.repo";
 import { deleteAudioFile, saveAudioFile } from "../db/helpers";
 import { DisclosureConsultationRepo } from "../repos/disclosure-consultation.repo";
-import { NotificationRepo } from "../repos/notification.repo";
+import { NotificationService } from "./notification.service";
 @injectable()
 export class DisclosureService {
   constructor(
@@ -40,8 +40,8 @@ export class DisclosureService {
     @inject("db") private db: TDbContext,
     @inject(AuditLogRepo)
     private auditLogRepo: AuditLogRepo,
-    @inject(NotificationRepo)
-    private notificationRepo: NotificationRepo,
+    @inject(NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
   getDisclosureById(id: string) {
@@ -283,6 +283,18 @@ export class DisclosureService {
         },
         tx as any,
       );
+      // rest.createdBy!,
+      //      "consultation_requested",
+      //      rest.disclosureId,
+      //      undefined,
+      //      tx as any,
+      await this.notificationService.sendNotificationToRoles({
+        fromId: rest.createdBy,
+        type: "consultation_requested",
+        roles: ["manager"],
+        recordId: rest.disclosureId,
+        tx: tx as any,
+      });
     });
   }
   // CONSULTATIONS
@@ -360,12 +372,13 @@ export class DisclosureService {
         tx as any,
       );
 
-      await this.notificationRepo.create(
-        {
-          from: updatedBy,
-          to: consultation.createdBy!,
-          type: "consultation_completed",
-        },
+      // Notify the scout who requested the consultation
+      await this.notificationService.sendNotification(
+        updatedBy,
+        consultation.createdBy!,
+        "consultation_completed",
+        undefined,
+        consultation.disclosureId,
         tx as any,
       );
     });

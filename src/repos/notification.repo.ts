@@ -6,7 +6,7 @@ import {
 } from "../types/notification.type";
 import { TDbContext } from "../db/drizzle";
 import { notifications } from "../db/schema";
-import { and, count, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 
 @injectable()
@@ -18,7 +18,9 @@ export class NotificationRepo {
   }
 
   async findById(id: string): Promise<TNotificationEntity | undefined> {
-    return this.db.query.notifications.findFirst({ where: eq(notifications.id, id) });
+    return this.db.query.notifications.findFirst({
+      where: eq(notifications.id, id),
+    });
   }
 
   async findByEmployeeId(employeeId: string): Promise<TNotificationEntity[]> {
@@ -28,7 +30,7 @@ export class NotificationRepo {
     });
   }
 
-  private async getFilters({ type, isRead, from, to }: TFilterNotificationsDto) {
+  private async getFilters({ type, from, to }: TFilterNotificationsDto) {
     const typeFilter = type ? eq(notifications.type, type) : undefined;
     const fromFilter = from ? eq(notifications.from, from) : undefined;
     const toFilter = to ? eq(notifications.to, to) : undefined;
@@ -82,7 +84,9 @@ export class NotificationRepo {
     };
   }
 
-  async findUnreadByEmployeeId(employeeId: string): Promise<TNotificationEntity[]> {
+  async findUnreadByEmployeeId(
+    employeeId: string,
+  ): Promise<TNotificationEntity[]> {
     return this.db.query.notifications.findMany({
       where: eq(notifications.to, employeeId),
       orderBy: desc(notifications.id),
@@ -93,7 +97,9 @@ export class NotificationRepo {
     const [{ value: totalCount }] = await this.db
       .select({ value: count() })
       .from(notifications)
-      .where(and(eq(notifications.to, employeeId), isNull(notifications.readAt)));
+      .where(
+        and(eq(notifications.to, employeeId), isNull(notifications.readAt)),
+      );
 
     return totalCount;
   }
@@ -105,3 +111,4 @@ export class NotificationRepo {
       .where(eq(notifications.id, id));
   }
 }
+

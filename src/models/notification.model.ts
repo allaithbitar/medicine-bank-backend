@@ -15,10 +15,10 @@ export const filterNotificationsModel = t.Partial(
   t.Composite([
     paginationModel,
     t.Object({
-      type: t.Optional(notificationInsertModel.properties.type),
-      isRead: t.Optional(t.Boolean()),
-      from: t.Optional(t.String({ format: "uuid" })),
-      to: t.Optional(t.String({ format: "uuid" })),
+      type: notificationInsertModel.properties.type,
+      isRead: t.Boolean(),
+      from: t.String({ format: "uuid" }),
+      to: t.String({ format: "uuid" }),
     }),
   ]),
 );
@@ -26,3 +26,4 @@ export const filterNotificationsModel = t.Partial(
 export const markAsReadModel = t.Object({
   id: t.String({ format: "uuid" }),
 });
+
