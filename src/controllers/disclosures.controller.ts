@@ -4,6 +4,7 @@ import {
   addDisclosureConsultationModel,
   addDisclosureModel,
   addDisclosureNoteModel,
+  archiveDisclosureModel,
   completeDisclosureConsultationModel,
   disclosureDetailsInsertModel,
   disclosureSelectModel,
@@ -256,6 +257,26 @@ export const DisclosuresController = new Elysia({
         }),
       {
         body: disclosureDetailsInsertModel,
+      },
+    )
+    .put(
+      "/archive",
+      async ({ body, disclosureService, user }) => {
+        await disclosureService.archiveDisclosure(body.id, user.id);
+      },
+      {
+        body: archiveDisclosureModel,
+        roles: ["manager", "supervisor"],
+      },
+    )
+    .put(
+      "/unarchive",
+      async ({ body, disclosureService, user }) => {
+        await disclosureService.unarchiveDisclosure(body.id, user.id);
+      },
+      {
+        body: archiveDisclosureModel,
+        roles: ["manager", "supervisor"],
       },
     ),
 );

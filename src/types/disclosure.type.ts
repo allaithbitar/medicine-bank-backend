@@ -3,6 +3,7 @@ import {
   addDisclosureConsultationModel,
   addDisclosureModel,
   addDisclosureNoteModel,
+  archiveDisclosureModel,
   completeDisclosureConsultationModel,
   disclosureConsultationSelectModel,
   disclosureDetailsInsertModel,
@@ -114,4 +115,7 @@ export type TAddDisclosureDetailsDto = TAddDisclosureDetailsEntityDto &
   TCreatedBy;
 
 export type TUpdateDisclosureDetailsDto = TAddDisclosureDetailsEntityDto &
+  TUpdatedBy;
+
+export type TArchiveDisclosureDto = Static<typeof archiveDisclosureModel> &
   TUpdatedBy;
