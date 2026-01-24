@@ -1,11 +1,21 @@
 import { Elysia } from "elysia";
 import DiContainer from "../di/di-container";
-import { PatientService } from "../services/patient.service";
-import { EmployeeService } from "../services/employee.service";
-import { DisclosureService } from "../services/disclosure.service";
-import { CityService } from "../services/city.service";
-import { AreaService } from "../services/area.service";
-import { RatingService } from "../services/rating.service";
+import { TDbContext } from "../db/drizzle";
+import {
+  areas,
+  areasToEmployees,
+  auditLogs,
+  cities,
+  disclosureDetails,
+  disclosureNotes,
+  disclosures,
+  employees,
+  patients,
+  patientsPhoneNumbers,
+  priorityDegrees,
+  ratings,
+} from "../db/schema";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 
 export const OfflineController = new Elysia({
   name: "Offline.Controller",
@@ -13,57 +23,112 @@ export const OfflineController = new Elysia({
 }).group("/offline", (app) =>
   app
     .resolve(() => ({
-      patientService: DiContainer.get(PatientService),
-      employeeService: DiContainer.get(EmployeeService),
-      disclosureService: DiContainer.get(DisclosureService),
-      cityService: DiContainer.get(CityService),
-      areaService: DiContainer.get(AreaService),
-      ratingsService: DiContainer.get(RatingService),
+      db: DiContainer.get("db") as TDbContext,
+      // disclosureService: DiContainer.get(DisclosureService),
+      // cityService: DiContainer.get(CityService),
+      // areaService: DiContainer.get(AreaService),
+      // ratingsService: DiContainer.get(RatingService),
     }))
     .get(
       "sync",
       async ({
-        patientService,
-        areaService,
-        cityService,
-        disclosureService,
-        employeeService,
-        ratingsService,
+        db,
+        // areaService,
+        // cityService,
+        // disclosureService,
+        // employeeService,
+        // ratingsService,
       }) => {
-        const patients = await patientService.searchPatients({
-          pageNumber: 0,
-          pageSize: Number.MAX_SAFE_INTEGER,
-        });
+        const _employees = await db.select().from(employees);
 
-        const employees = await employeeService.searchEmployees({
-          pageNumber: 0,
-          pageSize: Number.MAX_SAFE_INTEGER,
-        });
+        const _priorityDegrees = await db
+          .select()
+          .from(priorityDegrees)
+          .execute();
 
-        const disclosures = await disclosureService.searchDisclosures({
-          pageNumber: 0,
-          pageSize: Number.MAX_SAFE_INTEGER,
-        });
+        const _ratings = await db.select().from(ratings).execute();
 
-        
+        const _cities = await db.select().from(cities).execute();
 
-        const cities = await cityService.getCities({
-          pageSize: Number.MAX_SAFE_INTEGER,
-        });
+        const _areas = await db.select().from(areas).execute();
 
-        const areas = await areaService.getAreas({
-          pageSize: Number.MAX_SAFE_INTEGER,
-        });
+        const _areasToEmployees = await db.select().from(areasToEmployees);
 
-        const ratings = await ratingsService.getRatings({});
+        const _disclosures = await db
+          .select()
+          .from(disclosures)
+          .orderBy(desc(disclosures.createdAt))
+          .limit(500)
+          .execute();
+
+        const _disclosureIds = _disclosures.map((d) => d.id);
+
+        const _patientIds = _disclosures.map((d) => d.patientId);
+
+        const _patients = await db
+          .select()
+          .from(patients)
+          .orderBy(desc(patients.createdAt))
+          .where(inArray(patients.id, _patientIds))
+          .execute();
+
+        const _patientsPhoneNumbers = await db
+          .select()
+          .from(patientsPhoneNumbers)
+          .where(inArray(patientsPhoneNumbers.patientId, _patientIds))
+          .execute();
+
+        const _disclosureNotes = await db
+          .select()
+          .from(disclosureNotes)
+          .orderBy(desc(disclosureNotes.createdAt))
+          .where(inArray(disclosureNotes.disclosureId, _disclosureIds))
+          .execute();
+
+        const _disclosureNoteIds = _disclosureNotes.map((dn) => dn.id);
+
+        const _disclosureDetails = await db
+          .select()
+          .from(disclosureDetails)
+          .orderBy(desc(disclosureDetails.createdAt))
+          .where(inArray(disclosureDetails.disclosureId, _disclosureIds))
+          .execute();
+
+        const _auditLogs = await db
+          .select()
+          .from(auditLogs)
+          .where(
+            or(
+              and(
+                eq(auditLogs.table, "disclosure_notes"),
+                inArray(auditLogs.recordId, _disclosureNoteIds),
+              ),
+              and(
+                eq(auditLogs.table, "disclosure_details"),
+                inArray(auditLogs.recordId, _disclosureIds),
+              ),
+              and(
+                eq(auditLogs.table, "disclosures"),
+                inArray(auditLogs.recordId, _disclosureIds),
+              ),
+            ),
+          )
+          .orderBy(desc(auditLogs.createdAt))
+          .execute();
 
         return {
-          beneficiaries: patients.items,
-          employees: employees.items,
-          disclosures: disclosures.items,
-          cities: cities.items,
-          areas: areas.items,
-          ratings: ratings,
+          employees: _employees,
+          areasToEmployees: _areasToEmployees,
+          patients: _patients,
+          disclosures: _disclosures,
+          auditLogs: _auditLogs,
+          priorityDegrees: _priorityDegrees,
+          ratings: _ratings,
+          cities: _cities,
+          areas: _areas,
+          disclosureNotes: _disclosureNotes,
+          disclosureDetails: _disclosureDetails,
+          patientsPhoneNumbers: _patientsPhoneNumbers,
         };
       },
     ),
