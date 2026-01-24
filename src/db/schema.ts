@@ -93,6 +93,7 @@ export const medicine_form_enum = pgEnum("medicine_form_enum", [
 export const notification_type_enum = pgEnum("notification_type_enum", [
   "consultation_requested",
   "consultation_completed",
+  "disclosure_assigned",
 ]);
 
 export const system_broadcast_type_enum = pgEnum("system_broadcast_type_enum", [

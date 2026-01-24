@@ -38,7 +38,7 @@
     "@typescript-eslint/eslint-plugin": "^8.33.0",
     "@typescript-eslint/parser": "^8.33.0",
     "bun-types": "latest",
-    "drizzle-kit": "^0.31.1",
+    "drizzle-kit": "^0.31.8",
     "eslint": "^9.27.0",
     "eslint-plugin-security": "^3.0.1",
     "tsx": "^4.19.4",

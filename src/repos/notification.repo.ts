@@ -6,15 +6,26 @@ import {
 } from "../types/notification.type";
 import { TDbContext } from "../db/drizzle";
 import { notifications } from "../db/schema";
-import { and, count, desc, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 
 @injectable()
 export class NotificationRepo {
   constructor(@inject("db") private db: TDbContext) {}
 
-  async create(createDto: TAddNotificationDto, tx?: TDbContext): Promise<void> {
+  async create(
+    createDto: TAddNotificationDto[],
+    tx?: TDbContext,
+  ): Promise<void> {
     await (tx ?? this.db).insert(notifications).values(createDto);
+  }
+
+  async createMany(
+    createDtos: TAddNotificationDto[],
+    tx?: TDbContext,
+  ): Promise<void> {
+    if (createDtos.length === 0) return;
+    await (tx ?? this.db).insert(notifications).values(createDtos);
   }
 
   async findById(id: string): Promise<TNotificationEntity | undefined> {
@@ -110,5 +121,22 @@ export class NotificationRepo {
       .set({ readAt: new Date().toISOString() })
       .where(eq(notifications.id, id));
   }
-}
 
+  async markAllAsRead(userId: string, tx?: TDbContext): Promise<void> {
+    await (tx ?? this.db)
+      .update(notifications)
+      .set({ readAt: new Date().toISOString() })
+      .where(eq(notifications.to, userId));
+  }
+
+  async deleteReadNotifications(
+    userId: string,
+    tx?: TDbContext,
+  ): Promise<void> {
+    await (tx ?? this.db)
+      .delete(notifications)
+      .where(
+        and(eq(notifications.to, userId), isNotNull(notifications.readAt)),
+      );
+  }
+}

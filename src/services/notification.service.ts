@@ -8,8 +8,13 @@ import {
 import { ERROR_CODES, NotFoundError } from "../constants/errors";
 import { TDbContext } from "../db/drizzle";
 import { employees } from "../db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { TEmployeeEntity } from "../types/employee.type";
+
+type NotificationType =
+  | "consultation_requested"
+  | "consultation_completed"
+  | "disclosure_assigned";
 
 @injectable()
 export class NotificationService {
@@ -18,7 +23,7 @@ export class NotificationService {
     @inject("db") private db: TDbContext,
   ) {}
 
-  async createNotification(dto: TAddNotificationDto, tx?: TDbContext) {
+  async createNotification(dto: TAddNotificationDto[], tx?: TDbContext) {
     return this.notificationRepo.create(dto, tx);
   }
 
@@ -42,33 +47,20 @@ export class NotificationService {
     return notification;
   }
 
-  async sendNotification(
-    fromId: string,
-    toId: string,
-    type: "consultation_requested" | "consultation_completed",
-    text?: string,
-    recordId?: string,
-    tx?: TDbContext,
-  ) {
-    const notification: TAddNotificationDto = {
-      from: fromId,
-      to: toId,
-      type: type as any,
-      text,
-      recordId,
-    };
-
-    await this.createNotification(notification, tx);
+  async sendNotification(dto: TAddNotificationDto[], tx?: TDbContext) {
+    await this.createNotification(dto, tx);
   }
 
   async sendNotificationToMultiple(dto: {
     fromId: string;
     toIds: string[];
-    type: "consultation_requested" | "consultation_completed";
+    type: NotificationType;
     text?: string;
     recordId?: string;
     tx?: TDbContext;
   }) {
+    if (dto.toIds.length === 0) return;
+
     const notifications: TAddNotificationDto[] = dto.toIds.map((toId) => ({
       from: dto.fromId,
       to: toId,
@@ -77,37 +69,37 @@ export class NotificationService {
       recordId: dto.recordId,
     }));
 
-    // Create all notifications in batch
-    for (const notification of notifications) {
-      await this.createNotification(notification, dto.tx);
-    }
+    // Use bulk insert for better performance
+    await this.createNotification(notifications, dto.tx);
   }
 
-  async sendNotificationToRoles(dto: {
-    roles: TEmployeeEntity["role"][];
-    fromId: string;
-    type: "consultation_requested" | "consultation_completed";
-    recordId?: string;
-    text?: string;
-    tx?: TDbContext;
-  }) {
-    // Fetch all managers
-    const managers = await this.db
+  async sendBulkNotifications(
+    notifications: TAddNotificationDto[],
+    tx?: TDbContext,
+  ) {
+    if (notifications.length === 0) return;
+    await this.createNotification(notifications, tx);
+  }
+
+  async sendNotificationToRoles(
+    dto: Omit<TAddNotificationDto, "to"> & { roles: TEmployeeEntity["role"][] },
+    tx?: TDbContext,
+  ) {
+    const employeesInRoles = await this.db
       .select({ id: employees.id })
       .from(employees)
       .where(inArray(employees.role, dto.roles));
 
-    const roleIds = managers.map((m) => m.id);
+    const employeeIds = employeesInRoles.map((e) => e.id);
 
-    if (roleIds.length > 0) {
-      await this.sendNotificationToMultiple({
-        fromId: dto.fromId,
-        toIds: roleIds,
-        type: dto.type,
-        recordId: dto.recordId,
-        text: dto.text,
-        tx: dto.tx,
-      });
+    if (employeeIds.length > 0) {
+      await this.createNotification(
+        employeeIds.map((id) => ({
+          ...dto,
+          to: id,
+        })),
+        tx,
+      );
     }
   }
 
@@ -116,5 +108,13 @@ export class NotificationService {
     if (!notification) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
 
     await this.notificationRepo.markAsRead(id);
+  }
+
+  async markAllAsRead(userId: string) {
+    await this.notificationRepo.markAllAsRead(userId);
+  }
+
+  async deleteReadNotifications(userId: string) {
+    await this.notificationRepo.deleteReadNotifications(userId);
   }
 }

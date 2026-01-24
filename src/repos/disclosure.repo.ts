@@ -196,8 +196,8 @@ export class DisclosureRepo {
     return { items: result, totalCount, pageSize, pageNumber };
   }
 
-  async create(createDto: TAddDisclosureDto, tx?: TDbContext): Promise<void> {
-    await (tx ?? this.db).insert(disclosures).values(createDto);
+  async create(createDto: TAddDisclosureDto, tx?: TDbContext) {
+    return await (tx ?? this.db).insert(disclosures).values(createDto).returning();
   }
 
   async update(updateDto: TUpdateDisclosureDto, tx?: TDbContext) {

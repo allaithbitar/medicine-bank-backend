@@ -31,6 +31,7 @@ import { AuditLogRepo } from "../repos/audit-log.repo";
 import { deleteAudioFile, saveAudioFile } from "../db/helpers";
 import { DisclosureConsultationRepo } from "../repos/disclosure-consultation.repo";
 import { NotificationService } from "./notification.service";
+import { TAddNotificationDto } from "../types/notification.type";
 @injectable()
 export class DisclosureService {
   constructor(
@@ -48,8 +49,27 @@ export class DisclosureService {
     return this.disclosureRepo.getByIdWithIncludes(id);
   }
 
-  addDisclosure(dto: TAddDisclosureDto) {
-    return this.disclosureRepo.create(dto);
+  async addDisclosure(dto: TAddDisclosureDto) {
+    return await this.db.transaction(async (tx) => {
+      const [newDisclosure] = await this.disclosureRepo.create(dto, tx as any);
+
+      // If a scout is assigned, notify them
+      if (newDisclosure.scoutId && dto.createdBy) {
+        await this.notificationService.sendNotification(
+          [
+            {
+              from: dto.createdBy,
+              to: newDisclosure.scoutId,
+              type: "disclosure_assigned",
+              recordId: newDisclosure.id,
+            },
+          ],
+          tx as any,
+        );
+      }
+
+      return [newDisclosure];
+    });
   }
 
   searchDisclosures(dto: TFilterDisclosuresDto) {
@@ -260,6 +280,21 @@ export class DisclosureService {
           }));
 
         await this.auditLogRepo.create(auditsToAdd, tx as any);
+
+        // Notify the new scout for each disclosure assigned to them (bulk operation)
+        const notifications: TAddNotificationDto[] = updatedDisclosures.map(
+          (disclosure) => ({
+            from: updatedBy,
+            to: dto.toScoutId,
+            type: "disclosure_assigned",
+            recordId: disclosure.id,
+          }),
+        );
+
+        await this.notificationService.sendBulkNotifications(
+          notifications,
+          tx as any,
+        );
       }
 
       return updatedDisclosures.length;
@@ -276,25 +311,23 @@ export class DisclosureService {
         consultationAudioUUID = await saveAudioFile(consultationAudioFile);
       }
 
-      await this.consultationRepo.create(
+      const [addedConsultation] = await this.consultationRepo.create(
         {
           ...rest,
           consultationAudio: consultationAudioUUID,
         },
         tx as any,
       );
-      // rest.createdBy!,
-      //      "consultation_requested",
-      //      rest.disclosureId,
-      //      undefined,
-      //      tx as any,
-      await this.notificationService.sendNotificationToRoles({
-        fromId: rest.createdBy,
-        type: "consultation_requested",
-        roles: ["manager"],
-        recordId: rest.disclosureId,
-        tx: tx as any,
-      });
+
+      await this.notificationService.sendNotificationToRoles(
+        {
+          from: addedConsultation.createdBy!,
+          type: "consultation_requested",
+          roles: ["manager"],
+          recordId: addedConsultation.id,
+        },
+        tx as any,
+      );
     });
   }
   // CONSULTATIONS
@@ -374,11 +407,14 @@ export class DisclosureService {
 
       // Notify the scout who requested the consultation
       await this.notificationService.sendNotification(
-        updatedBy,
-        consultation.createdBy!,
-        "consultation_completed",
-        undefined,
-        consultation.disclosureId,
+        [
+          {
+            from: updatedBy,
+            to: consultation.createdBy!,
+            type: "consultation_completed",
+            recordId: consultation.id,
+          },
+        ],
         tx as any,
       );
     });

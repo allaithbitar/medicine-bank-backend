@@ -44,6 +44,11 @@ export const NotificationsController = new Elysia({
       {
         body: markAsReadModel,
       },
+    )
+    .put("/mark-all-read", ({ notificationService, user }) =>
+      notificationService.markAllAsRead(user.id),
+    )
+    .put("/delete-read", ({ notificationService, user }) =>
+      notificationService.deleteReadNotifications(user.id),
     ),
 );
-

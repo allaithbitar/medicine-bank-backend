@@ -23,7 +23,4 @@ export const filterNotificationsModel = t.Partial(
   ]),
 );
 
-export const markAsReadModel = t.Object({
-  id: t.String({ format: "uuid" }),
-});
-
+export const markAsReadModel = t.Pick(notificationSelectModel, ["id"]);
