@@ -121,21 +121,23 @@ const app = new Elysia({
     const responseContentType =
       ((response as Response)?.headers as Headers)?.get("content-type") ?? "";
 
-    if (
-      responseContentType?.includes("audio") ||
-      responseContentType?.includes("video")
-    ) {
-      ((response as Response)?.headers as Headers).set(
-        "Cross-Origin-Resource-Policy",
-        "cross-origin",
-      );
-      ((response as Response)?.headers as Headers).set(
-        "Accept-Ranges",
-        "bytes",
-      );
-
+    if (!!responseContentType) {
+      if (
+        responseContentType?.includes("audio") ||
+        responseContentType?.includes("video")
+      ) {
+        ((response as Response)?.headers as Headers).set(
+          "Cross-Origin-Resource-Policy",
+          "cross-origin",
+        );
+        ((response as Response)?.headers as Headers).set(
+          "Accept-Ranges",
+          "bytes",
+        );
+      }
       return response;
     }
+
     return {
       success: true,
       data: response ?? null,

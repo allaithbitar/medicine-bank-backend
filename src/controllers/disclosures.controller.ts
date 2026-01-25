@@ -278,5 +278,13 @@ export const DisclosuresController = new Elysia({
         body: archiveDisclosureModel,
         roles: ["manager", "supervisor"],
       },
+    )
+    .put(
+      "/export-excel",
+      async ({ body, disclosureService }) =>
+        disclosureService.exportToExcel(body),
+      {
+        body: t.Omit(searchDisclosuresModel, ["pageSize", "pageNumber"]),
+      },
     ),
 );

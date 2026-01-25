@@ -32,6 +32,10 @@ import { deleteAudioFile, saveAudioFile } from "../db/helpers";
 import { DisclosureConsultationRepo } from "../repos/disclosure-consultation.repo";
 import { NotificationService } from "./notification.service";
 import { TAddNotificationDto } from "../types/notification.type";
+import { rowsToExcel } from "../libs/xlsx";
+import localization from "../constants/localization.json";
+import { formatDateTime } from "../helpers";
+
 @injectable()
 export class DisclosureService {
   constructor(
@@ -606,6 +610,94 @@ export class DisclosureService {
         ],
         tx as any,
       );
+    });
+  }
+
+  async exportToExcel(dto: TFilterDisclosuresDto) {
+    const result = await this.disclosureRepo.findManyWithIncludesPaginated({
+      ...dto,
+      pageSize: Number.MAX_SAFE_INTEGER,
+    });
+    const normalizedResult = result.items.map((i) => {
+      const {
+        patient,
+        updatedBy,
+        createdBy,
+        priority,
+        rating,
+        scout,
+        customRating,
+        isCustomRating,
+        // patientId,
+        // priorityId,
+        // ratingId,
+        // id,
+        // scoutId,
+        type,
+        status,
+        initialNote,
+        isReceived,
+        visitNote,
+        visitReason,
+        visitResult,
+        ratingNote,
+        appointmentDate,
+        isAppointmentCompleted,
+        archiveNumber,
+        createdAt,
+        updatedAt,
+      } = i;
+      const dtoToBePrinted = {
+        [localization["disclosure.excel.type"]]:
+          localization[`disclosure.excel.${type}`],
+        [localization["disclosure.excel.patient"]]: patient.name,
+        [localization["disclosure.excel.priority"]]: priority.name,
+        [localization["disclosure.excel.status"]]:
+          localization[`disclosure.excel.${status}`],
+        [localization["disclosure.excel.initial_note"]]: initialNote ?? "",
+        [localization["disclosure.excel.scout"]]: (scout as any)?.name,
+        [localization["disclosure.excel.visit_status"]]: visitResult
+          ? localization[`disclosure.excel.${visitResult}`]
+          : localization["disclosure.excel.none"],
+        [localization["disclosure.excel.visit_reason"]]: visitReason ?? "",
+        [localization["disclosure.excel.visit_note"]]: visitNote ?? "",
+        [localization["disclosure.excel.rating"]]:
+          (isCustomRating
+            ? `( ${localization["disclosure.excel.rating_custom"]} ) - ${customRating}`
+            : rating
+              ? `( ${rating.code} ) - ${rating.name}`
+              : "") || "",
+        [localization["disclosure.excel.rating_note"]]: ratingNote ?? "",
+        [localization["disclosure.excel.appointment_date"]]:
+          appointmentDate ?? "",
+        [localization["disclosure.excel.appointment_status"]]:
+          isAppointmentCompleted ? localization["disclosure.excel.done"] : "",
+        [localization["disclosure.excel.receive_status"]]: isReceived
+          ? localization["disclosure.excel.done"]
+          : "",
+        [localization["disclosure.excel.archive_number"]]: archiveNumber ?? "",
+        [localization["disclosure.excel.created_by"]]: (createdBy as any)?.name,
+        [localization["disclosure.excel.created_at"]]:
+          formatDateTime(createdAt),
+        [localization["disclosure.excel.updated_by"]]: (updatedBy as any)?.name,
+        [localization["disclosure.excel.updated_at"]]: updatedAt
+          ? formatDateTime(updatedAt)
+          : "",
+      };
+      return dtoToBePrinted;
+    });
+    const excelFileName = await rowsToExcel(normalizedResult);
+    const file = Bun.file(excelFileName);
+
+    const fileArrayBuffer = await file.arrayBuffer();
+    const contentType = file.type;
+
+    await file.delete();
+
+    return new Response(fileArrayBuffer, {
+      headers: {
+        "Content-Type": contentType,
+      },
     });
   }
 }
