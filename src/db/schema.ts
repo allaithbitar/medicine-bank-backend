@@ -26,7 +26,9 @@ const updatedAtColumn = {
   updatedAt: timestamp("updated_at", {
     mode: "string",
     withTimezone: true,
-  }).$onUpdate(() => sql`CURRENT_TIMESTAMP`),
+  })
+    .$onUpdate(() => sql`CURRENT_TIMESTAMP`)
+    .$default(() => sql`NULL`),
 };
 
 export const emplyee_role_enum = pgEnum("emplyee_role_enum", [
