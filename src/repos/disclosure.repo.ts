@@ -1,6 +1,11 @@
 import { inject, injectable } from "inversify";
 import { TDbContext } from "../db/drizzle";
-import { disclosureDetails, disclosureNotes, disclosures } from "../db/schema";
+import {
+  disclosureDetails,
+  disclosureNotes,
+  disclosures,
+  patients,
+} from "../db/schema";
 import {
   TAddDisclosureDetailsDto,
   TAddDisclosureDto,
@@ -61,6 +66,7 @@ export class DisclosureRepo {
     type,
     visitResult,
     unvisited,
+    areaIds,
   }: TFilterDisclosuresDto) {
     let scoutesFilter = undefined;
 
@@ -71,6 +77,8 @@ export class DisclosureRepo {
     let undeliveredFilter = undefined;
 
     let unvisitedFilter = undefined;
+
+    let areasFilter = undefined;
 
     const createdAtStartFilter = createdAtStart
       ? gte(disclosures.createdAt, createdAtStart)
@@ -109,6 +117,15 @@ export class DisclosureRepo {
 
     if (unvisited) {
       unvisitedFilter = isNull(disclosures.visitResult);
+    }
+
+    if (areaIds?.length) {
+      areasFilter = inArray(disclosures.patientId, 
+        this.db
+          .select({ id: patients.id })
+          .from(patients)
+          .where(inArray(patients.areaId, areaIds))
+      );
     }
 
     let appointmentDateFilter = appointmentDate
@@ -165,6 +182,7 @@ export class DisclosureRepo {
       typeFilter,
       visitResultFilter,
       unvisitedFilter,
+      areasFilter,
     };
   }
 
@@ -197,7 +215,10 @@ export class DisclosureRepo {
   }
 
   async create(createDto: TAddDisclosureDto, tx?: TDbContext) {
-    return await (tx ?? this.db).insert(disclosures).values(createDto).returning();
+    return await (tx ?? this.db)
+      .insert(disclosures)
+      .values(createDto)
+      .returning();
   }
 
   async update(updateDto: TUpdateDisclosureDto, tx?: TDbContext) {
