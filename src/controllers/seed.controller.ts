@@ -304,7 +304,8 @@ export const SeedController = new Elysia({
                     : "scout",
               areaIds: e.regions
                 .map(
-                  (r: any) => areas.find((aa) => aa.name === r.name.trim())?.id,
+                  (r: any) =>
+                    areas.find((aa) => aa.name === r.name.trim())?.id!,
                 )
                 .filter(Boolean),
             });
