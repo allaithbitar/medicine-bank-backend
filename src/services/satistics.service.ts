@@ -2,8 +2,19 @@ import "reflect-metadata";
 import { inject, injectable } from "inversify";
 import { TGetSatisticsDto } from "../types/satistics.type";
 import { TDbContext } from "../db/drizzle";
-import { and, count, eq, gte, lte, countDistinct, isNull } from "drizzle-orm";
-import { auditLogs, disclosures, ratings } from "../db/schema";
+import {
+  and,
+  count,
+  eq,
+  gte,
+  lte,
+  countDistinct,
+  isNull,
+  sql,
+  or,
+  isNotNull,
+} from "drizzle-orm";
+import { auditLogs, disclosures, priorityDegrees, ratings } from "../db/schema";
 
 @injectable()
 export class SatisticsService {
@@ -63,11 +74,38 @@ export class SatisticsService {
         ),
       );
 
+    let priorityDegress = await this.db.query.priorityDegrees.findMany({
+      where: isNotNull(priorityDegrees.durationInDays),
+    });
+
+    let pdQuery = priorityDegress.map((pd) =>
+      and(
+        sql`${disclosures.createdAt} <= NOW() - INTERVAL '${sql.raw(String(pd.durationInDays!))} days'`,
+        eq(disclosures.priorityId, pd.id),
+      ),
+    );
+
+    let [{ count: lateDisclosuresCount }] = await this.db
+      .select({ count: count() })
+      .from(disclosures)
+      .where(
+        and(
+          gte(disclosures.createdAt, fromDate),
+          lte(disclosures.createdAt, toDate),
+          employeeId ? eq(disclosures.scoutId, employeeId) : undefined,
+          or(...pdQuery),
+          eq(disclosures.status, "active"),
+          isNull(disclosures.visitResult),
+          and(isNull(disclosures.ratingId), isNull(disclosures.customRating)),
+        ),
+      );
+
     return {
       addedDisclosuresCount,
       uncompletedVisitsCount,
       completedVisitsCount,
       cantBeCompletedVisitsCount,
+      lateDisclosuresCount,
     };
   }
 

@@ -87,6 +87,8 @@ export const searchDisclosuresModel = t.Composite([
 
       isCustomRating: t.Boolean(),
 
+      isLate: t.Boolean(),
+
       isReceived: t.Boolean(),
 
       areaIds: t.Array(t.String({ format: "uuid" })),

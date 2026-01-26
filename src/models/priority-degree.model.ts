@@ -2,7 +2,9 @@ import { createInsertSchema, createSelectSchema } from "drizzle-typebox";
 import { priorityDegrees } from "../db/schema";
 import { t } from "elysia";
 
-export const priorityDegreeInsertModel = createInsertSchema(priorityDegrees);
+export const priorityDegreeInsertModel = createInsertSchema(priorityDegrees, {
+  durationInDays: t.Optional(t.Nullable(t.Integer({ minimum: 1 }))),
+});
 
 export const priorityDegreeSelectModel = createSelectSchema(priorityDegrees);
 

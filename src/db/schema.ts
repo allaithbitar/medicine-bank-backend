@@ -262,6 +262,7 @@ export const priorityDegrees = pgTable("priority_degrees", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").unique().notNull(),
   color: text("color"),
+  durationInDays: integer("duration_in_days"),
 });
 
 export const ratings = pgTable("ratings", {

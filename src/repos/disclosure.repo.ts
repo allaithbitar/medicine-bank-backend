@@ -5,6 +5,7 @@ import {
   disclosureNotes,
   disclosures,
   patients,
+  priorityDegrees,
 } from "../db/schema";
 import {
   TAddDisclosureDetailsDto,
@@ -29,6 +30,8 @@ import {
   isNotNull,
   isNull,
   lte,
+  or,
+  sql,
 } from "drizzle-orm";
 import {
   ACTIONER_WITH,
@@ -67,6 +70,7 @@ export class DisclosureRepo {
     visitResult,
     unvisited,
     areaIds,
+    isLate,
   }: TFilterDisclosuresDto) {
     let scoutesFilter = undefined;
 
@@ -79,6 +83,8 @@ export class DisclosureRepo {
     let unvisitedFilter = undefined;
 
     let areasFilter = undefined;
+
+    let isLateFilter = undefined;
 
     const createdAtStartFilter = createdAtStart
       ? gte(disclosures.createdAt, createdAtStart)
@@ -120,11 +126,12 @@ export class DisclosureRepo {
     }
 
     if (areaIds?.length) {
-      areasFilter = inArray(disclosures.patientId, 
+      areasFilter = inArray(
+        disclosures.patientId,
         this.db
           .select({ id: patients.id })
           .from(patients)
-          .where(inArray(patients.areaId, areaIds))
+          .where(inArray(patients.areaId, areaIds)),
       );
     }
 
@@ -160,6 +167,26 @@ export class DisclosureRepo {
       ? inArray(disclosures.visitResult, noramlizedVisitResult)
       : undefined;
 
+    if (isLate) {
+      let priorityDegress = await this.db.query.priorityDegrees.findMany({
+        where: isNotNull(priorityDegrees.durationInDays),
+      });
+
+      let pdQuery = priorityDegress.map((pd) =>
+        and(
+          sql`${disclosures.createdAt} <= NOW() - INTERVAL '${sql.raw(String(pd.durationInDays!))} days'`,
+          eq(disclosures.priorityId, pd.id),
+        ),
+      );
+
+      isLateFilter = and(
+        or(...pdQuery),
+        eq(disclosures.status, "active"),
+        isNull(disclosures.visitResult),
+        and(isNull(disclosures.ratingId), isNull(disclosures.customRating)),
+      );
+    }
+
     //
     // isReceived,
     //    ratingId,
@@ -183,6 +210,7 @@ export class DisclosureRepo {
       visitResultFilter,
       unvisitedFilter,
       areasFilter,
+      isLateFilter,
     };
   }
 

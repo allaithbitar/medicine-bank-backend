@@ -1,0 +1,1 @@
+ALTER TABLE "priority_degrees" ADD COLUMN "duration_in_days" integer;
