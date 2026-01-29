@@ -196,11 +196,12 @@ export const patients = pgTable("patients", {
 export const familyMembers = pgTable("family_members", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
-  birthDate: date("birth_date", { mode: "string" }),
-  gender: gender_enum("gender"),
+  birthDate: date("birth_date", { mode: "string" }).notNull(),
+  gender: gender_enum("gender").notNull(),
   nationalNumber: text("national_number"),
   kinshep: kinshep_enum("kinshep"),
   jobOrSchool: text("job_or_school"),
+  residential: text("residential"),
   note: text("note"),
   kidsCount: integer("kids_count"),
   patientId: uuid("patient_id")
