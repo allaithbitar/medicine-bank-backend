@@ -69,7 +69,7 @@ export class NotificationRepo {
     pageNumber = DEFAULT_PAGE_NUMBER,
     ...rest
   }: TFilterNotificationsDto) {
-    const count = await this.getCount(rest);
+    const totalCount = await this.getCount(rest);
     const { typeFilter, fromFilter, toFilter } = await this.getFilters(rest);
 
     const result = await this.db.query.notifications.findMany({
@@ -89,7 +89,7 @@ export class NotificationRepo {
 
     return {
       items: result,
-      count,
+      totalCount,
       pageSize,
       pageNumber,
     };

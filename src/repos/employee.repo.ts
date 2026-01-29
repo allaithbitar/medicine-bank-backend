@@ -107,7 +107,7 @@ export class EmployeeRepo {
     pageNumber = DEFAULT_PAGE_NUMBER,
     ...rest
   }: TFilterEmployeesDto) {
-    const count = await this.getCount(rest);
+    const totalCount = await this.getCount(rest);
     const { areasFilter, queryFilter, roleFilter } =
       await this.getFilters(rest);
 
@@ -126,7 +126,7 @@ export class EmployeeRepo {
     });
     return {
       items: result,
-      count,
+      totalCount,
       pageSize,
       pageNumber,
     };

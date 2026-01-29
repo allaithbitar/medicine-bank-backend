@@ -2,6 +2,7 @@ import { inject, injectable } from "inversify";
 import {
   TAddPatientDto,
   TFilterPatientsDto,
+  TPatient,
   TUpdatePatientDto,
   TValidatePatientNationalNumberDto,
   TValidatePatientPhoneNumbersDto,
@@ -11,6 +12,7 @@ import { patients, patientsPhoneNumbers } from "../db/schema";
 import { and, count, desc, eq, ilike, inArray, ne, SQL } from "drizzle-orm";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 import { searchArabic } from "../db/helpers";
+import { TPaginatedResponse } from "../types/common.types";
 
 @injectable()
 export class PatientRepo {
@@ -125,12 +127,12 @@ export class PatientRepo {
     pageSize = DEFAULT_PAGE_SIZE,
     pageNumber = DEFAULT_PAGE_NUMBER,
     ...rest
-  }: TFilterPatientsDto) {
+  }: TFilterPatientsDto): Promise<TPaginatedResponse<TPatient>> {
     const filters = await this.getFilters(rest);
 
     const where = and(...Object.values(filters));
 
-    const count = await this.getCount(where);
+    const totalCount = await this.getCount(where);
 
     const result = await this.db.query.patients.findMany({
       where,
@@ -145,7 +147,7 @@ export class PatientRepo {
 
     return {
       items: result,
-      count,
+      totalCount,
       pageSize,
       pageNumber,
     };
