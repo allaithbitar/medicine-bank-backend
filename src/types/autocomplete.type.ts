@@ -3,6 +3,7 @@ import {
   areasAutocompleteModel,
   autocompleteModel,
   employeesAutocompleteModel,
+  medicinesAutocompleteModel,
 } from "../models/autocomplete.model";
 
 export type TAutocompleteDto<T> = Static<typeof autocompleteModel> & {
@@ -13,4 +14,8 @@ export type TAreasAutocompleteDto = Static<typeof areasAutocompleteModel>;
 
 export type TEmployeesAutocompleteDto = Static<
   typeof employeesAutocompleteModel
+>;
+
+export type TMedicinesAutocompleteDto = Static<
+  typeof medicinesAutocompleteModel
 >;

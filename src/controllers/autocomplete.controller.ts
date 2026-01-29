@@ -5,12 +5,12 @@ import {
   updateSystemBroadcastModel,
 } from "../models/system-broadcast.model";
 import DiContainer from "../di/di-container";
-import { SystemBroadcastService } from "../services/system-broadcast.service";
 import { AutocompleteRepo } from "../repos/autocomplete.repo";
 import {
   areasAutocompleteModel,
   autocompleteModel,
   employeesAutocompleteModel,
+  medicinesAutocompleteModel,
 } from "../models/autocomplete.model";
 
 export const AutocompleteController = new Elysia({
@@ -52,6 +52,14 @@ export const AutocompleteController = new Elysia({
         autocompleteRepo.getPaginatedEmployees(body as any),
       {
         body: employeesAutocompleteModel,
+      },
+    )
+    .post(
+      "medicines",
+      ({ autocompleteRepo, body }) =>
+        autocompleteRepo.getPaginatedMedicines(body as any),
+      {
+        body: medicinesAutocompleteModel,
       },
     ),
 );

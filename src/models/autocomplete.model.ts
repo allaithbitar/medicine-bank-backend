@@ -22,3 +22,5 @@ export const employeesAutocompleteModel = t.Composite([
   autocompleteModel,
   t.Pick(filterEmployeesModel, ["role"]),
 ]);
+
+export const medicinesAutocompleteModel = t.Composite([autocompleteModel]);

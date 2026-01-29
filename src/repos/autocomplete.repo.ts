@@ -1,14 +1,15 @@
 import { inject, injectable } from "inversify";
 import { TDbContext } from "../db/drizzle";
-import { areas, cities, employees, patients } from "../db/schema";
+import { areas, cities, employees, medicines, patients } from "../db/schema";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 import { TPaginatedResponse } from "../types/common.types";
 import {
   TAreasAutocompleteDto,
   TAutocompleteDto,
   TEmployeesAutocompleteDto,
+  TMedicinesAutocompleteDto,
 } from "../types/autocomplete.type";
-import { and, count, eq, inArray, SQL } from "drizzle-orm";
+import { and, count, eq, ilike, inArray, SQL } from "drizzle-orm";
 import { searchArabic } from "../db/helpers";
 
 @injectable()
@@ -132,6 +133,29 @@ export class AutocompleteRepo {
     const where = and(queryFilter, roleFilter);
     const totalCount = await this.getCount(where, employees);
     const result = await this.db.query.employees.findMany({
+      where,
+      limit: pageSize,
+      offset: pageSize * pageNumber,
+      columns: {
+        id: true,
+        name: true,
+        ...columns,
+      },
+    });
+
+    return { items: result, totalCount, pageNumber, pageSize };
+  }
+
+  async getPaginatedMedicines({
+    pageNumber = DEFAULT_PAGE_NUMBER,
+    pageSize = DEFAULT_PAGE_SIZE,
+    query,
+    columns,
+  }: TMedicinesAutocompleteDto): Promise<TPaginatedResponse<any>> {
+    const queryFilter = query ? ilike(medicines.name, `%${query}%`) : undefined;
+    const where = and(queryFilter);
+    const totalCount = await this.getCount(where, medicines);
+    const result = await this.db.query.medicines.findMany({
       where,
       limit: pageSize,
       offset: pageSize * pageNumber,
