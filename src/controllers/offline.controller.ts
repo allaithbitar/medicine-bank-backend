@@ -10,18 +10,23 @@ import {
   disclosureNotes,
   disclosures,
   employees,
+  familyMembers,
+  medicines,
+  patientMedicines,
   patients,
   patientsPhoneNumbers,
   priorityDegrees,
   ratings,
 } from "../db/schema";
 import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { AuthGuard } from "../guards/auth.guard";
 
 export const OfflineController = new Elysia({
   name: "Offline.Controller",
   tags: ["Offline"],
 }).group("/offline", (app) =>
   app
+    .use(AuthGuard)
     .resolve(() => ({
       db: DiContainer.get("db") as TDbContext,
       // disclosureService: DiContainer.get(DisclosureService),
@@ -54,6 +59,8 @@ export const OfflineController = new Elysia({
 
         const _areasToEmployees = await db.select().from(areasToEmployees);
 
+        const _medicines = await db.select().from(medicines);
+
         const _disclosures = await db
           .select()
           .from(disclosures)
@@ -76,6 +83,18 @@ export const OfflineController = new Elysia({
           .select()
           .from(patientsPhoneNumbers)
           .where(inArray(patientsPhoneNumbers.patientId, _patientIds))
+          .execute();
+
+        const _patientsMedicines = await db
+          .select()
+          .from(patientMedicines)
+          .where(inArray(patientMedicines.patientId, _patientIds))
+          .execute();
+
+        const _familyMembers = await db
+          .select()
+          .from(familyMembers)
+          .where(inArray(familyMembers.patientId, _patientIds))
           .execute();
 
         const _disclosureNotes = await db
@@ -129,6 +148,9 @@ export const OfflineController = new Elysia({
           disclosureNotes: _disclosureNotes,
           disclosureDetails: _disclosureDetails,
           patientsPhoneNumbers: _patientsPhoneNumbers,
+          medicines: _medicines,
+          patientMedicines: _patientsMedicines,
+          familyMembers: _familyMembers,
         };
       },
     ),
