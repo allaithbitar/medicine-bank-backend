@@ -373,7 +373,7 @@ export class DisclosureService {
   }
 
   async getDisclosureConsultation(id: string) {
-    const result = await this.consultationRepo.getById(id);
+    const result = await this.consultationRepo.getByIdWithIncludes(id);
     if (!result) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
     return result;
   }

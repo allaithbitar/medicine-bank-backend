@@ -10,6 +10,9 @@ RUN bun install
 
 COPY ./src ./src
 
+# Create public directory structure for static files
+RUN mkdir -p /app/public/audio
+
 ARG POSTGRES_HOST
 
 ARG POSTGRES_PORT

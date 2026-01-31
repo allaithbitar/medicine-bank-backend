@@ -22,7 +22,7 @@ export class EmployeeRepo {
         .insert(employees)
         .values(rest)
         .returning({ id: employees.id });
-      if (areaIds) {
+      if (areaIds?.length) {
         await _x
           .insert(areasToEmployees)
           .values(areaIds.map((aId) => ({ areaId: aId, employeeId: id })));
