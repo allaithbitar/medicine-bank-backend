@@ -126,7 +126,7 @@ export class NotificationRepo {
     await (tx ?? this.db)
       .update(notifications)
       .set({ readAt: new Date().toISOString() })
-      .where(eq(notifications.to, userId));
+      .where(and(eq(notifications.to, userId), isNull(notifications.readAt)));
   }
 
   async deleteReadNotifications(
