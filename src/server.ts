@@ -78,7 +78,14 @@ const app = new Elysia({
       },
     }),
   )
-  .use(staticPlugin())
+  .use(
+    staticPlugin({
+      assets: "public",
+      prefix: "/public",
+      alwaysStatic: false,
+      staticLimit: 0,
+    }),
+  )
   .onError(({ error, set }) => {
     let message = { en: "", ar: "", details: "", code: "" } as TSystemError;
 
