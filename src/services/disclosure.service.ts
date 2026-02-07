@@ -199,7 +199,7 @@ export class DisclosureService {
       if ((oldNote.createdBy as any).id !== updatedBy)
         throw new ForbiddenError(ERROR_CODES.FORBIDDEN_ACTION);
 
-      let noteAudio = "";
+      let noteAudio = oldNote.noteAudio || undefined;
 
       if (_deleteAudioFile === "true" || audioFile) {
         if (oldNote.noteAudio) {
