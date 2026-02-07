@@ -17,19 +17,26 @@ import { TPaginatedResponse } from "../types/common.types";
 @injectable()
 export class PatientRepo {
   constructor(@inject("db") private db: TDbContext) {}
-  async create(createDto: TAddPatientDto, tx?: TDbContext): Promise<void> {
+  async create(
+    createDto: TAddPatientDto,
+    tx?: TDbContext,
+  ): Promise<{ id: string }> {
     const { phoneNumbers, ...rest } = createDto;
 
+    let createdId = "";
     await (tx ?? this.db).transaction(async (_tx) => {
       const [{ id }] = await _tx
         .insert(patients)
         .values(rest)
         .returning({ id: patients.id });
 
+      createdId = id;
+
       await _tx
         .insert(patientsPhoneNumbers)
         .values(phoneNumbers.map((phone) => ({ patientId: id, phone })));
     });
+    return { id: createdId };
   }
 
   async update(updateDto: TUpdatePatientDto, tx?: TDbContext): Promise<void> {
@@ -38,13 +45,15 @@ export class PatientRepo {
     await (tx ?? this.db).transaction(async (_tx) => {
       await _tx.update(patients).set(rest).where(eq(patients.id, id));
 
-      await _tx
-        .delete(patientsPhoneNumbers)
-        .where(eq(patientsPhoneNumbers.patientId, id));
+      if (phoneNumbers) {
+        await _tx
+          .delete(patientsPhoneNumbers)
+          .where(eq(patientsPhoneNumbers.patientId, id));
 
-      await _tx
-        .insert(patientsPhoneNumbers)
-        .values(phoneNumbers.map((phone) => ({ patientId: id, phone })));
+        await _tx
+          .insert(patientsPhoneNumbers)
+          .values(phoneNumbers.map((phone) => ({ patientId: id, phone })));
+      }
     });
   }
 

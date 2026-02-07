@@ -21,7 +21,7 @@ export class FamilyMemberService {
   }
 
   async addFamilyMember(dto: TAddFamilyMemberDto) {
-    await this.familyMemberRepo.create(dto);
+    return this.familyMemberRepo.create(dto);
   }
 
   async updateFamilyMember(dto: TUpdateFamilyMemberDto) {

@@ -16,13 +16,13 @@ export const addPatientModel = t.Composite([
     "updatedBy",
   ]),
   t.Object({
-    phoneNumbers: t.Array(t.String(), { default: [], minItems: 1 }),
+    phoneNumbers: t.Array(t.String()),
   }),
 ]);
 
 export const updatePatientModel = t.Composite([
   t.Pick(patientSelectModel, ["id"]),
-  addPatientModel,
+  t.Partial(addPatientModel),
 ]);
 
 export const filterPatientsModel = t.Composite([

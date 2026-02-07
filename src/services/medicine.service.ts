@@ -41,7 +41,7 @@ export class MedicineService {
   }
 
   async addPatientMedicine(dto: TAddPatientMedicineDto) {
-    await this.medicineRepo.createPatientMedicine(dto);
+    return this.medicineRepo.createPatientMedicine(dto);
   }
 
   async updatePatientMedicine(dto: TUpdatePatientMedicineDto) {

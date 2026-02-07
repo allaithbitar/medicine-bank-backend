@@ -4,10 +4,11 @@ import { paginationModel } from "./common.model";
 import { medicines, patientMedicines } from "../db/schema";
 
 export const medicineInsertModel = createInsertSchema(medicines, {
-  doseVariants: t.Array(t.Number(), {
-    default: [],
-    examples: [[100, 500]],
-  }),
+  doseVariants: t.Optional(
+    t.Array(t.Number(), {
+      examples: [[100, 500]],
+    }),
+  ),
 });
 
 export const medicineSelectModel = createSelectSchema(medicines);
@@ -15,8 +16,8 @@ export const medicineSelectModel = createSelectSchema(medicines);
 export const addMedicineModel = t.Omit(medicineInsertModel, ["id"]);
 
 export const updateMedicineModel = t.Composite([
-  addMedicineModel,
-  t.Required(t.Pick(medicineInsertModel, ["id"])),
+  t.Pick(medicineSelectModel, ["id"]),
+  t.Partial(addMedicineModel),
 ]);
 
 export const filterMedicinesModel = t.Composite([

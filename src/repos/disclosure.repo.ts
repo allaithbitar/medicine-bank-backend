@@ -492,7 +492,12 @@ export class DisclosureRepo {
     dto: TUpdateDisclosureDetailsDto,
     tx?: TDbContext,
   ) {
-    return await (tx || this.db).update(disclosureDetails).set(dto).returning();
+    const { disclosureId, ...rest } = dto;
+    return await (tx || this.db)
+      .update(disclosureDetails)
+      .set(rest)
+      .where(eq(disclosureDetails.disclosureId, disclosureId))
+      .returning();
   }
 
   async getDisclosureDetails(disclosureId: string) {

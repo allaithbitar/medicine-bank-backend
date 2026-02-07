@@ -72,7 +72,7 @@ export class DisclosureService {
         );
       }
 
-      return [newDisclosure];
+      return newDisclosure;
     });
   }
 

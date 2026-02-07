@@ -217,7 +217,7 @@ export const medicines = pgTable("medicines", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   form: medicine_form_enum("form").notNull(),
-  doseVariants: real("dose_variants").array().notNull(),
+  doseVariants: real("dose_variants").array(),
   // dosePerIntake: real("dose_per_intake").notNull(), // e.g., 1 pill
   // intakeFrequency: text("intake_frequency"),
   // note: text("note"),
@@ -624,6 +624,10 @@ export const disclosureConsultationRelations = relations(
     }),
   }),
 );
+
+export const cityRelations = relations(cities, ({ many }) => ({
+  areas: many(areas),
+}));
 
 export const notificationRelations = relations(notifications, ({ one }) => ({
   fromEmployee: one(employees, {

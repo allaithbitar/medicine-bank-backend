@@ -62,7 +62,11 @@ export class FamilyMemberRepo {
   }
 
   async create(dto: TAddFamilyMemberDto, tx?: TDbContext) {
-    return await (tx ?? this.db).insert(familyMembers).values(dto);
+    const [addedFamilyMember] = await (tx ?? this.db)
+      .insert(familyMembers)
+      .values(dto)
+      .returning();
+    return addedFamilyMember;
   }
 
   async update(dto: TUpdateFamilyMemberDto, tx?: TDbContext) {

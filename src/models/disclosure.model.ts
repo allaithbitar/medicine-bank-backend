@@ -32,10 +32,6 @@ export const updateDisclosureModel = t.Composite([
   t.Partial(addDisclosureModel),
 ]);
 
-export const updateDisclosureStatusModel = t.Composite([
-  t.Pick(disclosureSelectModel, ["id"]),
-]);
-
 export const searchDisclosuresModel = t.Composite([
   paginationModel,
   t.Omit(disclosureInsertModel, [

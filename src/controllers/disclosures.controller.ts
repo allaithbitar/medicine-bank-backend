@@ -63,9 +63,9 @@ export const DisclosuresController = new Elysia({
     )
     .post(
       "",
-      ({ body, disclosureService, user }) => {
-        disclosureService.addDisclosure({ ...body, createdBy: user.id });
-      },
+      ({ body, disclosureService, user }) =>
+        disclosureService.addDisclosure({ ...body, createdBy: user.id }),
+
       {
         body: addDisclosureModel,
         roles: ["manager", "supervisor"],

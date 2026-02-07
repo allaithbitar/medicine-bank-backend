@@ -192,7 +192,11 @@ export class MedicineRepo {
   }
 
   async createPatientMedicine(dto: TAddPatientMedicineDto, tx?: TDbContext) {
-    return await (tx ?? this.db).insert(patientMedicines).values(dto);
+    const [result] = await (tx ?? this.db)
+      .insert(patientMedicines)
+      .values(dto)
+      .returning();
+    return result;
   }
 
   async updatePatientMedicine(dto: TUpdatePatientMedicineDto, tx?: TDbContext) {

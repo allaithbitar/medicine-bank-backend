@@ -16,8 +16,8 @@ export const addFamilyMemberModel = t.Omit(familyMemberInsertModel, [
 ]);
 
 export const updateFamilyMemberModel = t.Composite([
-  addFamilyMemberModel,
-  t.Required(t.Pick(familyMemberInsertModel, ["id"])),
+  t.Pick(familyMemberSelectModel, ["id", "patientId"]),
+  t.Partial(addFamilyMemberModel),
 ]);
 
 export const filterFamilyMembersModel = t.Composite([
