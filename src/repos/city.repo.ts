@@ -1,13 +1,13 @@
 import { inject, injectable } from "inversify";
 import { TDbContext } from "../db/drizzle";
-import { cities } from "../db/schema";
+import { areas, areasToEmployees, cities } from "../db/schema";
 import {
   TAddCityDto,
   TCity,
   TFilterCitiesDto,
   TUpdateCityDto,
 } from "../types/city.type";
-import { count, eq, ilike } from "drizzle-orm";
+import { count, eq, ilike, sql } from "drizzle-orm";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 import { TPaginatedResponse } from "../types/common.types";
 import { ERROR_CODES, NotFoundError } from "../constants/errors";
@@ -54,11 +54,22 @@ export class CityRepo {
     const totalCount = await this.getCount(rest);
     const { nameFilter } = this.getFilters(rest);
 
-    const result = await this.db.query.cities.findMany({
-      where: nameFilter,
-      limit: pageSize,
-      offset: pageSize * pageNumber,
-    });
+    const result = await this.db
+      .select({
+        id: cities.id,
+        name: cities.name,
+        areasCount: sql<number>`(SELECT COUNT(*) FROM ${areas} WHERE ${eq(areas.cityId, cities.id)})`,
+        employeesCount: sql<number>`(
+          SELECT COUNT(DISTINCT ${areasToEmployees.employeeId}) 
+          FROM ${areasToEmployees} 
+          INNER JOIN ${areas} ON ${eq(areasToEmployees.areaId, areas.id)}
+          WHERE ${eq(areas.cityId, cities.id)}
+        )`,
+      })
+      .from(cities)
+      .where(nameFilter)
+      .limit(pageSize)
+      .offset(pageSize * pageNumber);
 
     return { items: result, totalCount, pageNumber, pageSize };
   }

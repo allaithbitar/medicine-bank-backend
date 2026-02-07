@@ -1,7 +1,7 @@
 import { inject, injectable } from "inversify";
 import { TDbContext } from "../db/drizzle";
-import { areas } from "../db/schema";
-import { and, count, eq, ilike } from "drizzle-orm";
+import { areas, areasToEmployees, cities, patients } from "../db/schema";
+import { and, count, eq, ilike, sql } from "drizzle-orm";
 import {
   TAddAreaDto,
   TArea,
@@ -44,11 +44,22 @@ export class AreaRepo {
     const totalCount = await this.getCount(rest);
     const { nameFilter, cityIdFilter } = this.getFilters(rest);
 
-    const result = await this.db.query.areas.findMany({
-      where: and(nameFilter, cityIdFilter),
-      limit: pageSize,
-      offset: pageSize * pageNumber,
-    });
+    const result = await this.db
+      .select({
+        id: areas.id,
+        name: areas.name,
+        cityId: areas.cityId,
+        city: {
+          id: cities.id,
+          name: cities.name,
+        },
+        patientsCount: sql<number>`(SELECT COUNT (*) FROM ${patients} WHERE ${eq(patients.areaId, areas.id)})`,
+      })
+      .from(areas)
+      .leftJoin(cities, eq(areas.cityId, cities.id))
+      .where(and(nameFilter, cityIdFilter))
+      .limit(pageSize)
+      .offset(pageSize * pageNumber);
 
     return { items: result, totalCount, pageNumber, pageSize };
   }
