@@ -357,6 +357,7 @@ export const notifications = pgTable("notifications", {
     mode: "string",
     withTimezone: true,
   }),
+  ...createdAtColumn,
 });
 
 export const systemBroadcasts = pgTable("system_broadcasts", {
