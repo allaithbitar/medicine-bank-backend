@@ -34,7 +34,7 @@ import { NotificationService } from "./notification.service";
 import { TAddNotificationDto } from "../types/notification.type";
 import { rowsToExcel } from "../libs/xlsx";
 import localization from "../constants/localization.json";
-import { formatDateTime } from "../helpers";
+import { isNullOrUndefined, formatDateTime } from "../helpers";
 
 @injectable()
 export class DisclosureService {
@@ -135,8 +135,12 @@ export class DisclosureService {
             column: disclosures[property].name,
             action: "UPDATE",
             createdBy: updatedBy,
-            newValue: String(updatedDisclosure[property]),
-            oldValue: String(oldDisclosure[property]),
+            newValue: !isNullOrUndefined(updatedDisclosure[property])
+              ? String(updatedDisclosure[property])
+              : null,
+            oldValue: !isNullOrUndefined(oldDisclosure[property])
+              ? String(oldDisclosure[property])
+              : null,
             table: "disclosures",
             createdAt: auditCreatedAt,
           });
@@ -227,8 +231,8 @@ export class DisclosureService {
             table: "disclosure_notes",
             column: "note_text",
             action: "UPDATE",
-            newValue: updatedNote.noteText,
-            oldValue: oldNote.noteText,
+            newValue: updatedNote.noteText || null,
+            oldValue: oldNote.noteText || null,
             createdBy: updatedNote.createdBy,
           });
         if (oldNote.noteAudio !== updatedNote.noteAudio) {
@@ -237,8 +241,8 @@ export class DisclosureService {
             table: "disclosure_notes",
             column: "note_audio",
             action: "UPDATE",
-            newValue: updatedNote.noteAudio,
-            oldValue: oldNote.noteAudio,
+            newValue: updatedNote.noteAudio || null,
+            oldValue: oldNote.noteAudio || null,
             createdBy: updatedNote.createdBy,
           });
         }
@@ -262,12 +266,10 @@ export class DisclosureService {
   }
 
   async moveDisclosures(dto: TMoveDisclosuresDto, updatedBy: string) {
-    await this.db.transaction(async (tx) => {
-      const updatedDisclosures = await this.disclosureRepo.moveDisclosures(
-        dto.fromScoutId,
-        dto.toScoutId,
-      );
+    console.log(dto);
 
+    await this.db.transaction(async (tx) => {
+      const updatedDisclosures = await this.disclosureRepo.moveDisclosures(dto);
       if (updatedDisclosures.length > 0) {
         const auditCreatedAt = new Date().toISOString();
 
@@ -388,7 +390,9 @@ export class DisclosureService {
       updatedBy,
     } = dto;
     const consultation = await this.consultationRepo.getById(id);
+
     if (!consultation) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+
     await this.db.transaction(async (tx) => {
       // Update the disclosure with rating information directly
       await this.updateDisclosure(consultation.disclosureId, updatedBy, {
@@ -397,6 +401,7 @@ export class DisclosureService {
         customRating,
         ratingNote,
         updatedBy,
+        visitResult: "completed",
       });
 
       await this.consultationRepo.update(
@@ -483,8 +488,8 @@ export class DisclosureService {
             column: disclosureDetails[property].name,
             action: "UPDATE",
             createdBy: dto.updatedBy,
-            newValue: updatedDisclosureDetails[property],
-            oldValue: oldDisclosureDetails[property],
+            newValue: updatedDisclosureDetails[property] || null,
+            oldValue: oldDisclosureDetails[property] || null,
             table: "disclosure_details",
             createdAt: auditCreatedAt,
           });
