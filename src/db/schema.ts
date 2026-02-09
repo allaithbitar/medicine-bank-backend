@@ -35,6 +35,7 @@ export const emplyee_role_enum = pgEnum("emplyee_role_enum", [
   "manager",
   "supervisor",
   "scout",
+  "accountant",
 ]);
 
 export const disclosure_status_enum = pgEnum("disclosure_status_enum", [
@@ -415,6 +416,16 @@ export const auditLogs = pgTable("audit_logs", {
   ...createdByColumn,
 });
 
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  disclosureId: uuid("disclosure_id")
+    .unique()
+    .notNull()
+    .references(() => disclosures.id, { onDelete: "set null" }),
+  ...createdAtColumn,
+  ...createdByColumn,
+});
+
 // RELATIONS //
 
 export const employeeRelations = relations(employees, ({ many }) => ({
@@ -523,6 +534,10 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
     references: [disclosureDetails.disclosureId],
   }),
   notes: many(disclosureNotes),
+  payment: one(payments, {
+    fields: [disclosures.id],
+    references: [payments.disclosureId],
+  }),
   createdBy: one(employees, {
     fields: [disclosures.createdBy],
     references: [employees.id],
@@ -640,5 +655,17 @@ export const notificationRelations = relations(notifications, ({ one }) => ({
     fields: [notifications.to],
     references: [employees.id],
     relationName: "toEmployee",
+  }),
+}));
+
+export const paymentRelations = relations(payments, ({ one }) => ({
+  disclosure: one(disclosures, {
+    fields: [payments.disclosureId],
+    references: [disclosures.id],
+  }),
+  createdBy: one(employees, {
+    fields: [payments.createdBy],
+    references: [employees.id],
+    relationName: "createdBy",
   }),
 }));

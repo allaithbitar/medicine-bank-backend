@@ -46,6 +46,7 @@ import { SystemBroadcastsController } from "./controllers/system-broadcasts.cont
 import { MeetingsController } from "./controllers/meetings.controller";
 import { NotificationsController } from "./controllers/notifications.controller";
 import { AutocompleteController } from "./controllers/autocomplete.controller";
+import { PaymentsController } from "./controllers/payments.controller";
 
 const app = new Elysia({
   serve: {
@@ -168,6 +169,7 @@ const app = new Elysia({
   .use(MeetingsController)
   .use(NotificationsController)
   .use(AutocompleteController)
+  .use(PaymentsController)
   .use(SeedController)
   .get("/api/ping", async () => {
     return "pong";
