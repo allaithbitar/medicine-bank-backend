@@ -121,4 +121,8 @@ export class EmployeeService {
     if (!result) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
     return result;
   }
+
+  async getRecommendedScoutsForPatient(patientId: string) {
+    return this.employeeRepo.getRecommondedScoutsForPatient(patientId);
+  }
 }

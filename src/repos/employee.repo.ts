@@ -6,10 +6,11 @@ import {
   TUpdateEmployeeDto,
 } from "../types/employee.type";
 import { TDbContext } from "../db/drizzle";
-import { areasToEmployees, employees } from "../db/schema";
+import { areasToEmployees, employees, patients } from "../db/schema";
 import { and, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { TFilterPatientsDto } from "../types/patient.type";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
+import { ERROR_CODES, NotFoundError } from "../constants/errors";
 
 @injectable()
 export class EmployeeRepo {
@@ -145,5 +146,33 @@ export class EmployeeRepo {
       columns: { password: false },
     });
     return result;
+  }
+  async getRecommondedScoutsForPatient(patientId: string) {
+    const [result] = await this.db
+      .select({ areaId: patients.areaId })
+      .from(patients)
+      .where(eq(patients.id, patientId))
+      .execute();
+
+    if (!result?.areaId) {
+      throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    }
+
+    const recommendedScouts = await this.db
+      .select({
+        id: employees.id,
+        name: employees.name,
+      })
+      .from(employees)
+      .leftJoin(areasToEmployees, eq(employees.id, areasToEmployees.employeeId))
+      .where(
+        and(
+          eq(employees.role, "scout"),
+          eq(areasToEmployees.areaId, result.areaId),
+        ),
+      )
+      .execute();
+
+    return recommendedScouts;
   }
 }

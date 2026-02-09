@@ -46,3 +46,7 @@ export const filterEmployeesModel = t.Partial(
     }),
   ]),
 );
+
+export const getRecommendedScoutsForPatientModel = t.Object({
+  patientId: t.String({ format: "uuid" }),
+});

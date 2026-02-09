@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import {
   addEmployeeModel,
   filterEmployeesModel,
+  getRecommendedScoutsForPatientModel,
   updateEmployeeModel,
 } from "../models/employee.model";
 import DiContainer from "../di/di-container";
@@ -20,7 +21,7 @@ export const EmployeesController = new Elysia({
       ({ body, employeeService }) => employeeService.searchEmployees(body),
       {
         body: filterEmployeesModel,
-        // roles: ["manager"],
+        roles: ["manager", "supervisor"],
       },
     )
     .get(
@@ -48,6 +49,15 @@ export const EmployeesController = new Elysia({
       {
         body: updateEmployeeModel,
         roles: ["manager"],
+      },
+    )
+    .get(
+      "patient-scouts-recommendations",
+      ({ employeeService, query }) =>
+        employeeService.getRecommendedScoutsForPatient(query.patientId),
+
+      {
+        query: getRecommendedScoutsForPatientModel,
       },
     ),
 );
