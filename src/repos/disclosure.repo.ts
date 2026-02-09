@@ -15,6 +15,7 @@ import {
   TGetDateAppointmentsDto,
   TGetDisclosureAppointmentsDto,
   TGetDisclosureNotesDto,
+  TMoveDisclosuresDto,
   TUpdateDisclosureDetailsDto,
   TUpdateDisclosureDto,
   TUpdateDisclosureNoteEntityDto,
@@ -362,7 +363,22 @@ export class DisclosureRepo {
       .returning();
   }
 
-  async moveDisclosures(fromScoutId: string, toScoutId: string) {
+  async moveDisclosures(dto: TMoveDisclosuresDto) {
+    const { fromScoutId, toScoutId, areaIds } = dto;
+    let disclosureIdsByAreaFilter;
+    if (areaIds?.length) {
+      let patientIds = await this.db
+        .select({ id: patients.id })
+        .from(patients)
+        .where(inArray(patients.areaId, areaIds));
+
+      if (patientIds.length) {
+        disclosureIdsByAreaFilter = inArray(
+          disclosures.patientId,
+          patientIds.map((pId) => pId.id),
+        );
+      }
+    }
     const disclosuresWithoutRatings = await this.db
       .select({ id: disclosures.id })
       .from(disclosures)
@@ -371,6 +387,8 @@ export class DisclosureRepo {
           eq(disclosures.scoutId, fromScoutId),
           isNull(disclosures.ratingId),
           isNull(disclosures.customRating),
+          isNull(disclosures.visitResult),
+          disclosureIdsByAreaFilter,
         ),
       );
 

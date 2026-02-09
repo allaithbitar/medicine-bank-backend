@@ -206,6 +206,7 @@ export const getDisclosureAuditLogsModel = t.Composite([
 export const moveDisclosuresModel = t.Object({
   fromScoutId: t.String({ format: "uuid" }),
   toScoutId: t.String({ format: "uuid" }),
+  areaIds: t.Optional(t.Array(t.String())),
 });
 
 export const getDisclosureAppointmentsModel = t.Object({
