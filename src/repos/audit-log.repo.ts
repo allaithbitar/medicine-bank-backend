@@ -135,6 +135,17 @@ export class AuditLogRepo {
               });
               break;
             }
+            case disclosures.ratingId.name: {
+              oldRecordValue = await this.db.query.ratings.findFirst({
+                where: eq(ratings.id, auditRecord.oldValue!),
+                columns: ACTIONER_WITH.columns,
+              });
+              newRecordValue = await this.db.query.ratings.findFirst({
+                where: eq(ratings.id, auditRecord.newValue!),
+                columns: ACTIONER_WITH.columns,
+              });
+              break;
+            }
           }
           break;
         }
