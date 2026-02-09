@@ -86,3 +86,40 @@ export function searchArabic(source: Column, text: string): SQL {
   normalizedText = `%${normalizedText}%`;
   return sql`normalize_arabic(${source}) ILIKE normalize_arabic(${normalizedText})`;
 }
+
+export function noramalizeArabicNumbers(str?: string) {
+  const dic = {
+    "٠": 0,
+    "١": 1,
+    "٢": 2,
+    "٣": 3,
+    "٤": 4,
+    "٥": 5,
+    "٦": 6,
+    "٧": 7,
+    "٨": 8,
+    "٩": 9,
+  } as const;
+
+  const arabicNumbersSet = new Set([
+    "٠",
+    "١",
+    "٢",
+    "٣",
+    "٤",
+    "٥",
+    "٦",
+    "٧",
+    "٨",
+    "٩",
+  ]);
+
+  let strArr = (str || "").slice().replaceAll(" ", "").split("");
+
+  for (let i = 0; i < strArr.length; i++) {
+    if (arabicNumbersSet.has(strArr[i])) {
+      (strArr[i] as string) = String(dic[strArr[i] as keyof typeof dic]);
+    }
+  }
+  return strArr.join("");
+}
