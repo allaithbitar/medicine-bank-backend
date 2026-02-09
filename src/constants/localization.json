@@ -29,5 +29,10 @@
   "disclosure.excel.not_completed": "غير مكتملة (حجة)",
   "disclosure.excel.cant_be_completed": "لايمكن إكمالها (حجة +)",
   "disclosure.excel.completed": "مكتملة",
-  "disclosure.excel.none": "لا يوجد"
+  "disclosure.excel.none": "لا يوجد",
+  "disclosures.repeated_message": "مكرر , يرجى الإطّلاع",
+  "priority_degrees.urgent": "مستعجل",
+  "priority_degrees.mandatory": "ضروري",
+  "priority_degrees.noraml": "عادي",
+  "priority_degrees.attention": "انتباه"
 }

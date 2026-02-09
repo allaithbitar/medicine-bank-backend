@@ -26,6 +26,8 @@ import oldDbEmployees from "../old_db_employees.json";
 import oldDbAreas from "../old_db_areas.json";
 import { rowsToExcel } from "../libs/xlsx";
 import { TInsertAuditLog } from "../types/audit-log.type";
+import { noramalizeArabicNumbers } from "../db/helpers";
+import localization from "../constants/localization.json";
 
 export const SeedController = new Elysia({
   name: "Seed.Controller",
@@ -216,14 +218,29 @@ export const SeedController = new Elysia({
       // )
       .get("syncPriorityDegrees", async ({ db }) => {
         const DEGS = {
-          NORAML: "عادي",
-          ATTENTION: "انتباه",
-          MANDATORY: "ضروري",
-          URGENT: "مستعجل",
+          NORAML: {
+            days: 10,
+            label: localization["priority_degrees.noraml"],
+          },
+          ATTENTION: {
+            days: 7,
+            label: localization["priority_degrees.attention"],
+          },
+          MANDATORY: {
+            days: 5,
+            label: localization["priority_degrees.mandatory"],
+          },
+          URGENT: {
+            days: 3,
+            label: localization["priority_degrees.urgent"],
+          },
         };
-        await db
-          .insert(priorityDegrees)
-          .values(Object.values(DEGS).map((v) => ({ name: v })));
+        await db.insert(priorityDegrees).values(
+          Object.values(DEGS).map((v) => ({
+            name: v.label,
+            durationInDays: v.days,
+          })),
+        );
       })
       .get("syncOldRatings", async ({ db }) => {
         await db.delete(ratings);
@@ -395,57 +412,58 @@ export const SeedController = new Elysia({
               }[];
             }
         > = {};
-        for (const d of oldDbDisclosures) {
-          if (d.phone.trim() in paitentsToAdd) {
-            paitentsToAdd[d.phone.trim()] = {
-              ...paitentsToAdd[d.phone.trim()],
-              name: paitentsToAdd[d.phone.trim()].name + ` (#) ${d.name}`,
-              address:
-                paitentsToAdd[d.phone.trim()].address +
-                ` (#) ${d.address_details}`,
 
-              disclosures: [
-                ...paitentsToAdd[d.phone.trim()].disclosures,
-                {
-                  logs: d.logs,
-                  createdAt: d.created_at,
-                  note: d.details,
-                  scoutName: d.user.name.trim(),
-                  priorityDegreeName: d.priority.color,
-                  appointmentDate: d.check_date,
-                  isAppointmentCompleted: d.patientIsCame,
-                  isReceived: d.userIsReceived,
-                  type: oldDisclosureTypes[d.type.id],
-                },
-              ],
+        for (const d of oldDbDisclosures) {
+          // const trimmedPhone = d.phone.trim();
+          const trimmedName = d.name.trim();
+          const trimmedAddress = d.address_details.trim();
+          const updatedAt = d.updated_at
+            ? new Date(d.updated_at).toISOString()
+            : null;
+          const createdAt = new Date(d.created_at).toISOString();
+          const trimmedAreaName = d.region.name.trim();
+          const trimmedNote = (d.details || "").trim() || null;
+          const trimmedScoutName = d.user.name.trim();
+
+          const normalizedOptionalPhone = noramalizeArabicNumbers(
+            (d.optionalPhone || "").trim(),
+          );
+          const normalizedPhone = noramalizeArabicNumbers(d.phone.trim() || "");
+
+          const dto = {
+            logs: d.logs,
+            createdAt: d.created_at,
+            note: trimmedNote || null,
+            scoutName: trimmedScoutName,
+            priorityDegreeName: d.priority.color,
+            appointmentDate: d.check_date || null,
+            isAppointmentCompleted: d.patientIsCame,
+            isReceived: d.userIsReceived,
+            type: oldDisclosureTypes[d.type.id],
+          };
+
+          if (normalizedPhone in paitentsToAdd) {
+            paitentsToAdd[normalizedPhone] = {
+              ...paitentsToAdd[normalizedPhone],
+              name: paitentsToAdd[normalizedPhone].name + ` (#) ${trimmedName}`,
+              address:
+                paitentsToAdd[normalizedPhone].address +
+                ` (#) ${trimmedAddress}`,
+              disclosures: [...paitentsToAdd[normalizedPhone].disclosures, dto],
             };
           } else {
-            paitentsToAdd[d.phone.trim()] = {
-              name: d.name,
-              createdAt: new Date(d.created_at).toISOString(),
+            paitentsToAdd[normalizedPhone] = {
+              name: trimmedName,
+              createdAt,
               phoneNumbers: [
-                ...(d.optionalPhone.trim() ? [d.optionalPhone.trim()] : []),
-                d.phone.trim(),
+                ...(normalizedOptionalPhone ? [normalizedOptionalPhone] : []),
+                normalizedPhone,
               ],
-              address: d.address_details,
-              updatedAt: d.updated_at
-                ? new Date(d.updated_at).toISOString()
-                : null,
+              address: trimmedAddress,
+              updatedAt,
               areaId:
-                allAreas.find((a) => a.name === d.region.name.trim())?.id ?? "",
-              disclosures: [
-                {
-                  logs: d.logs,
-                  createdAt: d.created_at,
-                  note: d.details,
-                  scoutName: d.user.name.trim(),
-                  priorityDegreeName: d.priority.color,
-                  appointmentDate: d.check_date,
-                  isAppointmentCompleted: d.patientIsCame,
-                  isReceived: d.userIsReceived,
-                  type: oldDisclosureTypes[d.type.id],
-                },
-              ],
+                allAreas.find((a) => a.name === trimmedAreaName)?.id ?? null,
+              disclosures: [dto],
             };
           }
         }
@@ -680,15 +698,16 @@ export const SeedController = new Elysia({
         );
 
         // return paitentsWithDisclosuresMapped;
+        //
 
-        await Promise.all(
-          paitentsWithDisclosuresMapped.map(async (p) => {
+        await db.transaction(async (outerTx) => {
+          for await (const p of paitentsWithDisclosuresMapped) {
             const {
               phoneNumbers,
               disclosures: patientDisclosures,
               ...rest
             } = p;
-            await db.transaction(async (tx) => {
+            await outerTx.transaction(async (tx) => {
               const [{ id: patientId }] = await tx
                 .insert(patients)
                 .values({
@@ -697,7 +716,8 @@ export const SeedController = new Elysia({
                     ? rest.name
                         .split("(#)")
                         .map((n, idx) => `(${idx + 1})_` + n)
-                        .join(" ") + " ( مكرر ي��جى ا��إطلاع )"
+                        .join(" ") +
+                      ` ( ${localization["disclosures.repeated_message"]} )`
                     : rest.name,
                   address: rest.address?.includes("(#)")
                     ? rest.address
@@ -737,8 +757,10 @@ export const SeedController = new Elysia({
                 );
               }
             });
-          }),
-        );
+          }
+        });
+
+        // await Promise.all(paitentsWithDisclosuresMapped.map(async (p) => {}));
 
         return {
           // Data migration completed successfully
