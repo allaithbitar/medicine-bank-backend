@@ -38,14 +38,16 @@ export const OfflineController = new Elysia({
       "sync",
       async ({
         db,
+        user,
         // areaService,
         // cityService,
         // disclosureService,
         // employeeService,
         // ratingsService,
       }) => {
-        const _employees = await db.select().from(employees);
+        const scoutId = user.id;
 
+        const _employees = await db.select().from(employees);
         const _priorityDegrees = await db
           .select()
           .from(priorityDegrees)
@@ -64,8 +66,9 @@ export const OfflineController = new Elysia({
         const _disclosures = await db
           .select()
           .from(disclosures)
+          .where(eq(disclosures.scoutId, scoutId))
           .orderBy(desc(disclosures.createdAt))
-          .limit(500)
+          .limit(100)
           .execute();
 
         const _disclosureIds = _disclosures.map((d) => d.id);
