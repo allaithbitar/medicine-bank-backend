@@ -78,7 +78,6 @@ export const DisclosuresController = new Elysia({
       },
       {
         body: updateDisclosureModel,
-        roles: ["manager", "supervisor"],
       },
     )
 
@@ -186,7 +185,6 @@ export const DisclosuresController = new Elysia({
         disclosureService.getDisclosureAuditLogsGroupedByDate(query),
       {
         query: getDisclosureAuditLogsModel,
-        roles: ["supervisor"],
       },
     )
     .post(
@@ -204,7 +202,6 @@ export const DisclosuresController = new Elysia({
             date: t.String({ date: t.String({ format: "date-time" }) }),
           }),
         ]),
-        roles: ["supervisor"],
       },
     )
     .post(
