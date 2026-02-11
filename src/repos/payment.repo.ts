@@ -4,7 +4,7 @@ import { inject, injectable } from "inversify";
 import { TDbContext } from "../db/drizzle";
 import {
   and,
-  count,
+  countDistinct,
   desc,
   eq,
   gt,
@@ -26,7 +26,7 @@ import {
 } from "../db/schema";
 import {
   TAddPaymentDto,
-  TGetEligibleDisclosuresDto,
+  TFilterPaymentsDto,
   TMarkDisclosuresAsPaidDto,
   TUpdatePaymentDto,
 } from "../types/payment.type";
@@ -70,7 +70,7 @@ export class PaymentRepo {
     dateTo,
     scoutIds,
     scoutId,
-  }: TGetEligibleDisclosuresDto & {
+  }: TFilterPaymentsDto & {
     scoutIds?: string[];
     scoutId?: string;
   }) {
@@ -140,7 +140,7 @@ export class PaymentRepo {
 
   private async getPaymentsCount(where: any) {
     const [{ value: totalCount }] = await this.db
-      .select({ value: count() })
+      .select({ value: countDistinct(disclosures.id) })
       .from(disclosures)
       .leftJoin(payments, eq(disclosures.id, payments.disclosureId))
       .leftJoin(employees, eq(disclosures.scoutId, employees.id))
@@ -155,7 +155,7 @@ export class PaymentRepo {
     pageSize = DEFAULT_PAGE_SIZE,
     pageNumber = DEFAULT_PAGE_NUMBER,
     ...dto
-  }: TGetEligibleDisclosuresDto = {}) {
+  }: TFilterPaymentsDto = {}) {
     const filters = this.getPaymentsFilters(dto);
 
     const where = and(...Object.values(filters));
@@ -163,7 +163,7 @@ export class PaymentRepo {
     const totalCount = await this.getPaymentsCount(where);
 
     const items = await this.db
-      .select(columns)
+      .selectDistinctOn([disclosures.id], { ...columns })
       .from(disclosures)
       .leftJoin(payments, eq(disclosures.id, payments.disclosureId))
       .leftJoin(employees, eq(disclosures.scoutId, employees.id))
@@ -173,7 +173,7 @@ export class PaymentRepo {
       .where(where)
       .limit(pageSize)
       .offset(pageSize * pageNumber)
-      .orderBy(desc(auditLogs.createdAt))
+      .orderBy(disclosures.id, desc(auditLogs.createdAt))
       .execute();
 
     return {
@@ -189,7 +189,7 @@ export class PaymentRepo {
     const where = and(...Object.values(filters));
 
     const disclosureIds = await this.db
-      .select({ id: disclosures.id })
+      .selectDistinctOn([disclosures.id], { id: disclosures.id })
       .from(disclosures)
       .leftJoin(payments, eq(disclosures.id, payments.disclosureId))
       .leftJoin(employees, eq(disclosures.scoutId, employees.id))
@@ -199,11 +199,13 @@ export class PaymentRepo {
       .where(where)
       .execute();
     if (disclosureIds.length) {
-      const dtos = disclosureIds.map((dId) => ({
-        disclosureId: dId.id,
-        createdBy: dto.createdBy,
-      }));
-      await this.create(dtos);
+      await this.db.transaction(async (tx) => {
+        const dtos = disclosureIds.map((dId) => ({
+          disclosureId: dId.id,
+          createdBy: dto.createdBy,
+        }));
+        await this.create(dtos, tx as any);
+      });
     }
   }
 
@@ -211,13 +213,13 @@ export class PaymentRepo {
     pageSize = DEFAULT_PAGE_SIZE,
     pageNumber = DEFAULT_PAGE_NUMBER,
     ...dto
-  }: TGetEligibleDisclosuresDto) {
+  }: TFilterPaymentsDto) {
     const { hasNoPaymentFilter, ...restFilters } = this.getPaymentsFilters(dto);
     const hasPaymentFilter = sql`(${payments.disclosureId} IS NOT NULL)`;
     const where = and(...Object.values({ ...restFilters, hasPaymentFilter }));
     const totalCount = await this.getPaymentsCount(where);
     const items = await this.db
-      .select(columns)
+      .selectDistinctOn([disclosures.id], { ...columns })
       .from(disclosures)
       .leftJoin(payments, eq(disclosures.id, payments.disclosureId))
       .leftJoin(employees, eq(disclosures.scoutId, employees.id))
@@ -227,7 +229,7 @@ export class PaymentRepo {
       .where(where)
       .limit(pageSize)
       .offset(pageSize * pageNumber)
-      .orderBy(desc(payments.createdAt));
+      .orderBy(disclosures.id, desc(payments.createdAt));
     return {
       items,
       totalCount,
