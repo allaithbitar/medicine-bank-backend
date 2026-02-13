@@ -1,5 +1,3 @@
-const PAYMENTS_START_DATE = "2026-02-01";
-
 import { inject, injectable } from "inversify";
 import { TDbContext } from "../db/drizzle";
 import {
@@ -30,7 +28,11 @@ import {
   TMarkDisclosuresAsPaidDto,
   TUpdatePaymentDto,
 } from "../types/payment.type";
-import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
+import {
+  DEFAULT_PAGE_NUMBER,
+  DEFAULT_PAGE_SIZE,
+  PAYMENTS_START_DATE,
+} from "../constants/constants";
 
 const columns = {
   disclosureId: disclosures.id,

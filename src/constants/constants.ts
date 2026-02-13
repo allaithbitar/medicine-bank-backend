@@ -7,3 +7,5 @@ export const ACTIONER_WITH = {
     name: true,
   },
 };
+
+export const PAYMENTS_START_DATE = "2026-02-01";

@@ -13,8 +13,16 @@ import {
   sql,
   or,
   isNotNull,
+  gt,
 } from "drizzle-orm";
-import { auditLogs, disclosures, priorityDegrees, ratings } from "../db/schema";
+import {
+  auditLogs,
+  disclosures,
+  payments,
+  priorityDegrees,
+  ratings,
+} from "../db/schema";
+import { PAYMENTS_START_DATE } from "../constants/constants";
 
 @injectable()
 export class SatisticsService {
@@ -62,6 +70,50 @@ export class SatisticsService {
         ),
       );
 
+    let [{ count: paymentEligibleDisclosuresCount }] = await this.db
+      .select({ count: countDistinct(disclosures.id) })
+      .from(disclosures)
+      .leftJoin(payments, eq(disclosures.id, payments.disclosureId))
+      .leftJoin(auditLogs, eq(disclosures.id, auditLogs.recordId))
+      .where(
+        and(
+          employeeId ? eq(disclosures.scoutId, employeeId) : undefined,
+          eq(disclosures.visitResult, "completed"),
+          or(
+            and(
+              isNotNull(disclosures.ratingId),
+              eq(disclosures.isCustomRating, false),
+            ),
+            and(
+              isNull(disclosures.ratingId),
+              eq(disclosures.isCustomRating, true),
+              isNotNull(disclosures.customRating),
+            ),
+          ),
+          gt(disclosures.createdAt, PAYMENTS_START_DATE),
+          gte(disclosures.createdAt, fromDate),
+          lte(disclosures.createdAt, toDate),
+          sql`${payments.disclosureId} IS NULL`,
+          and(
+            sql`${auditLogs.recordId} = ${disclosures.id}`,
+            or(
+              and(
+                sql`${auditLogs.column} = ${disclosures.ratingId.name}`,
+                sql`${auditLogs.newValue} IS NOT NULL`,
+              ),
+              and(
+                sql`${auditLogs.column} = ${disclosures.isCustomRating.name}`,
+                sql`${auditLogs.newValue} IS NOT NULL`,
+              ),
+              and(
+                sql`${auditLogs.column} = ${disclosures.customRating.name}`,
+                sql`${auditLogs.newValue} IS NOT NULL`,
+              ),
+            ),
+          ),
+        ),
+      );
+
     let [{ count: uncompletedVisitsCount }] = await this.db
       .select({ count: count() })
       .from(disclosures)
@@ -106,6 +158,7 @@ export class SatisticsService {
       completedVisitsCount,
       cantBeCompletedVisitsCount,
       lateDisclosuresCount,
+      paymentEligibleDisclosuresCount,
     };
   }
 
