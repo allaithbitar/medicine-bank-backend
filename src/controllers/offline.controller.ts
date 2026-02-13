@@ -6,6 +6,7 @@ import {
   areasToEmployees,
   auditLogs,
   cities,
+  disclosureConsultations,
   disclosureDetails,
   disclosureNotes,
   disclosures,
@@ -107,6 +108,13 @@ export const OfflineController = new Elysia({
           .where(inArray(disclosureNotes.disclosureId, _disclosureIds))
           .execute();
 
+        const _disclosureConsultations = await db
+          .select()
+          .from(disclosureConsultations)
+          .orderBy(desc(disclosureConsultations.createdAt))
+          .where(inArray(disclosureConsultations.disclosureId, _disclosureIds))
+          .execute();
+
         const _disclosureNoteIds = _disclosureNotes.map((dn) => dn.id);
 
         const _disclosureDetails = await db
@@ -149,6 +157,7 @@ export const OfflineController = new Elysia({
           cities: _cities,
           areas: _areas,
           disclosureNotes: _disclosureNotes,
+          disclosureConsultations: _disclosureConsultations,
           disclosureDetails: _disclosureDetails,
           patientsPhoneNumbers: _patientsPhoneNumbers,
           medicines: _medicines,

@@ -346,7 +346,7 @@ export class DisclosureService {
     await this.db.transaction(async (tx) => {
       const oldConsultation = await this.consultationRepo.getById(dto.id);
 
-      let consultationAudio = "";
+      let consultationAudio = oldConsultation?.consultationAudio || undefined;
 
       if (!oldConsultation)
         throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
