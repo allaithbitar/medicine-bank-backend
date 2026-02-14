@@ -8,4 +8,4 @@ export const ACTIONER_WITH = {
   },
 };
 
-export const PAYMENTS_START_DATE = "2026-02-01";
+export const PAYMENTS_START_DATE = "2026-02-12";
