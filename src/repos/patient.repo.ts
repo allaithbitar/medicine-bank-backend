@@ -11,7 +11,7 @@ import { TDbContext } from "../db/drizzle";
 import { patients, patientsPhoneNumbers } from "../db/schema";
 import { and, count, desc, eq, ilike, inArray, ne, SQL } from "drizzle-orm";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
-import { searchArabic } from "../db/helpers";
+import { noramalizeArabicNumbers, searchArabic } from "../db/helpers";
 import { TPaginatedResponse } from "../types/common.types";
 
 @injectable()
@@ -32,9 +32,15 @@ export class PatientRepo {
 
       createdId = id;
 
+      const normalizedPhoneNumbers = phoneNumbers.map((p) =>
+        noramalizeArabicNumbers(p),
+      );
+
       await _tx
         .insert(patientsPhoneNumbers)
-        .values(phoneNumbers.map((phone) => ({ patientId: id, phone })));
+        .values(
+          normalizedPhoneNumbers.map((phone) => ({ patientId: id, phone })),
+        );
     });
     return { id: createdId };
   }
@@ -50,9 +56,15 @@ export class PatientRepo {
           .delete(patientsPhoneNumbers)
           .where(eq(patientsPhoneNumbers.patientId, id));
 
+        const normalizedPhoneNumbers = phoneNumbers.map((p) =>
+          noramalizeArabicNumbers(p),
+        );
+
         await _tx
           .insert(patientsPhoneNumbers)
-          .values(phoneNumbers.map((phone) => ({ patientId: id, phone })));
+          .values(
+            normalizedPhoneNumbers.map((phone) => ({ patientId: id, phone })),
+          );
       }
     });
   }

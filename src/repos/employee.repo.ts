@@ -11,6 +11,7 @@ import { and, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { TFilterPatientsDto } from "../types/patient.type";
 import { DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE } from "../constants/constants";
 import { ERROR_CODES, NotFoundError } from "../constants/errors";
+import { noramalizeArabicNumbers } from "../db/helpers";
 
 @injectable()
 export class EmployeeRepo {
@@ -18,10 +19,11 @@ export class EmployeeRepo {
 
   async create(createDto: TAddEmployeeDto, tx?: TDbContext): Promise<void> {
     await (tx ?? this.db).transaction(async (_x) => {
-      const { areaIds, ...rest } = createDto;
+      const { areaIds, phone, ...rest } = createDto;
+      const normalizedPhone = noramalizeArabicNumbers(phone);
       const [{ id }] = await _x
         .insert(employees)
-        .values(rest)
+        .values({ ...rest, phone: normalizedPhone })
         .returning({ id: employees.id });
       if (areaIds?.length) {
         await _x
