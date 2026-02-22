@@ -22,6 +22,36 @@ export const SatisticsController = new Elysia({
       },
     )
     .post(
+      "get-half-detailed-satistics",
+      async ({ satisticsService, body }) => {
+        const [
+          addedDisclosures,
+          uncompletedVisits,
+          completedVisits,
+          cantBeCompletedVisits,
+          lateDisclosures,
+        ] = await Promise.all([
+          satisticsService.getAddedDisclosuresSummary(body),
+          satisticsService.getUncompletedVisitsSummary(body),
+          satisticsService.getCompletedVisitsSummary(body),
+          satisticsService.getCantBeCompletedVisitsSummary(body),
+          satisticsService.getLateDisclosuresSummary(body),
+        ]);
+
+        return {
+          addedDisclosures,
+          uncompletedVisits,
+          completedVisits,
+          cantBeCompletedVisits,
+          lateDisclosures,
+        };
+      },
+      {
+        body: getSatisticsModel,
+      },
+    )
+
+    .post(
       "get-detailed-satistics",
       ({ satisticsService, body }) =>
         satisticsService.getDetailedSatistics(body),

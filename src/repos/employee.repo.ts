@@ -149,17 +149,7 @@ export class EmployeeRepo {
     });
     return result;
   }
-  async getRecommondedScoutsForPatient(patientId: string) {
-    const [result] = await this.db
-      .select({ areaId: patients.areaId })
-      .from(patients)
-      .where(eq(patients.id, patientId))
-      .execute();
-
-    if (!result?.areaId) {
-      throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
-    }
-
+  async getRecommondedScoutsForArea(areaId: string) {
     const recommendedScouts = await this.db
       .select({
         id: employees.id,
@@ -168,10 +158,7 @@ export class EmployeeRepo {
       .from(employees)
       .leftJoin(areasToEmployees, eq(employees.id, areasToEmployees.employeeId))
       .where(
-        and(
-          eq(employees.role, "scout"),
-          eq(areasToEmployees.areaId, result.areaId),
-        ),
+        and(eq(employees.role, "scout"), eq(areasToEmployees.areaId, areaId)),
       )
       .execute();
 

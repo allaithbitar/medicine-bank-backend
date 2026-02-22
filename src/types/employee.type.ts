@@ -4,7 +4,6 @@ import { Static } from "elysia";
 import {
   addEmployeeModel,
   filterEmployeesModel,
-  getRecommendedScoutsForPatientModel,
   updateEmployeeModel,
 } from "../models/employee.model";
 import { TJwtAuthTokens } from "./common.types";
@@ -26,7 +25,3 @@ export type TUpdateEmployeeDto = Static<typeof updateEmployeeModel>;
 export type TLoginEmployeeDto = Pick<TEmployeeEntity, "phone" | "password">;
 
 export type TFilterEmployeesDto = Static<typeof filterEmployeesModel>;
-
-export type TGetRecommendedScoutsForPatientDto = Static<
-  typeof getRecommendedScoutsForPatientModel
->;

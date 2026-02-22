@@ -28,6 +28,68 @@ import { PAYMENTS_START_DATE } from "../constants/constants";
 export class SatisticsService {
   constructor(@inject("db") private db: TDbContext) {}
 
+  // Helper: format grouped rows returned from DB into desired shape
+  private formatTypePriority(
+    rows: {
+      type: string;
+      priorityid: string | null;
+      priorityname: string | null;
+      cnt: string | number;
+    }[],
+  ) {
+    // const types: TDisclosure["type"][] = ["new", "return", "help"];
+    const details: Record<string, any> = {};
+    // for (const t of types) details[t] = { count: 0, details: [] };
+
+    for (const r of rows as any[]) {
+      const t = r.type as string;
+      const entry = {
+        key: r.priorityname ?? r.priorityName ?? null,
+        count: Number(r.cnt),
+      };
+      if (!details[t]) details[t] = { count: 0, details: [] };
+      details[t].count += Number(r.cnt);
+      details[t].details.push(entry);
+    }
+
+    return details;
+  }
+
+  // Helper: group by disclosures table
+  private async groupFromDisclosures(whereClause: any) {
+    const rows = await this.db
+      .select({
+        type: disclosures.type,
+        priorityid: disclosures.priorityId,
+        priorityname: priorityDegrees.name,
+        cnt: count(),
+      })
+      .from(disclosures)
+      .leftJoin(priorityDegrees, eq(disclosures.priorityId, priorityDegrees.id))
+      .where(whereClause)
+      .groupBy(disclosures.type, disclosures.priorityId, priorityDegrees.name);
+
+    return rows as any[];
+  }
+
+  // Helper: group by auditLogs (distinct records) joined to disclosures
+  private async groupFromAuditLogs(auditWhere: any) {
+    const rows = await this.db
+      .select({
+        type: disclosures.type,
+        priorityid: disclosures.priorityId,
+        priorityname: priorityDegrees.name,
+        cnt: countDistinct(auditLogs.recordId),
+      })
+      .from(auditLogs)
+      .leftJoin(disclosures, eq(auditLogs.recordId, disclosures.id))
+      .leftJoin(priorityDegrees, eq(disclosures.priorityId, priorityDegrees.id))
+      .where(auditWhere)
+      .groupBy(disclosures.type, disclosures.priorityId, priorityDegrees.name);
+
+    return rows as any[];
+  }
+
   async getSummarySatistics(dto: TGetSatisticsDto) {
     const { fromDate, toDate, employeeId } = dto ?? {};
 
@@ -160,6 +222,149 @@ export class SatisticsService {
       lateDisclosuresCount,
       paymentEligibleDisclosuresCount,
     };
+  }
+
+  /**
+   * Returns added disclosures counts grouped by type and priority (urgency).
+   * Example:
+   * {
+   *   addedDisclosuresCount: 20,
+   *   details: {
+   *     new: { count: 10, details: [{ priorityId, priorityDegree, count }] },
+   *     return: { ... },
+   *     help: { ... }
+   *   }
+   * }
+   */
+  async getAddedDisclosuresSummary(dto: Partial<TGetSatisticsDto> = {}) {
+    const { fromDate, toDate, employeeId } = dto ?? {};
+
+    const filters = [
+      fromDate ? gte(disclosures.createdAt, fromDate) : undefined,
+      toDate ? lte(disclosures.createdAt, toDate) : undefined,
+      employeeId ? eq(disclosures.createdBy, employeeId) : undefined,
+    ];
+
+    const whereClause = and(...filters);
+
+    const [{ count: addedDisclosuresCount }] = await this.db
+      .select({ count: count() })
+      .from(disclosures)
+      .where(whereClause);
+
+    const rows = await this.groupFromDisclosures(whereClause);
+    const details = this.formatTypePriority(rows as any[]);
+
+    return {
+      count: Number(addedDisclosuresCount ?? 0),
+      details,
+    };
+  }
+
+  async getUncompletedVisitsSummary(dto: Partial<TGetSatisticsDto> = {}) {
+    const { fromDate, toDate, employeeId } = dto ?? {};
+
+    const filters = [
+      fromDate ? gte(disclosures.createdAt, fromDate) : undefined,
+      toDate ? lte(disclosures.createdAt, toDate) : undefined,
+      employeeId ? eq(disclosures.scoutId, employeeId) : undefined,
+      isNull(disclosures.visitResult),
+    ];
+
+    const whereClause = and(...filters);
+
+    const [{ count: total }] = await this.db
+      .select({ count: count() })
+      .from(disclosures)
+      .where(whereClause);
+
+    const rows = await this.groupFromDisclosures(whereClause);
+    const details = this.formatTypePriority(rows as any[]);
+
+    return { count: Number(total ?? 0), details };
+  }
+
+  async getCompletedVisitsSummary(dto: Partial<TGetSatisticsDto> = {}) {
+    const { fromDate, toDate, employeeId } = dto ?? {};
+
+    const auditFilters = [
+      fromDate ? gte(auditLogs.createdAt, fromDate) : undefined,
+      toDate ? lte(auditLogs.createdAt, toDate) : undefined,
+      eq(auditLogs.table, "disclosures"),
+      eq(auditLogs.column, disclosures.visitResult.name),
+      sql`${auditLogs.newValue} = 'completed'`,
+      employeeId ? eq(auditLogs.createdBy, employeeId) : undefined,
+    ];
+
+    const [{ count: total }] = await this.db
+      .select({ count: countDistinct(auditLogs.recordId) })
+      .from(auditLogs)
+      .where(and(...auditFilters));
+
+    const rows = await this.groupFromAuditLogs(and(...auditFilters));
+    const details = this.formatTypePriority(rows as any[]);
+
+    return { count: Number(total ?? 0), details };
+  }
+
+  async getCantBeCompletedVisitsSummary(dto: Partial<TGetSatisticsDto> = {}) {
+    const { fromDate, toDate, employeeId } = dto ?? {};
+
+    const auditFilters = [
+      fromDate ? gte(auditLogs.createdAt, fromDate) : undefined,
+      toDate ? lte(auditLogs.createdAt, toDate) : undefined,
+      eq(auditLogs.table, "disclosures"),
+      eq(auditLogs.column, disclosures.visitResult.name),
+      sql`${auditLogs.newValue} = 'cant_be_completed'`,
+      employeeId ? eq(auditLogs.createdBy, employeeId) : undefined,
+    ];
+
+    const [{ count: total }] = await this.db
+      .select({ count: countDistinct(auditLogs.recordId) })
+      .from(auditLogs)
+      .where(and(...auditFilters));
+
+    const rows = await this.groupFromAuditLogs(and(...auditFilters));
+    const details = this.formatTypePriority(rows as any[]);
+
+    return { count: Number(total ?? 0), details };
+  }
+
+  async getLateDisclosuresSummary(dto: Partial<TGetSatisticsDto> = {}) {
+    const { fromDate, toDate, employeeId } = dto ?? {};
+
+    const priorityDegress = await this.db.query.priorityDegrees.findMany({
+      where: isNotNull(priorityDegrees.durationInDays),
+    });
+
+    const pdQuery = priorityDegress.map((pd) =>
+      and(
+        sql`${disclosures.createdAt} <= NOW() - INTERVAL '${sql.raw(String(pd.durationInDays!))} days'`,
+        eq(disclosures.priorityId, pd.id),
+      ),
+    );
+
+    const filters = [
+      fromDate ? gte(disclosures.createdAt, fromDate) : undefined,
+      toDate ? lte(disclosures.createdAt, toDate) : undefined,
+      employeeId ? eq(disclosures.scoutId, employeeId) : undefined,
+      or(...pdQuery),
+      eq(disclosures.status, "active"),
+      isNull(disclosures.visitResult),
+      and(isNull(disclosures.ratingId), isNull(disclosures.customRating)),
+    ];
+
+    const whereClause = and(...filters);
+
+    const [{ count: total }] = await this.db
+      .select({ count: count() })
+      .from(disclosures)
+      .where(whereClause);
+
+    const rows = await this.groupFromDisclosures(whereClause);
+    const details = this.formatTypePriority(rows as any[]);
+
+    return { count: Number(total ?? 0), details };
   }
 
   async getDetailedSatistics({

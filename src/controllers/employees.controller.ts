@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import {
   addEmployeeModel,
   filterEmployeesModel,
-  getRecommendedScoutsForPatientModel,
+  getRecommendedScoutsForAreaModel,
   updateEmployeeModel,
 } from "../models/employee.model";
 import DiContainer from "../di/di-container";
@@ -52,12 +52,12 @@ export const EmployeesController = new Elysia({
       },
     )
     .get(
-      "patient-scouts-recommendations",
+      "area-scouts-recommendations",
       ({ employeeService, query }) =>
-        employeeService.getRecommendedScoutsForPatient(query.patientId),
+        employeeService.getRecommondedScoutsForArea(query.areaId),
 
       {
-        query: getRecommendedScoutsForPatientModel,
+        query: getRecommendedScoutsForAreaModel,
       },
     ),
 );

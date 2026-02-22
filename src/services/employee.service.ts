@@ -122,7 +122,7 @@ export class EmployeeService {
     return result;
   }
 
-  async getRecommendedScoutsForPatient(patientId: string) {
-    return this.employeeRepo.getRecommondedScoutsForPatient(patientId);
+  async getRecommondedScoutsForArea(areaId: string) {
+    return this.employeeRepo.getRecommondedScoutsForArea(areaId);
   }
 }
