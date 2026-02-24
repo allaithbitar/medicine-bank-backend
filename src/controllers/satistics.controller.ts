@@ -58,5 +58,14 @@ export const SatisticsController = new Elysia({
       {
         body: getSatisticsModel,
       },
+    )
+    .post(
+      "get-half-detailed-by-area",
+      async ({ satisticsService, body }) => {
+        return satisticsService.getHalfDetailedByArea(body);
+      },
+      {
+        body: getSatisticsModel,
+      },
     ),
 );

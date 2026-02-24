@@ -18,6 +18,8 @@ import {
 import {
   auditLogs,
   disclosures,
+  patients,
+  areas,
   payments,
   priorityDegrees,
   ratings,
@@ -88,6 +90,252 @@ export class SatisticsService {
       .groupBy(disclosures.type, disclosures.priorityId, priorityDegrees.name);
 
     return rows as any[];
+  }
+
+  // New: half-detailed grouped by area (optimized: few queries grouped by area/type/priority)
+  async getHalfDetailedByArea(dto: TGetSatisticsDto) {
+    const { fromDate, toDate, employeeId } = dto ?? {};
+
+    const areasList = await this.db
+      .select({ id: areas.id, name: areas.name })
+      .from(areas);
+
+    // helper to format rows that include area (keyed by areaId)
+    const formatAreaTypePriority = (rows: any[]) => {
+      const map: Record<string, { name: string; types: Record<string, any> }> =
+        {};
+      for (const r of rows) {
+        const areaId = r.areaId as string;
+        const areaName = r.areaName as string;
+        if (!map[areaId]) map[areaId] = { name: areaName, types: {} };
+        const t = r.type as string;
+        const entry = { key: r.priorityname ?? null, count: Number(r.cnt) };
+        if (!map[areaId].types[t])
+          map[areaId].types[t] = { count: 0, details: [] };
+        map[areaId].types[t].count += Number(r.cnt);
+        map[areaId].types[t].details.push(entry);
+      }
+      return map;
+    };
+
+    // build base joins: disclosures -> patients -> areas -> priorityDegrees
+    // 1) added disclosures
+    const addedFilters = [
+      fromDate ? gte(disclosures.createdAt, fromDate) : undefined,
+      toDate ? lte(disclosures.createdAt, toDate) : undefined,
+      employeeId ? eq(disclosures.createdBy, employeeId) : undefined,
+    ];
+    const addedWhere = and(...addedFilters);
+
+    const addedRows = await this.db
+      .select({
+        areaId: areas.id,
+        areaName: areas.name,
+        type: disclosures.type,
+        priorityid: disclosures.priorityId,
+        priorityname: priorityDegrees.name,
+        cnt: count(),
+      })
+      .from(disclosures)
+      .leftJoin(patients, eq(disclosures.patientId, patients.id))
+      .leftJoin(areas, eq(patients.areaId, areas.id))
+      .leftJoin(priorityDegrees, eq(disclosures.priorityId, priorityDegrees.id))
+      .where(addedWhere)
+      .groupBy(
+        areas.id,
+        areas.name,
+        disclosures.type,
+        disclosures.priorityId,
+        priorityDegrees.name,
+      );
+
+    // 2) uncompleted visits
+    const uncompletedFilters = [
+      fromDate ? gte(disclosures.createdAt, fromDate) : undefined,
+      toDate ? lte(disclosures.createdAt, toDate) : undefined,
+      employeeId ? eq(disclosures.scoutId, employeeId) : undefined,
+      isNull(disclosures.visitResult),
+    ];
+    const uncompletedWhere = and(...uncompletedFilters);
+    const uncompletedRows = await this.db
+      .select({
+        areaId: areas.id,
+        areaName: areas.name,
+        type: disclosures.type,
+        priorityid: disclosures.priorityId,
+        priorityname: priorityDegrees.name,
+        cnt: count(),
+      })
+      .from(disclosures)
+      .leftJoin(patients, eq(disclosures.patientId, patients.id))
+      .leftJoin(areas, eq(patients.areaId, areas.id))
+      .leftJoin(priorityDegrees, eq(disclosures.priorityId, priorityDegrees.id))
+      .where(uncompletedWhere)
+      .groupBy(
+        areas.id,
+        areas.name,
+        disclosures.type,
+        disclosures.priorityId,
+        priorityDegrees.name,
+      );
+
+    // 3) completed visits (audit logs)
+    const completedAuditFilters = [
+      fromDate ? gte(auditLogs.createdAt, fromDate) : undefined,
+      toDate ? lte(auditLogs.createdAt, toDate) : undefined,
+      eq(auditLogs.table, "disclosures"),
+      eq(auditLogs.column, disclosures.visitResult.name),
+      sql`${auditLogs.newValue} = 'completed'`,
+      employeeId ? eq(auditLogs.createdBy, employeeId) : undefined,
+    ];
+    const completedAuditWhere = and(...completedAuditFilters);
+    const completedRows = await this.db
+      .select({
+        areaId: areas.id,
+        areaName: areas.name,
+        type: disclosures.type,
+        priorityid: disclosures.priorityId,
+        priorityname: priorityDegrees.name,
+        cnt: countDistinct(auditLogs.recordId),
+      })
+      .from(auditLogs)
+      .leftJoin(disclosures, eq(auditLogs.recordId, disclosures.id))
+      .leftJoin(patients, eq(disclosures.patientId, patients.id))
+      .leftJoin(areas, eq(patients.areaId, areas.id))
+      .leftJoin(priorityDegrees, eq(disclosures.priorityId, priorityDegrees.id))
+      .where(completedAuditWhere)
+      .groupBy(
+        areas.id,
+        areas.name,
+        disclosures.type,
+        disclosures.priorityId,
+        priorityDegrees.name,
+      );
+
+    // 4) cant_be_completed visits (audit logs)
+    const cantAuditFilters = [
+      fromDate ? gte(auditLogs.createdAt, fromDate) : undefined,
+      toDate ? lte(auditLogs.createdAt, toDate) : undefined,
+      eq(auditLogs.table, "disclosures"),
+      eq(auditLogs.column, disclosures.visitResult.name),
+      sql`${auditLogs.newValue} = 'cant_be_completed'`,
+      employeeId ? eq(auditLogs.createdBy, employeeId) : undefined,
+    ];
+    const cantAuditWhere = and(...cantAuditFilters);
+    const cantRows = await this.db
+      .select({
+        areaId: areas.id,
+        areaName: areas.name,
+        type: disclosures.type,
+        priorityid: disclosures.priorityId,
+        priorityname: priorityDegrees.name,
+        cnt: countDistinct(auditLogs.recordId),
+      })
+      .from(auditLogs)
+      .leftJoin(disclosures, eq(auditLogs.recordId, disclosures.id))
+      .leftJoin(patients, eq(disclosures.patientId, patients.id))
+      .leftJoin(areas, eq(patients.areaId, areas.id))
+      .leftJoin(priorityDegrees, eq(disclosures.priorityId, priorityDegrees.id))
+      .where(cantAuditWhere)
+      .groupBy(
+        areas.id,
+        areas.name,
+        disclosures.type,
+        disclosures.priorityId,
+        priorityDegrees.name,
+      );
+
+    // 5) late disclosures
+    const priorityDegress = await this.db.query.priorityDegrees.findMany({
+      where: isNotNull(priorityDegrees.durationInDays),
+    });
+    const pdQuery = priorityDegress.map((pd) =>
+      and(
+        sql`${disclosures.createdAt} <= NOW() - INTERVAL '${sql.raw(String(pd.durationInDays!))} days'`,
+        eq(disclosures.priorityId, pd.id),
+      ),
+    );
+
+    const lateFilters = [
+      fromDate ? gte(disclosures.createdAt, fromDate) : undefined,
+      toDate ? lte(disclosures.createdAt, toDate) : undefined,
+      employeeId ? eq(disclosures.scoutId, employeeId) : undefined,
+      or(...pdQuery),
+      eq(disclosures.status, "active"),
+      isNull(disclosures.visitResult),
+      and(isNull(disclosures.ratingId), isNull(disclosures.customRating)),
+    ];
+    const lateWhere = and(...lateFilters);
+    const lateRows = await this.db
+      .select({
+        areaId: areas.id,
+        areaName: areas.name,
+        type: disclosures.type,
+        priorityid: disclosures.priorityId,
+        priorityname: priorityDegrees.name,
+        cnt: count(),
+      })
+      .from(disclosures)
+      .leftJoin(patients, eq(disclosures.patientId, patients.id))
+      .leftJoin(areas, eq(patients.areaId, areas.id))
+      .leftJoin(priorityDegrees, eq(disclosures.priorityId, priorityDegrees.id))
+      .where(lateWhere)
+      .groupBy(
+        areas.id,
+        areas.name,
+        disclosures.type,
+        disclosures.priorityId,
+        priorityDegrees.name,
+      );
+
+    // Format per-area maps
+    const addedMap = formatAreaTypePriority(addedRows as any[]);
+    const uncompletedMap = formatAreaTypePriority(uncompletedRows as any[]);
+    const completedMap = formatAreaTypePriority(completedRows as any[]);
+    const cantMap = formatAreaTypePriority(cantRows as any[]);
+    const lateMap = formatAreaTypePriority(lateRows as any[]);
+
+    const resultArray: Array<any> = [];
+    const sumCount = (m: Record<string, any>) =>
+      Object.values(m).reduce((s: number, v: any) => s + (v.count ?? 0), 0);
+
+    for (const a of areasList) {
+      const id = a.id as string;
+      const name = a.name as string;
+      const addedDetails = addedMap[id]?.types ?? {};
+      const uncompletedDetails = uncompletedMap[id]?.types ?? {};
+      const completedDetails = completedMap[id]?.types ?? {};
+      const cantDetails = cantMap[id]?.types ?? {};
+      const lateDetails = lateMap[id]?.types ?? {};
+
+      const addedCount = sumCount(addedDetails);
+      const uncompletedCount = sumCount(uncompletedDetails);
+      const completedCount = sumCount(completedDetails);
+      const cantCount = sumCount(cantDetails);
+      const lateCount = sumCount(lateDetails);
+
+      const total =
+        addedCount + uncompletedCount + completedCount + cantCount + lateCount;
+      if (total === 0) continue; // skip empty areas
+
+      resultArray.push({
+        areaId: id,
+        areaName: name,
+        count: total,
+        details: {
+          addedDisclosures: { count: addedCount, details: addedDetails },
+          uncompletedVisits: {
+            count: uncompletedCount,
+            details: uncompletedDetails,
+          },
+          completedVisits: { count: completedCount, details: completedDetails },
+          cantBeCompletedVisits: { count: cantCount, details: cantDetails },
+          lateDisclosures: { count: lateCount, details: lateDetails },
+        },
+      });
+    }
+
+    return resultArray;
   }
 
   async getSummarySatistics(dto: TGetSatisticsDto) {
