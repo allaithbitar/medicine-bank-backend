@@ -52,9 +52,9 @@ export const EmployeesController = new Elysia({
       },
     )
     .get(
-      "area-scouts-recommendations",
+      "get-recommended-scouts",
       ({ employeeService, query }) =>
-        employeeService.getRecommondedScoutsForArea(query.areaId),
+        employeeService.getRecommondedScouts(query.patientId, query.areaId),
 
       {
         query: getRecommendedScoutsForAreaModel,

@@ -122,7 +122,7 @@ export class EmployeeService {
     return result;
   }
 
-  async getRecommondedScoutsForArea(areaId: string) {
-    return this.employeeRepo.getRecommondedScoutsForArea(areaId);
+  async getRecommondedScouts(patientId?: string, areaId?: string) {
+    return this.employeeRepo.getRecommondedScouts(patientId, areaId);
   }
 }

@@ -149,7 +149,26 @@ export class EmployeeRepo {
     });
     return result;
   }
-  async getRecommondedScoutsForArea(areaId: string) {
+  async getRecommondedScouts(patientId?: string, areaId?: string) {
+    let _areaId: string | null = null;
+    if (!areaId) {
+      if (patientId) {
+        const [result] = await this.db
+          .select({ areaId: patients.areaId })
+          .from(patients)
+          .where(eq(patients.id, patientId))
+          .execute();
+
+        _areaId = result.areaId;
+      }
+    } else {
+      _areaId = areaId;
+    }
+
+    if (!_areaId) {
+      throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    }
+
     const recommendedScouts = await this.db
       .select({
         id: employees.id,
@@ -158,7 +177,7 @@ export class EmployeeRepo {
       .from(employees)
       .leftJoin(areasToEmployees, eq(employees.id, areasToEmployees.employeeId))
       .where(
-        and(eq(employees.role, "scout"), eq(areasToEmployees.areaId, areaId)),
+        and(eq(employees.role, "scout"), eq(areasToEmployees.areaId, _areaId)),
       )
       .execute();
 

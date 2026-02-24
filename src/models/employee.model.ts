@@ -47,6 +47,9 @@ export const filterEmployeesModel = t.Partial(
   ]),
 );
 
-export const getRecommendedScoutsForAreaModel = t.Object({
-  areaId: t.String({ format: "uuid" }),
-});
+export const getRecommendedScoutsForAreaModel = t.Partial(
+  t.Object({
+    areaId: t.String({ format: "uuid" }),
+    patientId: t.String({ format: "uuid" }),
+  }),
+);
