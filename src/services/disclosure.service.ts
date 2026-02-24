@@ -266,8 +266,6 @@ export class DisclosureService {
   }
 
   async moveDisclosures(dto: TMoveDisclosuresDto, updatedBy: string) {
-    console.log(dto);
-
     await this.db.transaction(async (tx) => {
       const updatedDisclosures = await this.disclosureRepo.moveDisclosures(dto);
       if (updatedDisclosures.length > 0) {

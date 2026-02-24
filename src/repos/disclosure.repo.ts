@@ -364,46 +364,93 @@ export class DisclosureRepo {
   }
 
   async moveDisclosures(dto: TMoveDisclosuresDto) {
-    const { fromScoutId, toScoutId, areaIds } = dto;
-    let disclosureIdsByAreaFilter;
-    if (areaIds?.length) {
-      let patientIds = await this.db
-        .select({ id: patients.id })
-        .from(patients)
-        .where(inArray(patients.areaId, areaIds));
+    const { fromScoutId, toScoutId, areaIds, visitResult } = dto;
 
-      if (patientIds.length) {
-        disclosureIdsByAreaFilter = inArray(
+    const normalizedVisitResultArr = Array.isArray(visitResult)
+      ? visitResult.filter(Boolean)
+      : [];
+
+    const disclosureIdsByAreaFilter = areaIds?.length
+      ? inArray(
           disclosures.patientId,
-          patientIds.map((pId) => pId.id),
-        );
-      }
-    }
-    const disclosuresWithoutRatings = await this.db
-      .select({ id: disclosures.id })
-      .from(disclosures)
-      .where(
+          this.db
+            .select({ id: patients.id })
+            .from(patients)
+            .where(inArray(patients.areaId, areaIds)),
+        )
+      : undefined;
+
+    const perVisitResultClauses: any[] = [];
+
+    if (normalizedVisitResultArr.includes("not_completed")) {
+      perVisitResultClauses.push(
         and(
-          eq(disclosures.scoutId, fromScoutId),
-          isNull(disclosures.ratingId),
-          isNull(disclosures.customRating),
-          isNull(disclosures.visitResult),
-          disclosureIdsByAreaFilter,
+          eq(disclosures.visitResult, "not_completed"),
+          and(isNull(disclosures.ratingId), isNull(disclosures.customRating)),
         ),
       );
+    }
 
-    const disclosureIds = disclosuresWithoutRatings.map((d) => d.id);
+    if (normalizedVisitResultArr.includes("cant_be_completed")) {
+      perVisitResultClauses.push(
+        and(
+          eq(disclosures.visitResult, "cant_be_completed"),
+          and(isNull(disclosures.ratingId), isNull(disclosures.customRating)),
+        ),
+      );
+    }
+    if (normalizedVisitResultArr.includes("completed")) {
+      perVisitResultClauses.push(
+        and(
+          eq(disclosures.visitResult, "completed"),
+          or(
+            and(
+              isNotNull(disclosures.ratingId),
+              eq(disclosures.isCustomRating, false),
+            ),
+            and(
+              isNull(disclosures.ratingId),
+              isNotNull(disclosures.customRating),
+              eq(disclosures.isCustomRating, true),
+            ),
+          ),
+        ),
+      );
+    }
 
-    if (disclosureIds.length === 0) return [];
+    const visitAndRatingFilter = perVisitResultClauses.length
+      ? or(...perVisitResultClauses)
+      : undefined;
 
-    // Update the scoutId
-    const updated = await this.db
-      .update(disclosures)
-      .set({ scoutId: toScoutId })
-      .where(inArray(disclosures.id, disclosureIds))
-      .returning();
+    const whereClauses: any[] = [eq(disclosures.scoutId, fromScoutId)];
 
-    return updated;
+    if (visitAndRatingFilter) whereClauses.push(visitAndRatingFilter);
+
+    if (disclosureIdsByAreaFilter) whereClauses.push(disclosureIdsByAreaFilter);
+
+    return await this.db.transaction(async (tx) => {
+      const rows = await tx
+        .select({ id: disclosures.id })
+        .from(disclosures)
+        .where(and(...whereClauses));
+
+      const disclosureIds = rows.map((r) => r.id);
+
+      if (disclosureIds.length === 0) return [];
+
+      const updated = await tx
+        .update(disclosures)
+        .set({ scoutId: toScoutId })
+        .where(
+          and(
+            eq(disclosures.scoutId, fromScoutId),
+            inArray(disclosures.id, disclosureIds),
+          ),
+        )
+        .returning();
+
+      return updated;
+    });
   }
 
   async getAppointments(dto: TGetDisclosureAppointmentsDto) {
