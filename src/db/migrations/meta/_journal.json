@@ -50,6 +50,13 @@
       "when": 1770636337527,
       "tag": "0006_sharp_newton_destine",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1772642730932,
+      "tag": "0007_clean_madripoor",
+      "breakpoints": true
     }
   ]
 }

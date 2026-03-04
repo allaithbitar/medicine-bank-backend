@@ -91,6 +91,10 @@ export const medicine_form_enum = pgEnum("medicine_form_enum", [
   "injection",
   "capsule",
   "ointment",
+  "inhalation",
+  "eye-drop",
+  "test-strip",
+  "spray",
 ]);
 
 export const notification_type_enum = pgEnum("notification_type_enum", [
