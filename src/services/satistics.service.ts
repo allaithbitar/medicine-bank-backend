@@ -1,6 +1,9 @@
 import "reflect-metadata";
 import { inject, injectable } from "inversify";
-import { TGetSatisticsDto } from "../types/satistics.type";
+import {
+  TGetHalfDetailedSatisticsByAreaDto,
+  TGetSatisticsDto,
+} from "../types/satistics.type";
 import { TDbContext } from "../db/drizzle";
 import {
   and,
@@ -14,6 +17,7 @@ import {
   or,
   isNotNull,
   gt,
+  inArray,
 } from "drizzle-orm";
 import {
   auditLogs,
@@ -93,12 +97,17 @@ export class SatisticsService {
   }
 
   // New: half-detailed grouped by area (optimized: few queries grouped by area/type/priority)
-  async getHalfDetailedByArea(dto: TGetSatisticsDto) {
-    const { fromDate, toDate, employeeId } = dto ?? {};
+  async getHalfDetailedByArea(dto: TGetHalfDetailedSatisticsByAreaDto) {
+    const { fromDate, toDate, employeeId, areaIds } = dto ?? {};
+
+    const areasFilter = areaIds?.length
+      ? inArray(areas.id, areaIds)
+      : undefined;
 
     const areasList = await this.db
       .select({ id: areas.id, name: areas.name })
-      .from(areas);
+      .from(areas)
+      .where(areasFilter);
 
     // helper to format rows that include area (keyed by areaId)
     const formatAreaTypePriority = (rows: any[]) => {

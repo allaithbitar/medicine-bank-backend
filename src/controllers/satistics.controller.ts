@@ -2,7 +2,10 @@ import { Elysia } from "elysia";
 import DiContainer from "../di/di-container";
 import { AuthGuard } from "../guards/auth.guard";
 import { SatisticsService } from "../services/satistics.service";
-import { getSatisticsModel } from "../models/satistics.model";
+import {
+  getHalfDetailedSatisticsByAreaModel,
+  getSatisticsModel,
+} from "../models/satistics.model";
 
 export const SatisticsController = new Elysia({
   name: "Satistics.Controller",
@@ -65,7 +68,7 @@ export const SatisticsController = new Elysia({
         return satisticsService.getHalfDetailedByArea(body);
       },
       {
-        body: getSatisticsModel,
+        body: getHalfDetailedSatisticsByAreaModel,
       },
     ),
 );
