@@ -18,13 +18,6 @@ export const addDisclosureModel = t.Omit(disclosureInsertModel, [
   "updatedAt",
   "createdBy",
   "updatedBy",
-  "finishedAt",
-  "finishedBy",
-  "canceledAt",
-  "canceledBy",
-  "archivedAt",
-  "archivedBy",
-  "archivedReason",
 ]);
 
 export const updateDisclosureModel = t.Composite([

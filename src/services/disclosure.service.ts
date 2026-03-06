@@ -25,8 +25,13 @@ import {
   NotFoundError,
 } from "../constants/errors";
 import { TDbContext } from "../db/drizzle";
-import { auditLogs, disclosureDetails, disclosures } from "../db/schema";
-import { eq, InferInsertModel } from "drizzle-orm";
+import {
+  auditLogs,
+  disclosureDetails,
+  disclosures,
+  patientsPhoneNumbers,
+} from "../db/schema";
+import { eq, inArray, InferInsertModel } from "drizzle-orm";
 import { AuditLogRepo } from "../repos/audit-log.repo";
 import { deleteAudioFile, saveAudioFile } from "../db/helpers";
 import { DisclosureConsultationRepo } from "../repos/disclosure-consultation.repo";
@@ -34,7 +39,7 @@ import { NotificationService } from "./notification.service";
 import { TAddNotificationDto } from "../types/notification.type";
 import { rowsToExcel } from "../libs/xlsx";
 import localization from "../constants/localization.json";
-import { isNullOrUndefined, formatDateTime } from "../helpers";
+import { isNullOrUndefined } from "../helpers";
 
 @injectable()
 export class DisclosureService {
@@ -621,75 +626,108 @@ export class DisclosureService {
       ...dto,
       pageSize: Number.MAX_SAFE_INTEGER,
     });
+    const patientIds = result.items.map((i) => i.patientId);
+
+    const phoneNumbers = await this.db.query.patientsPhoneNumbers.findMany({
+      where: inArray(patientsPhoneNumbers.patientId, patientIds),
+    });
     const normalizedResult = result.items.map((i) => {
       const {
         patient,
-        updatedBy,
-        createdBy,
-        priority,
-        rating,
-        scout,
-        customRating,
-        isCustomRating,
-        // patientId,
-        // priorityId,
-        // ratingId,
-        // id,
-        // scoutId,
+        // updatedBy,
+        // createdBy,
+        // priority,
+        // rating,
+        // scout,
+        // customRating,
+        // isCustomRating,
+        // // patientId,
+        // // priorityId,
+        // // ratingId,
+        // // id,
+        // // scoutId,
         type,
-        status,
-        initialNote,
-        isReceived,
-        visitNote,
-        visitReason,
-        visitResult,
-        ratingNote,
-        appointmentDate,
-        isAppointmentCompleted,
-        archiveNumber,
-        createdAt,
-        updatedAt,
+        // status,
+        // initialNote,
+        // isReceived,
+        // visitNote,
+        // visitReason,
+        // visitResult,
+        // ratingNote,
+        // appointmentDate,
+        // isAppointmentCompleted,
+        // archiveNumber,
+        // createdAt,
+        // updatedAt,
       } = i;
+
+      const patientPhoneNumbers = phoneNumbers
+        .filter((pn) => pn.patientId === patient.id)
+        .map((pn) => pn.phone)
+        .join(", ");
       const dtoToBePrinted = {
+        [localization["disclosure.excel.name"]]: patient.name,
         [localization["disclosure.excel.type"]]:
           localization[`disclosure.excel.${type}`],
-        [localization["disclosure.excel.patient"]]: patient.name,
-        [localization["disclosure.excel.priority"]]: priority.name,
-        [localization["disclosure.excel.status"]]:
-          localization[`disclosure.excel.${status}`],
-        [localization["disclosure.excel.initial_note"]]: initialNote ?? "",
-        [localization["disclosure.excel.scout"]]: (scout as any)?.name,
-        [localization["disclosure.excel.visit_status"]]: visitResult
-          ? localization[`disclosure.excel.${visitResult}`]
-          : localization["disclosure.excel.none"],
-        [localization["disclosure.excel.visit_reason"]]: visitReason ?? "",
-        [localization["disclosure.excel.visit_note"]]: visitNote ?? "",
-        [localization["disclosure.excel.rating"]]:
-          (isCustomRating
-            ? `( ${localization["disclosure.excel.rating_custom"]} ) - ${customRating}`
-            : rating
-              ? `( ${rating.code} ) - ${rating.name}`
-              : "") || "",
-        [localization["disclosure.excel.rating_note"]]: ratingNote ?? "",
-        [localization["disclosure.excel.appointment_date"]]:
-          appointmentDate ?? "",
-        [localization["disclosure.excel.appointment_status"]]:
-          isAppointmentCompleted ? localization["disclosure.excel.done"] : "",
-        [localization["disclosure.excel.receive_status"]]: isReceived
-          ? localization["disclosure.excel.done"]
-          : "",
-        [localization["disclosure.excel.archive_number"]]: archiveNumber ?? "",
-        [localization["disclosure.excel.created_by"]]: (createdBy as any)?.name,
-        [localization["disclosure.excel.created_at"]]:
-          formatDateTime(createdAt),
-        [localization["disclosure.excel.updated_by"]]: (updatedBy as any)?.name,
-        [localization["disclosure.excel.updated_at"]]: updatedAt
-          ? formatDateTime(updatedAt)
-          : "",
+        [localization["disclosure.excel.phones"]]: patientPhoneNumbers,
+        [localization["disclosure.excel.address"]]: patient.address,
+        // [localization["disclosure.excel.priority"]]: priority.name,
+        // [localization["disclosure.excel.status"]]:
+        //   localization[`disclosure.excel.${status}`],
+        // [localization["disclosure.excel.initial_note"]]: initialNote ?? "",
+        // [localization["disclosure.excel.scout"]]: (scout as any)?.name,
+        // [localization["disclosure.excel.visit_status"]]: visitResult
+        //   ? localization[`disclosure.excel.${visitResult}`]
+        //   : localization["disclosure.excel.none"],
+        // [localization["disclosure.excel.visit_reason"]]: visitReason ?? "",
+        // [localization["disclosure.excel.visit_note"]]: visitNote ?? "",
+        // [localization["disclosure.excel.rating"]]:
+        //   (isCustomRating
+        //     ? `( ${localization["disclosure.excel.rating_custom"]} ) - ${customRating}`
+        //     : rating
+        //       ? `( ${rating.code} ) - ${rating.name}`
+        //       : "") || "",
+        // [localization["disclosure.excel.rating_note"]]: ratingNote ?? "",
+        // [localization["disclosure.excel.appointment_date"]]:
+        //   appointmentDate ?? "",
+        // [localization["disclosure.excel.appointment_status"]]:
+        //   isAppointmentCompleted ? localization["disclosure.excel.done"] : "",
+        // [localization["disclosure.excel.receive_status"]]: isReceived
+        //   ? localization["disclosure.excel.done"]
+        //   : "",
+        // [localization["disclosure.excel.archive_number"]]: archiveNumber ?? "",
+        // [localization["disclosure.excel.created_by"]]: (createdBy as any)?.name,
+        // [localization["disclosure.excel.created_at"]]:
+        //   formatDateTime(createdAt),
+        // [localization["disclosure.excel.updated_by"]]: (updatedBy as any)?.name,
+        // [localization["disclosure.excel.updated_at"]]: updatedAt
+        //   ? formatDateTime(updatedAt)
+        //   : "",
       };
       return dtoToBePrinted;
     });
-    const excelFileName = await rowsToExcel(normalizedResult);
+    // Transform the data so each column represents a patient and each row is an attribute
+    // We build rows where the first column is the attribute name (Field) and subsequent
+    // columns are patients (one column per patient). This flips the usual row-oriented
+    // layout into a column-oriented layout as requested.
+    let excelFileName: string;
+    if (!normalizedResult.length) {
+      // Preserve existing behavior for empty result set
+      excelFileName = await rowsToExcel(normalizedResult);
+    } else {
+      const attributeKeys = Object.keys(normalizedResult[0]);
+
+      // Build an array-of-arrays (no header row) where each inner array is:
+      // [attributeName, value_for_patient_1, value_for_patient_2, ...]
+      const aoaRows: any[][] = attributeKeys.map((attrKey) => {
+        return [
+          attrKey,
+          ...normalizedResult.map((patientObj) => patientObj[attrKey] ?? ""),
+        ];
+      });
+
+      excelFileName = await rowsToExcel(aoaRows);
+    }
     const file = Bun.file(excelFileName);
 
     const fileArrayBuffer = await file.arrayBuffer();
