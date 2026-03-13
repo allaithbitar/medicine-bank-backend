@@ -41,4 +41,9 @@ export const ERROR_MESSAGES = {
     ar: "لا تملك الصلاحية للقيام بهذا العمل",
     code: "014",
   },
+  [ERROR_CODES.DUPLICATE_ARCHIVE_NUMBER]: {
+    en: "Archive Number is already used",
+    ar: "رقم الأرشفة مستخدم بالفعل",
+    code: "015",
+  },
 } as const;

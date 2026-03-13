@@ -229,4 +229,7 @@ export const getDisclosureDetailsModel = t.Pick(disclosureDetailsSelectModel, [
 ]);
 
 // ARCHIVE
-export const archiveDisclosureModel = t.Pick(disclosureSelectModel, ["id"]);
+export const archiveDisclosureModel = t.Object({
+  id: disclosureSelectModel.properties.id,
+  archiveNumber: t.Optional(t.String()),
+});

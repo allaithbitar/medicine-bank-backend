@@ -8,6 +8,7 @@ export const ERROR_CODES = {
   FORBIDDEN_ACTION: "FORBIDDEN_ACTION",
   INSUFFICIENT_PERMISSIONS: "INSUFFICIENT_PERMISSIONS",
   ENTITY_NOT_FOUND: "ENTITY_NOT_FOUND",
+  DUPLICATE_ARCHIVE_NUMBER: "DUPLICATE_ARCHIVE_NUMBER",
 } as const;
 
 export class BadRequestError extends Error {
@@ -33,6 +34,13 @@ export class ForbiddenError extends Error {
 
 export class NotFoundError extends Error {
   code = 404 as const;
+  constructor(MESSAGE_CODE: string) {
+    super(MESSAGE_CODE);
+  }
+}
+
+export class ConflictError extends Error {
+  code = 409 as const;
   constructor(MESSAGE_CODE: string) {
     super(MESSAGE_CODE);
   }

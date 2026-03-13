@@ -2,6 +2,7 @@ import { Elysia, ValidationError } from "elysia";
 import { swagger } from "@elysiajs/swagger";
 import {
   BadRequestError,
+  ConflictError,
   NotFoundError,
   ServerError,
   UnauthorizedError,
@@ -94,7 +95,8 @@ const app = new Elysia({
       case error instanceof UnauthorizedError:
       case error instanceof NotFoundError:
       case error instanceof ServerError:
-      case error instanceof BadRequestError: {
+      case error instanceof BadRequestError:
+      case error instanceof ConflictError: {
         set.status = error.code;
         message = {
           ...message,

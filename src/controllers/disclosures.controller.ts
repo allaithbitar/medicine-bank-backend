@@ -259,7 +259,11 @@ export const DisclosuresController = new Elysia({
     .put(
       "/archive",
       async ({ body, disclosureService, user }) => {
-        await disclosureService.archiveDisclosure(body.id, user.id);
+        await disclosureService.archiveDisclosure(
+          body.id,
+          user.id,
+          body.archiveNumber,
+        );
       },
       {
         body: archiveDisclosureModel,

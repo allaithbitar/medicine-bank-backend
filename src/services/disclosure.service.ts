@@ -20,6 +20,7 @@ import {
   TUpdateDisclosureNoteDto,
 } from "../types/disclosure.type";
 import {
+  ConflictError,
   ERROR_CODES,
   ForbiddenError,
   NotFoundError,
@@ -33,13 +34,14 @@ import {
 } from "../db/schema";
 import { eq, inArray, InferInsertModel } from "drizzle-orm";
 import { AuditLogRepo } from "../repos/audit-log.repo";
-import { deleteAudioFile, saveAudioFile } from "../db/helpers";
+import { deleteAudioFile, isDbError, saveAudioFile } from "../db/helpers";
 import { DisclosureConsultationRepo } from "../repos/disclosure-consultation.repo";
 import { NotificationService } from "./notification.service";
 import { TAddNotificationDto } from "../types/notification.type";
 import { rowsToExcel } from "../libs/xlsx";
 import localization from "../constants/localization.json";
-import { isNullOrUndefined } from "../helpers";
+import { generateRandomNumberStr, isNullOrUndefined } from "../helpers";
+import { PG_ERROR_CODES } from "../constants/pg-errors";
 
 @injectable()
 export class DisclosureService {
@@ -98,6 +100,17 @@ export class DisclosureService {
       });
 
       if (!oldDisclosure) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+
+      if (dto.visitResult === "cant_be_completed") {
+        dto.status = "suspended";
+      }
+
+      if (
+        (dto.visitResult === null || dto.visitResult === "not_completed") &&
+        oldDisclosure.status === "suspended"
+      ) {
+        dto.status = "active";
+      }
 
       const [updatedDisclosure] = await this.disclosureRepo.update(
         {
@@ -506,65 +519,99 @@ export class DisclosureService {
     return this.disclosureRepo.updateDisclosureDetails(dto);
   }
 
-  async archiveDisclosure(id: string, updatedBy: string) {
+  async archiveDisclosure(
+    id: string,
+    updatedBy: string,
+    manualArchiveNumber?: string,
+  ) {
     await this.db.transaction(async (tx) => {
-      const oldDisclosure = await tx.query.disclosures.findFirst({
-        where: eq(disclosures.id, id),
-      });
+      try {
+        const oldDisclosure = await tx.query.disclosures.findFirst({
+          where: eq(disclosures.id, id),
+        });
 
-      if (!oldDisclosure) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+        if (!oldDisclosure)
+          throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
 
-      if (oldDisclosure.status === "archived") {
-        throw new ForbiddenError(ERROR_CODES.FORBIDDEN_ACTION);
+        if (oldDisclosure.status === "archived") {
+          throw new ForbiddenError(ERROR_CODES.FORBIDDEN_ACTION);
+        }
+        let archiveNumber: undefined | string = undefined;
+
+        if (manualArchiveNumber) {
+          archiveNumber = manualArchiveNumber;
+
+          await this.disclosureRepo.update(
+            {
+              id,
+              status: "archived",
+              archiveNumber,
+              updatedBy,
+            },
+            tx as any,
+          );
+        } else {
+          while (true) {
+            archiveNumber = generateRandomNumberStr();
+
+            try {
+              await this.disclosureRepo.update(
+                {
+                  id,
+                  status: "archived",
+                  archiveNumber,
+                  updatedBy,
+                },
+                tx as any,
+              );
+
+              break;
+            } catch (err: any) {
+              if (err?.code === PG_ERROR_CODES.UNIQUE_CONSTRAINT) {
+                continue;
+              }
+              throw err;
+            }
+          }
+        }
+
+        const createdAt = new Date().toISOString();
+
+        await this.auditLogRepo.create(
+          [
+            {
+              recordId: id,
+              column: disclosures.archiveNumber.name,
+              action: "UPDATE",
+              createdBy: updatedBy,
+              newValue: archiveNumber,
+              oldValue: oldDisclosure.archiveNumber,
+              table: "disclosures",
+              createdAt,
+            },
+            {
+              recordId: id,
+              column: disclosures.status.name,
+              action: "UPDATE",
+              createdBy: updatedBy,
+              newValue: "archived",
+              oldValue: oldDisclosure.status,
+              table: "disclosures",
+              createdAt,
+            },
+          ],
+          tx as any,
+        );
+      } catch (error: any) {
+        if (
+          isDbError(error) &&
+          (error.cause as any)?.code === PG_ERROR_CODES.UNIQUE_CONSTRAINT
+        ) {
+          throw new ConflictError(ERROR_CODES.DUPLICATE_ARCHIVE_NUMBER);
+        } else {
+          throw error;
+        }
       }
-
-      const [{ maxArchiveNumber }] = await tx
-        .select({
-          maxArchiveNumber: disclosures.archiveNumber,
-        })
-        .from(disclosures)
-        .orderBy(disclosures.archiveNumber)
-        .limit(1);
-
-      const nextArchiveNumber = (maxArchiveNumber || 0) + 1;
-
-      await this.disclosureRepo.update(
-        {
-          id,
-          status: "archived",
-          archiveNumber: nextArchiveNumber,
-          updatedBy,
-        },
-        tx as any,
-      );
-
-      const createdAt = new Date().toISOString();
-      // Create audit log
-      await this.auditLogRepo.create(
-        [
-          {
-            recordId: id,
-            column: disclosures.archiveNumber.name,
-            action: "UPDATE",
-            createdBy: updatedBy,
-            newValue: String(nextArchiveNumber),
-            oldValue: null,
-            table: "disclosures",
-            createdAt,
-          },
-          {
-            recordId: id,
-            column: disclosures.status.name,
-            action: "UPDATE",
-            createdBy: updatedBy,
-            newValue: "archived",
-            oldValue: oldDisclosure.status,
-            table: "disclosures",
-            createdAt,
-          },
-        ],
-        tx as any,
-      );
     });
   }
 

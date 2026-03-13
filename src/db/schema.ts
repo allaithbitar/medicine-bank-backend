@@ -292,7 +292,7 @@ export const disclosures = pgTable("disclosures", {
   initialNote: text("initial_note"),
   //
   isReceived: boolean("is_received").notNull().default(false),
-  archiveNumber: integer("archive_number"),
+  archiveNumber: text("archive_number").unique(),
   //
   visitResult: visit_result_enum("visit_result"),
   visitReason: text("visit_reason"),

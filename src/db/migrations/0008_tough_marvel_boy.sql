@@ -1,0 +1,2 @@
+ALTER TABLE "disclosures" ALTER COLUMN "archive_number" SET DATA TYPE text;--> statement-breakpoint
+ALTER TABLE "disclosures" ADD CONSTRAINT "disclosures_archive_number_unique" UNIQUE("archive_number");
