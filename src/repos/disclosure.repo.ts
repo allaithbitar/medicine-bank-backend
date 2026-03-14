@@ -141,7 +141,7 @@ export class DisclosureRepo {
       : undefined;
 
     let archiveNumberFilter = archiveNumber
-      ? eq(disclosures.archiveNumber, archiveNumber)
+      ? ilike(disclosures.archiveNumber, `%${archiveNumber}%`)
       : undefined;
 
     let isCustomRatingFilter =
