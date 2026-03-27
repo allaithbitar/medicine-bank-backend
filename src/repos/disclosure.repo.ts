@@ -231,7 +231,7 @@ export class DisclosureRepo {
     const filters = await this.getFilters(rest);
 
     const result = await this.db.query.disclosures.findMany({
-      with: withClause,
+      with: { ...withClause, patient: { with: { area: true } } },
       where: and(...Object.values(filters)),
       limit: pageSize,
       offset: pageSize * pageNumber,
