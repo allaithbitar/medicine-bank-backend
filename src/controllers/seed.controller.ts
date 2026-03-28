@@ -700,6 +700,7 @@ export const SeedController = new Elysia({
         // return paitentsWithDisclosuresMapped;
         //
 
+        let seededCount = 0;
         await db.transaction(async (outerTx) => {
           for await (const p of paitentsWithDisclosuresMapped) {
             const {
@@ -757,6 +758,10 @@ export const SeedController = new Elysia({
                 );
               }
             });
+            seededCount += 1;
+            console.info(
+              `Seeded ${seededCount} out of ${paitentsWithDisclosuresMapped.length}`,
+            );
           }
         });
 
