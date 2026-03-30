@@ -47,7 +47,6 @@ export const PatientsController = new Elysia({
         patientService.updatePatient({ ...body, updatedBy: user.id }),
       {
         body: updatePatientModel,
-        roles: ["manager", "supervisor"],
       },
     )
     .post(
@@ -55,7 +54,6 @@ export const PatientsController = new Elysia({
       ({ body, patientService }) => patientService.validateNationalNumber(body),
       {
         body: validatePatientNationalNumberModel,
-        roles: ["manager", "supervisor"],
       },
     )
     .post(
@@ -63,7 +61,6 @@ export const PatientsController = new Elysia({
       ({ body, patientService }) => patientService.validatePhoneNumbers(body),
       {
         body: validatePatientPhoneNumbers,
-        roles: ["manager", "supervisor"],
       },
     ),
 );
