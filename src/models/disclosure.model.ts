@@ -66,11 +66,11 @@ export const searchDisclosuresModel = t.Composite([
 
       type: t.Array(disclosureInsertModel.properties.type),
 
-      visitResult: t.Array(disclosureInsertModel.properties.visitResult),
+      visitResult: t.Array(
+        t.Nullable(disclosureInsertModel.properties.visitResult),
+      ),
 
       undelivered: t.Boolean(),
-
-      unvisited: t.Boolean(),
 
       unrated: t.Boolean(),
 

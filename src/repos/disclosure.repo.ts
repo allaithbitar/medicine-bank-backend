@@ -69,7 +69,6 @@ export class DisclosureRepo {
     ratingIds,
     type,
     visitResult,
-    unvisited,
     areaIds,
     isLate,
   }: TFilterDisclosuresDto) {
@@ -80,8 +79,6 @@ export class DisclosureRepo {
     let patientFilter = undefined;
 
     let undeliveredFilter = undefined;
-
-    let unvisitedFilter = undefined;
 
     let areasFilter = undefined;
 
@@ -122,10 +119,6 @@ export class DisclosureRepo {
       undeliveredFilter = isNull(disclosures.scoutId);
     }
 
-    if (unvisited) {
-      unvisitedFilter = isNull(disclosures.visitResult);
-    }
-
     if (areaIds?.length) {
       areasFilter = inArray(
         disclosures.patientId,
@@ -164,9 +157,19 @@ export class DisclosureRepo {
         : undefined;
 
     const noramlizedVisitResult = visitResult?.filter((v) => !!v);
+
     let visitResultFilter = noramlizedVisitResult?.length
       ? inArray(disclosures.visitResult, noramlizedVisitResult)
       : undefined;
+
+    const hasUnvisited = visitResult?.includes(null);
+
+    if (hasUnvisited) {
+      visitResultFilter = or(
+        visitResultFilter,
+        isNull(disclosures.visitResult),
+      );
+    }
 
     if (isLate) {
       let priorityDegress = await this.db.query.priorityDegrees.findMany({
@@ -209,7 +212,6 @@ export class DisclosureRepo {
       isReceivedFilter,
       typeFilter,
       visitResultFilter,
-      unvisitedFilter,
       areasFilter,
       isLateFilter,
     };
