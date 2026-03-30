@@ -56,8 +56,10 @@ export class DisclosureService {
     private notificationService: NotificationService,
   ) {}
 
-  getDisclosureById(id: string) {
-    return this.disclosureRepo.getByIdWithIncludes(id);
+  async getDisclosureById(id: string) {
+    const result = await this.disclosureRepo.getByIdWithIncludes(id);
+    if (!result) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+    return result;
   }
 
   async addDisclosure(dto: TAddDisclosureDto) {
@@ -678,6 +680,15 @@ export class DisclosureService {
     const phoneNumbers = await this.db.query.patientsPhoneNumbers.findMany({
       where: inArray(patientsPhoneNumbers.patientId, patientIds),
     });
+
+    const areas = await this.db.query.areas.findMany();
+    const areasDic = areas.reduce(
+      (acc, curr) => {
+        acc[curr.id] = curr.name;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
     const normalizedResult = result.items.map((i) => {
       const {
         patient,
@@ -712,11 +723,14 @@ export class DisclosureService {
         .filter((pn) => pn.patientId === patient.id)
         .map((pn) => pn.phone)
         .join(", ");
+
+      const patientArea = areasDic[patient.areaId as keyof typeof areasDic];
       const dtoToBePrinted = {
         [localization["disclosure.excel.name"]]: patient.name,
         [localization["disclosure.excel.type"]]:
           localization[`disclosure.excel.${type}`],
         [localization["disclosure.excel.phones"]]: patientPhoneNumbers,
+        [localization["disclosure.excel.area"]]: patientArea,
         [localization["disclosure.excel.address"]]: patient.address,
         // [localization["disclosure.excel.priority"]]: priority.name,
         // [localization["disclosure.excel.status"]]:
@@ -753,28 +767,7 @@ export class DisclosureService {
       };
       return dtoToBePrinted;
     });
-    // Transform the data so each column represents a patient and each row is an attribute
-    // We build rows where the first column is the attribute name (Field) and subsequent
-    // columns are patients (one column per patient). This flips the usual row-oriented
-    // layout into a column-oriented layout as requested.
-    let excelFileName: string;
-    if (!normalizedResult.length) {
-      // Preserve existing behavior for empty result set
-      excelFileName = await rowsToExcel(normalizedResult);
-    } else {
-      const attributeKeys = Object.keys(normalizedResult[0]);
-
-      // Build an array-of-arrays (no header row) where each inner array is:
-      // [attributeName, value_for_patient_1, value_for_patient_2, ...]
-      const aoaRows: any[][] = attributeKeys.map((attrKey) => {
-        return [
-          attrKey,
-          ...normalizedResult.map((patientObj) => patientObj[attrKey] ?? ""),
-        ];
-      });
-
-      excelFileName = await rowsToExcel(aoaRows);
-    }
+    const excelFileName = await rowsToExcel(normalizedResult);
     const file = Bun.file(excelFileName);
 
     const fileArrayBuffer = await file.arrayBuffer();
