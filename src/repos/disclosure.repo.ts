@@ -368,9 +368,9 @@ export class DisclosureRepo {
   async moveDisclosures(dto: TMoveDisclosuresDto) {
     const { fromScoutId, toScoutId, areaIds, visitResult } = dto;
 
-    const normalizedVisitResultArr = Array.isArray(visitResult)
-      ? visitResult.filter(Boolean)
-      : [];
+    // const normalizedVisitResultArr = Array.isArray(visitResult)
+    //   ? visitResult.filter(Boolean)
+    //   : [];
 
     const disclosureIdsByAreaFilter = areaIds?.length
       ? inArray(
@@ -384,7 +384,16 @@ export class DisclosureRepo {
 
     const perVisitResultClauses: any[] = [];
 
-    if (normalizedVisitResultArr.includes("not_completed")) {
+    if (visitResult.includes(null)) {
+      perVisitResultClauses.push(
+        and(
+          isNull(disclosures.visitResult),
+          and(isNull(disclosures.ratingId), isNull(disclosures.customRating)),
+        ),
+      );
+    }
+
+    if (visitResult.includes("not_completed")) {
       perVisitResultClauses.push(
         and(
           eq(disclosures.visitResult, "not_completed"),
@@ -393,32 +402,32 @@ export class DisclosureRepo {
       );
     }
 
-    if (normalizedVisitResultArr.includes("cant_be_completed")) {
-      perVisitResultClauses.push(
-        and(
-          eq(disclosures.visitResult, "cant_be_completed"),
-          and(isNull(disclosures.ratingId), isNull(disclosures.customRating)),
-        ),
-      );
-    }
-    if (normalizedVisitResultArr.includes("completed")) {
-      perVisitResultClauses.push(
-        and(
-          eq(disclosures.visitResult, "completed"),
-          or(
-            and(
-              isNotNull(disclosures.ratingId),
-              eq(disclosures.isCustomRating, false),
-            ),
-            and(
-              isNull(disclosures.ratingId),
-              isNotNull(disclosures.customRating),
-              eq(disclosures.isCustomRating, true),
-            ),
-          ),
-        ),
-      );
-    }
+    // if (visitResult.includes("cant_be_completed")) {
+    //   perVisitResultClauses.push(
+    //     and(
+    //       eq(disclosures.visitResult, "cant_be_completed"),
+    //       and(isNull(disclosures.ratingId), isNull(disclosures.customRating)),
+    //     ),
+    //   );
+    // }
+    // if (visitResult.includes("completed")) {
+    //   perVisitResultClauses.push(
+    //     and(
+    //       eq(disclosures.visitResult, "completed"),
+    //       or(
+    //         and(
+    //           isNotNull(disclosures.ratingId),
+    //           eq(disclosures.isCustomRating, false),
+    //         ),
+    //         and(
+    //           isNull(disclosures.ratingId),
+    //           isNotNull(disclosures.customRating),
+    //           eq(disclosures.isCustomRating, true),
+    //         ),
+    //       ),
+    //     ),
+    //   );
+    // }
 
     const visitAndRatingFilter = perVisitResultClauses.length
       ? or(...perVisitResultClauses)

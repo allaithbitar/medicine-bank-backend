@@ -200,7 +200,9 @@ export const moveDisclosuresModel = t.Object({
   fromScoutId: t.String({ format: "uuid" }),
   toScoutId: t.String({ format: "uuid" }),
   areaIds: t.Optional(t.Array(t.String())),
-  visitResult: t.Array(disclosureSelectModel.properties.visitResult),
+  visitResult: t.Array(
+    t.Nullable(disclosureInsertModel.properties.visitResult),
+  ),
 });
 
 export const getDisclosureAppointmentsModel = t.Object({
