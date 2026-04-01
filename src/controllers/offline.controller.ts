@@ -79,7 +79,7 @@ export const OfflineController = new Elysia({
               sql`COALESCE(${disclosures.updatedAt}, ${disclosures.createdAt})`,
             ),
           )
-          .limit(100)
+          .limit(200)
           .execute();
 
         const _disclosureIds = _disclosures.map((d) => d.id);
