@@ -240,7 +240,9 @@ export class DisclosureRepo {
       where: and(...Object.values(filters)),
       limit: pageSize,
       offset: pageSize * pageNumber,
-      orderBy: desc(disclosures.createdAt),
+      orderBy: desc(
+        sql`COALESCE(${disclosures.updatedAt}, ${disclosures.createdAt})`,
+      ),
     });
 
     const totalCount = await this.getCount(and(...Object.values(filters)));

@@ -20,7 +20,7 @@ import {
   ratings,
   subPatients,
 } from "../db/schema";
-import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { AuthGuard } from "../guards/auth.guard";
 
 export const OfflineController = new Elysia({
@@ -68,8 +68,17 @@ export const OfflineController = new Elysia({
         const _disclosures = await db
           .select()
           .from(disclosures)
-          .where(eq(disclosures.scoutId, scoutId))
-          .orderBy(desc(disclosures.createdAt))
+          .where(
+            and(
+              eq(disclosures.scoutId, scoutId),
+              eq(disclosures.status, "active"),
+            ),
+          )
+          .orderBy(
+            desc(
+              sql`COALESCE(${disclosures.updatedAt}, ${disclosures.createdAt})`,
+            ),
+          )
           .limit(100)
           .execute();
 
