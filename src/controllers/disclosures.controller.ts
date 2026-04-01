@@ -4,6 +4,7 @@ import {
   addDisclosureConsultationModel,
   addDisclosureModel,
   addDisclosureNoteModel,
+  addSubPatientModel,
   archiveDisclosureModel,
   completeDisclosureConsultationModel,
   disclosureDetailsInsertModel,
@@ -14,11 +15,13 @@ import {
   getDisclosureConsultationsModel,
   getDisclosureDetailsModel,
   getDisclosureNotesModel,
+  getDisclosureSubPatientsModel,
   moveDisclosuresModel,
   searchDisclosuresModel,
   updateDisclosureConsultationModel,
   updateDisclosureModel,
   updateDisclosureNoteModel,
+  updateSubPatientModel,
 } from "../models/disclosure.model";
 import { DisclosureService } from "../services/disclosure.service";
 import { AuthGuard } from "../guards/auth.guard";
@@ -286,6 +289,46 @@ export const DisclosuresController = new Elysia({
         disclosureService.exportToExcel(body),
       {
         body: t.Omit(searchDisclosuresModel, ["pageSize", "pageNumber"]),
+      },
+    )
+    .get(
+      "/sub-patients/:disclosureId",
+      async ({ params, disclosureService }) =>
+        disclosureService.getDisclosureSubPatients(params.disclosureId),
+      {
+        params: getDisclosureSubPatientsModel,
+      },
+    )
+    .get(
+      "/sub-patient/:id",
+      async ({ params, disclosureService }) =>
+        disclosureService.getDisclosureSubPatientById(params.id),
+      {
+        params: t.Object({ id: t.String({ format: "uuid" }) }),
+      },
+    )
+    .post(
+      "/sub-patient",
+      async ({ body, disclosureService }) =>
+        disclosureService.addDisclosureSubPatient(body),
+      {
+        body: addSubPatientModel,
+      },
+    )
+    .put(
+      "/sub-patient",
+      async ({ body, disclosureService }) =>
+        disclosureService.updateDisclosureSubPatient(body),
+      {
+        body: updateSubPatientModel,
+      },
+    )
+    .delete(
+      "/sub-patient/:id",
+      async ({ params, disclosureService }) =>
+        disclosureService.deleteDisclosureSubPatient(params.id),
+      {
+        params: t.Object({ id: t.String({ format: "uuid" }) }),
       },
     ),
 );

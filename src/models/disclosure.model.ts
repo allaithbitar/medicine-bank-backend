@@ -4,6 +4,7 @@ import {
   disclosureDetails,
   disclosureNotes,
   disclosures,
+  subPatients,
 } from "../db/schema";
 import { t } from "elysia";
 import { paginationModel } from "./common.model";
@@ -235,3 +236,22 @@ export const archiveDisclosureModel = t.Object({
   id: disclosureSelectModel.properties.id,
   archiveNumber: t.Optional(t.String()),
 });
+
+const subPatientSelectModel = createSelectSchema(subPatients);
+
+const subPatientInsertModel = createInsertSchema(subPatients);
+
+export const addSubPatientModel = t.Omit(subPatientInsertModel, ["id"]);
+
+export const updateSubPatientModel = t.Composite([
+  t.Pick(subPatientSelectModel, ["id"]),
+  t.Partial(t.Omit(addSubPatientModel, ["disclosureId"])),
+]);
+
+export const getDisclosureSubPatientsModel = t.Object({
+  disclosureId: t.String({ format: "uuid" }),
+});
+
+export const getSubPatientByIdModel = t.Pick(subPatientSelectModel, ["id"]);
+
+export const deleteSubPatientById = getSubPatientByIdModel;

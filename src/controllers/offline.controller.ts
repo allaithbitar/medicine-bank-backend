@@ -18,6 +18,7 @@ import {
   patientsPhoneNumbers,
   priorityDegrees,
   ratings,
+  subPatients,
 } from "../db/schema";
 import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { AuthGuard } from "../guards/auth.guard";
@@ -108,6 +109,12 @@ export const OfflineController = new Elysia({
           .where(inArray(disclosureNotes.disclosureId, _disclosureIds))
           .execute();
 
+        const _disclosureSubPatients = await db
+          .select()
+          .from(subPatients)
+          .where(inArray(subPatients.disclosureId, _disclosureIds))
+          .execute();
+
         const _disclosureConsultations = await db
           .select()
           .from(disclosureConsultations)
@@ -163,6 +170,7 @@ export const OfflineController = new Elysia({
           medicines: _medicines,
           patientMedicines: _patientsMedicines,
           familyMembers: _familyMembers,
+          disclosureSubPatients: _disclosureSubPatients,
         };
       },
     ),

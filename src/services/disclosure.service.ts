@@ -6,6 +6,7 @@ import {
   TAddDisclosureDetailsDto,
   TAddDisclosureDto,
   TAddDisclosureNoteDto,
+  TAddSubPatientDto,
   TCompleteDisclosureConsultationsDto,
   TDisclosure,
   TFilterDisclosuresDto,
@@ -18,6 +19,7 @@ import {
   TUpdateDisclosureConsultationDto,
   TUpdateDisclosureDetailsDto,
   TUpdateDisclosureNoteDto,
+  TUpdateSubPatientDto,
 } from "../types/disclosure.type";
 import {
   ConflictError,
@@ -780,5 +782,22 @@ export class DisclosureService {
         "Content-Type": contentType,
       },
     });
+  }
+
+  async getDisclosureSubPatientById(id: string) {
+    return this.disclosureRepo.getDisclosureSubPatientById(id);
+  }
+  async getDisclosureSubPatients(disclosureId: string) {
+    return this.disclosureRepo.getDisclosureSubPatients(disclosureId);
+  }
+
+  async addDisclosureSubPatient(dto: TAddSubPatientDto) {
+    return this.disclosureRepo.addDislcosureSubPatient(dto);
+  }
+  async updateDisclosureSubPatient(dto: TUpdateSubPatientDto) {
+    return this.disclosureRepo.updateDisclosureSubPatient(dto);
+  }
+  async deleteDisclosureSubPatient(id: string) {
+    return this.disclosureRepo.deleteDisclosureSubPatient(id);
   }
 }

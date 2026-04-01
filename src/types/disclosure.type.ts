@@ -3,6 +3,7 @@ import {
   addDisclosureConsultationModel,
   addDisclosureModel,
   addDisclosureNoteModel,
+  addSubPatientModel,
   archiveDisclosureModel,
   completeDisclosureConsultationModel,
   disclosureConsultationSelectModel,
@@ -18,6 +19,7 @@ import {
   updateDisclosureConsultationModel,
   updateDisclosureModel,
   updateDisclosureNoteModel,
+  updateSubPatientModel,
   // updateVisitModel,
 } from "../models/disclosure.model";
 
@@ -119,3 +121,7 @@ export type TUpdateDisclosureDetailsDto = TAddDisclosureDetailsEntityDto &
 
 export type TArchiveDisclosureDto = Static<typeof archiveDisclosureModel> &
   TUpdatedBy;
+
+export type TAddSubPatientDto = Static<typeof addSubPatientModel>;
+
+export type TUpdateSubPatientDto = Static<typeof updateSubPatientModel>;

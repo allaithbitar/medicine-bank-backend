@@ -6,11 +6,13 @@ import {
   disclosures,
   patients,
   priorityDegrees,
+  subPatients,
 } from "../db/schema";
 import {
   TAddDisclosureDetailsDto,
   TAddDisclosureDto,
   TAddDisclosureNoteEntityDto,
+  TAddSubPatientDto,
   TFilterDisclosuresDto,
   TGetDateAppointmentsDto,
   TGetDisclosureAppointmentsDto,
@@ -19,6 +21,7 @@ import {
   TUpdateDisclosureDetailsDto,
   TUpdateDisclosureDto,
   TUpdateDisclosureNoteEntityDto,
+  TUpdateSubPatientDto,
 } from "../types/disclosure.type";
 import {
   and,
@@ -581,5 +584,29 @@ export class DisclosureRepo {
       where: eq(disclosureDetails.disclosureId, disclosureId),
       with: { createdBy: ACTIONER_WITH, updatedBy: ACTIONER_WITH },
     });
+  }
+
+  async getDisclosureSubPatients(disclosureId: string) {
+    return await this.db.query.subPatients.findMany({
+      where: eq(subPatients.disclosureId, disclosureId),
+    });
+  }
+  async getDisclosureSubPatientById(id: string) {
+    return await this.db.query.subPatients.findFirst({
+      where: eq(subPatients.id, id),
+    });
+  }
+  async addDislcosureSubPatient(dto: TAddSubPatientDto) {
+    return await this.db.insert(subPatients).values(dto).returning();
+  }
+  async updateDisclosureSubPatient({ id, ...rest }: TUpdateSubPatientDto) {
+    return await this.db
+      .update(subPatients)
+      .set(rest)
+      .where(eq(subPatients.id, id))
+      .returning();
+  }
+  async deleteDisclosureSubPatient(id: string) {
+    await this.db.delete(subPatients).where(eq(subPatients.id, id));
   }
 }

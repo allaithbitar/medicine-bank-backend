@@ -185,7 +185,7 @@ export const patients = pgTable("patients", {
   name: text("name").notNull(),
   nationalNumber: text("national_number"),
   birthDate: date("birth_date", { mode: "string" }),
-  gender: gender_enum("gender").default("male"),
+  gender: gender_enum("gender"),
   job: text("job"),
   address: text("address"),
   about: text("about"),
@@ -196,6 +196,20 @@ export const patients = pgTable("patients", {
   ...updatedAtColumn,
   ...createdByColumn,
   ...updatedByColumn,
+});
+
+export const subPatients = pgTable("sub_patients", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  nationalNumber: text("national_number"),
+  birthDate: date("birth_date", { mode: "string" }),
+  gender: gender_enum("gender"),
+  job: text("job"),
+  about: text("about"),
+  disclosureId: uuid("disclosure_id")
+    .notNull()
+    .references(() => disclosures.id, { onDelete: "cascade" }),
+  phones: text("phones").array(),
 });
 
 export const familyMembers = pgTable("family_members", {
@@ -538,6 +552,7 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
     references: [disclosureDetails.disclosureId],
   }),
   notes: many(disclosureNotes),
+  subPatients: many(subPatients),
   payment: one(payments, {
     fields: [disclosures.id],
     references: [payments.disclosureId],
@@ -672,4 +687,8 @@ export const paymentRelations = relations(payments, ({ one }) => ({
     references: [employees.id],
     relationName: "createdBy",
   }),
+}));
+
+export const subPatientRelations = relations(subPatients, ({ one }) => ({
+  disclosure: one(disclosures),
 }));

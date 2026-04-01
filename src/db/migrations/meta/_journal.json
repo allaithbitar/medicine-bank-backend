@@ -64,6 +64,13 @@
       "when": 1773421927847,
       "tag": "0008_tough_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1775040334612,
+      "tag": "0009_lazy_warpath",
+      "breakpoints": true
     }
   ]
 }
