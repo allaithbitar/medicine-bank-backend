@@ -5,6 +5,7 @@ import {
   disclosureNotes,
   disclosures,
   patients,
+  patientsPhoneNumbers,
   priorityDegrees,
   subPatients,
 } from "../db/schema";
@@ -245,9 +246,44 @@ export class DisclosureRepo {
       ),
     });
 
+    const patientIds = [...new Set(result.map((d) => d.patient.id))];
+
+    const phonesData = await this.db
+      .select({
+        patientId: patientsPhoneNumbers.patientId,
+        id: patientsPhoneNumbers.id,
+        phone: patientsPhoneNumbers.phone,
+      })
+      .from(patientsPhoneNumbers)
+      .where(inArray(patientsPhoneNumbers.patientId, patientIds));
+
+    const phonesByPatient = phonesData.reduce(
+      (acc, phone) => {
+        if (!acc[phone.patientId]) acc[phone.patientId] = [];
+        acc[phone.patientId].push({
+          id: phone.id,
+          phone: phone.phone,
+          patientId: phone.patientId,
+        });
+        return acc;
+      },
+      {} as Record<
+        string,
+        Array<{ id: string; phone: string; patientId: string }>
+      >,
+    );
+
+    const itemsWithPhones = result.map((item) => ({
+      ...item,
+      patient: {
+        ...item.patient,
+        phones: phonesByPatient[item.patient.id] || [],
+      },
+    }));
+
     const totalCount = await this.getCount(and(...Object.values(filters)));
 
-    return { items: result, totalCount, pageSize, pageNumber };
+    return { items: itemsWithPhones, totalCount, pageSize, pageNumber };
   }
 
   async create(createDto: TAddDisclosureDto, tx?: TDbContext) {
