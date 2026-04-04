@@ -694,6 +694,7 @@ export class DisclosureService {
     const normalizedResult = result.items.map((i) => {
       const {
         patient,
+        initialNote,
         // updatedBy,
         // createdBy,
         // priority,
@@ -734,6 +735,7 @@ export class DisclosureService {
         [localization["disclosure.excel.phones"]]: patientPhoneNumbers,
         [localization["disclosure.excel.area"]]: patientArea,
         [localization["disclosure.excel.address"]]: patient.address,
+        [localization["disclosure.excel.initial_note"]]: initialNote,
         // [localization["disclosure.excel.priority"]]: priority.name,
         // [localization["disclosure.excel.status"]]:
         //   localization[`disclosure.excel.${status}`],
