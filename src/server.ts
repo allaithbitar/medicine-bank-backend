@@ -8,6 +8,36 @@ import {
   UnauthorizedError,
 } from "./constants/errors";
 import { ERROR_MESSAGES } from "./constants/error-messages";
+import { createStream } from "rotating-file-stream";
+import { pino } from "pino";
+
+const errorLogStream = createStream("error.logs", {
+  interval: "1d", // Rotate daily
+  maxFiles: 7, // Keep 7 days of logs
+  path: "./logs",
+  compress: "gzip",
+});
+
+const requestLogStream = createStream("requests.logs", {
+  interval: "1d", // Rotate daily
+  maxFiles: 7, // Keep 7 days of logs
+  path: "./logs",
+  compress: "gzip",
+});
+
+const errorLogger = pino(
+  {
+    level: "error",
+  },
+  errorLogStream,
+);
+
+const requestLogger = pino(
+  {
+    level: "info",
+  },
+  requestLogStream,
+);
 
 function customProps(ctx: ElysiaLoggerContext) {
   return {
@@ -18,7 +48,7 @@ function customProps(ctx: ElysiaLoggerContext) {
   };
 }
 
-import { logger, fileLogger } from "@bogeychan/elysia-logger";
+import { logger } from "@bogeychan/elysia-logger";
 import {
   getReadableDbErrorMessage,
   isDbError,
@@ -67,13 +97,6 @@ const app = new Elysia({
     }),
   )
   .use(
-    fileLogger({
-      file: "./logs.log",
-      customProps,
-      enabled: Bun.env.NODE_ENV === "production",
-    }),
-  )
-  .use(
     swagger({
       documentation: {
         tags: [{ name: "Auth" }],
@@ -88,7 +111,7 @@ const app = new Elysia({
       staticLimit: 0,
     }),
   )
-  .onError(({ error, set }) => {
+  .onError(({ error, set, request, ...ctx }) => {
     let message = { en: "", ar: "", details: "", code: "" } as TSystemError;
 
     switch (true) {
@@ -125,9 +148,47 @@ const app = new Elysia({
       }
     }
 
+    // Log error to error.logs with full context
+    const errorObj = error as any;
+    errorLogger.error({
+      error: {
+        message: errorObj?.message || String(error),
+        stack: errorObj?.stack,
+        name: errorObj?.name,
+        type: error.constructor.name,
+      },
+      request: {
+        method: request.method,
+        url: request.url,
+      },
+      context: customProps(ctx as any),
+      timestamp: new Date().toISOString(),
+      errorResponse: message,
+    });
+
     return { success: false, data: null, errorMessage: message };
   })
-  .onAfterHandle(({ response }) => {
+  .onAfterHandle(({ request, response, ...ctx }) => {
+    // Skip logging for root health check endpoint
+    const url = new URL(request.url);
+    const filteredUrls = ["/", "/notifications/unread-count"];
+    const shouldLogRequest = !filteredUrls.includes(url.pathname);
+
+    if (shouldLogRequest) {
+      requestLogger.info({
+        request: {
+          method: request.method,
+          url: request.url,
+          pathname: url.pathname,
+        },
+        response: {
+          status: (response as Response)?.status,
+        },
+        context: customProps(ctx as any),
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     const responseContentType =
       ((response as Response)?.headers as Headers)?.get("content-type") ?? "";
 
