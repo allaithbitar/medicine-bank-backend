@@ -15,7 +15,9 @@ import {
   TUpdateMedicineDto,
   TUpdatePatientMedicineDto,
 } from "../types/medicine.type";
-import { ERROR_CODES, NotFoundError } from "../constants/errors";
+import { ConflictError, ERROR_CODES, NotFoundError } from "../constants/errors";
+import { isDbError } from "../db/helpers";
+import { PG_ERROR_CODES } from "../constants/pg-errors";
 
 @injectable()
 export class MedicineRepo {
@@ -192,11 +194,22 @@ export class MedicineRepo {
   }
 
   async createPatientMedicine(dto: TAddPatientMedicineDto, tx?: TDbContext) {
-    const [result] = await (tx ?? this.db)
-      .insert(patientMedicines)
-      .values(dto)
-      .returning();
-    return result;
+    try {
+      const [result] = await (tx ?? this.db)
+        .insert(patientMedicines)
+        .values(dto)
+        .returning();
+      return result;
+    } catch (error) {
+      if (
+        isDbError(error) &&
+        (error.cause as any)?.code === PG_ERROR_CODES.UNIQUE_CONSTRAINT
+      ) {
+        throw new ConflictError(ERROR_CODES.DUPLICATE_PATIENT_MEDICINE);
+      } else {
+        throw error;
+      }
+    }
   }
 
   async updatePatientMedicine(dto: TUpdatePatientMedicineDto, tx?: TDbContext) {

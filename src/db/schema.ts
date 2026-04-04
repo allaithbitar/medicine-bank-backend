@@ -242,22 +242,28 @@ export const medicines = pgTable("medicines", {
   // note: text("note"),
 });
 
-export const patientMedicines = pgTable("patient_medicines", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  patientId: uuid("patient_id")
-    .notNull()
-    .references(() => patients.id, { onDelete: "cascade" }),
-  medicineId: uuid("medicine_id")
-    .notNull()
-    .references(() => medicines.id, { onDelete: "cascade" }),
-  dosePerIntake: real("dose_per_intake"),
-  intakeFrequency: text("intake_frequency"),
-  note: text("note"),
-  ...createdAtColumn,
-  ...updatedAtColumn,
-  ...createdByColumn,
-  ...updatedByColumn,
-});
+export const patientMedicines = pgTable(
+  "patient_medicines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    patientId: uuid("patient_id")
+      .notNull()
+      .references(() => patients.id, { onDelete: "cascade" }),
+    medicineId: uuid("medicine_id")
+      .notNull()
+      .references(() => medicines.id, { onDelete: "cascade" }),
+    dosePerIntake: real("dose_per_intake"),
+    intakeFrequency: text("intake_frequency"),
+    note: text("note"),
+    ...createdAtColumn,
+    ...updatedAtColumn,
+    ...createdByColumn,
+    ...updatedByColumn,
+  },
+  (table) => [
+    unique("patient_id_medicine_id").on(table.patientId, table.medicineId),
+  ],
+);
 
 // export const houseHoldAssets = pgTable("house_hold_assets", {
 //   id: uuid("id").primaryKey().defaultRandom(),

@@ -46,4 +46,9 @@ export const ERROR_MESSAGES = {
     ar: "رقم الأرشفة مستخدم بالفعل",
     code: "015",
   },
+  [ERROR_CODES.DUPLICATE_PATIENT_MEDICINE]: {
+    en: "Medicine Already added to this patient",
+    ar: "الدواء موجود بالفعل لهذا المريض",
+    code: "016",
+  },
 } as const;

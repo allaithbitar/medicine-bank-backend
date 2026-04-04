@@ -1,0 +1,1 @@
+ALTER TABLE "patient_medicines" ADD CONSTRAINT "patient_id_medicine_id" UNIQUE("patient_id","medicine_id");

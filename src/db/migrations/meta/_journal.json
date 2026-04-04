@@ -71,6 +71,13 @@
       "when": 1775040334612,
       "tag": "0009_lazy_warpath",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1775255224051,
+      "tag": "0010_skinny_umar",
+      "breakpoints": true
     }
   ]
 }
