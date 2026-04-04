@@ -182,7 +182,9 @@ export class PatientRepo {
     const result = await this.db.query.patients.findFirst({
       where: eq(patients.id, id),
       with: {
-        area: true,
+        area: {
+          with: { city: true },
+        },
         phones: true,
       },
     });
