@@ -11,6 +11,7 @@ import {
   TUpdateFamilyMemberDto,
 } from "../types/family-member.type";
 import { ERROR_CODES, NotFoundError } from "../constants/errors";
+import { noramalizeArabicNumbers } from "../db/helpers";
 
 @injectable()
 export class FamilyMemberRepo {
@@ -62,6 +63,14 @@ export class FamilyMemberRepo {
   }
 
   async create(dto: TAddFamilyMemberDto, tx?: TDbContext) {
+    if (dto.nationalNumber) {
+      dto.nationalNumber = noramalizeArabicNumbers(dto.nationalNumber);
+    }
+
+    if (dto.kidsCount) {
+      dto.kidsCount = Number(noramalizeArabicNumbers(String(dto.kidsCount)));
+    }
+
     const [addedFamilyMember] = await (tx ?? this.db)
       .insert(familyMembers)
       .values(dto)
@@ -71,6 +80,15 @@ export class FamilyMemberRepo {
 
   async update(dto: TUpdateFamilyMemberDto, tx?: TDbContext) {
     const { id, patientId, ...rest } = dto;
+
+    if (rest.nationalNumber) {
+      rest.nationalNumber = noramalizeArabicNumbers(rest.nationalNumber);
+    }
+
+    if (rest.kidsCount) {
+      rest.kidsCount = Number(noramalizeArabicNumbers(String(rest.kidsCount)));
+    }
+
     return await (tx ?? this.db)
       .update(familyMembers)
       .set(rest)

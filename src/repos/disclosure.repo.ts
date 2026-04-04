@@ -43,6 +43,7 @@ import {
   DEFAULT_PAGE_NUMBER,
   DEFAULT_PAGE_SIZE,
 } from "../constants/constants";
+import { noramalizeArabicNumbers } from "../db/helpers";
 
 const withClause = {
   priority: true,
@@ -635,9 +636,24 @@ export class DisclosureRepo {
     });
   }
   async addDislcosureSubPatient(dto: TAddSubPatientDto) {
+    if (dto.nationalNumber) {
+      dto.nationalNumber = noramalizeArabicNumbers(dto.nationalNumber);
+    }
+
+    if (dto.phones?.length) {
+      dto.phones = dto.phones.map((p) => noramalizeArabicNumbers(p));
+    }
     return await this.db.insert(subPatients).values(dto).returning();
   }
   async updateDisclosureSubPatient({ id, ...rest }: TUpdateSubPatientDto) {
+    if (rest.nationalNumber) {
+      rest.nationalNumber = noramalizeArabicNumbers(rest.nationalNumber);
+    }
+
+    if (rest.phones?.length) {
+      rest.phones = rest.phones.map((p) => noramalizeArabicNumbers(p));
+    }
+
     return await this.db
       .update(subPatients)
       .set(rest)
