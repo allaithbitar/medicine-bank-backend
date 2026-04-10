@@ -6,6 +6,7 @@ import {
   TAddDisclosureDetailsDto,
   TAddDisclosureDto,
   TAddDisclosureNoteDto,
+  TAddDisclosurePropertiesDto,
   TAddSubPatientDto,
   TCompleteDisclosureConsultationsDto,
   TDisclosure,
@@ -19,6 +20,7 @@ import {
   TUpdateDisclosureConsultationDto,
   TUpdateDisclosureDetailsDto,
   TUpdateDisclosureNoteDto,
+  TUpdateDisclosurePropertiesDto,
   TUpdateSubPatientDto,
 } from "../types/disclosure.type";
 import {
@@ -31,6 +33,7 @@ import { TDbContext } from "../db/drizzle";
 import {
   auditLogs,
   disclosureDetails,
+  disclosureProperties,
   disclosures,
   patientsPhoneNumbers,
 } from "../db/schema";
@@ -801,5 +804,119 @@ export class DisclosureService {
   }
   async deleteDisclosureSubPatient(id: string) {
     return this.disclosureRepo.deleteDisclosureSubPatient(id);
+  }
+
+  async getDisclosureProperties(disclosureId: string) {
+    return this.disclosureRepo.getDisclosureProperties(disclosureId);
+  }
+
+  async addDisclosureProperties(dto: TAddDisclosurePropertiesDto) {
+    const { audioFile, ...rest } = dto;
+    await this.db.transaction(async (tx) => {
+      let audio;
+
+      if (audioFile) {
+        audio = await saveAudioFile(audioFile);
+      }
+
+      const [addedDisclosureProperties] =
+        await this.disclosureRepo.addDisclosureProperties(
+          { ...rest, audio },
+          tx as any,
+        );
+      if (addedDisclosureProperties) {
+        const auditCreatedAt = new Date().toISOString();
+
+        const auditsToAdd: InferInsertModel<typeof auditLogs>[] = [];
+
+        const auditProperties: (keyof typeof addedDisclosureProperties)[] = [
+          "pros",
+          "cons",
+          "meds",
+          "note",
+          "audio",
+        ];
+
+        auditProperties.forEach((property) => {
+          auditsToAdd.push({
+            recordId: dto.disclosureId,
+            column: disclosureProperties[property].name,
+            action: "INSERT",
+            createdBy: dto.createdBy,
+            newValue: addedDisclosureProperties[property] || null,
+            oldValue: null,
+            table: "disclosure_properties",
+            createdAt: auditCreatedAt,
+          });
+        });
+      }
+    });
+  }
+
+  async updateDisclosureProperties(dto: TUpdateDisclosurePropertiesDto) {
+    await this.db.transaction(async (tx) => {
+      const { audioFile, deleteAudioFile: _deleteAudioFile, ...rest } = dto;
+
+      const oldDisclosureProperties =
+        await tx.query.disclosureProperties.findFirst({
+          where: eq(disclosureProperties.disclosureId, dto.disclosureId),
+        });
+
+      if (!oldDisclosureProperties)
+        throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
+
+      let audio: string | undefined =
+        oldDisclosureProperties.audio || undefined;
+
+      if (_deleteAudioFile === "true" || audioFile) {
+        if (oldDisclosureProperties.audio) {
+          try {
+            await deleteAudioFile(oldDisclosureProperties.audio);
+          } catch {}
+        }
+      }
+
+      if (audioFile) {
+        audio = await saveAudioFile(audioFile);
+      }
+
+      const [updatedDisclosureProperties] =
+        await this.disclosureRepo.updateDisclosureProperties(
+          { ...rest, audio },
+          tx as any,
+        );
+
+      if (updatedDisclosureProperties) {
+        const auditCreatedAt = new Date().toISOString();
+
+        const auditsToAdd: InferInsertModel<typeof auditLogs>[] = [];
+
+        const auditProperties: (keyof typeof oldDisclosureProperties)[] = [
+          "pros",
+          "cons",
+          "meds",
+          "note",
+          "audio",
+        ];
+
+        auditProperties.forEach((property) => {
+          if (
+            oldDisclosureProperties[property] !==
+            updatedDisclosureProperties[property]
+          ) {
+            auditsToAdd.push({
+              recordId: dto.disclosureId,
+              column: disclosureProperties[property].name,
+              action: "UPDATE",
+              createdBy: dto.updatedBy,
+              newValue: updatedDisclosureProperties[property] || null,
+              oldValue: oldDisclosureProperties[property] || null,
+              table: "disclosure_properties",
+              createdAt: auditCreatedAt,
+            });
+          }
+        });
+      }
+    });
   }
 }

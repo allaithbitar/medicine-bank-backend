@@ -3,11 +3,13 @@ import {
   addDisclosureConsultationModel,
   addDisclosureModel,
   addDisclosureNoteModel,
+  addDisclosurePropertiesModel,
   addSubPatientModel,
   archiveDisclosureModel,
   completeDisclosureConsultationModel,
   disclosureConsultationSelectModel,
   disclosureDetailsInsertModel,
+  disclosurePropertiesInsertModel,
   disclosureSelectModel,
   getDateAppointmentsModel,
   getDisclosureAppointmentsModel,
@@ -19,6 +21,7 @@ import {
   updateDisclosureConsultationModel,
   updateDisclosureModel,
   updateDisclosureNoteModel,
+  updateDisclosurePropertiesModel,
   updateSubPatientModel,
   // updateVisitModel,
 } from "../models/disclosure.model";
@@ -125,3 +128,17 @@ export type TArchiveDisclosureDto = Static<typeof archiveDisclosureModel> &
 export type TAddSubPatientDto = Static<typeof addSubPatientModel>;
 
 export type TUpdateSubPatientDto = Static<typeof updateSubPatientModel>;
+
+export type TAddDisclosurePropertiesEntityDto = Static<
+  typeof disclosurePropertiesInsertModel
+>;
+
+export type TAddDisclosurePropertiesDto = Static<
+  typeof addDisclosurePropertiesModel
+> &
+  TCreatedBy;
+
+export type TUpdateDisclosurePropertiesDto = Static<
+  typeof updateDisclosurePropertiesModel
+> &
+  TUpdatedBy;

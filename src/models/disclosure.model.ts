@@ -3,6 +3,7 @@ import {
   disclosureConsultations,
   disclosureDetails,
   disclosureNotes,
+  disclosureProperties,
   disclosures,
   subPatients,
 } from "../db/schema";
@@ -255,3 +256,38 @@ export const getDisclosureSubPatientsModel = t.Object({
 export const getSubPatientByIdModel = t.Pick(subPatientSelectModel, ["id"]);
 
 export const deleteSubPatientById = getSubPatientByIdModel;
+
+export const disclosurePropertiesInsertModel =
+  createInsertSchema(disclosureProperties);
+
+export const addDisclosurePropertiesModel = t.Composite([
+  t.Omit(disclosurePropertiesInsertModel, [
+    "audio",
+    "createdAt",
+    "createdBy",
+    "updatedBy",
+    "updatedAt",
+  ]),
+  t.Partial(
+    t.Object({
+      audioFile: t.File(),
+    }),
+  ),
+]);
+
+export const updateDisclosurePropertiesModel = t.Composite([
+  addDisclosurePropertiesModel,
+  t.Partial(
+    t.Object({
+      deleteAudioFile: t.String(),
+    }),
+  ),
+]);
+
+export const disclosurePropertiesSelectModel =
+  createSelectSchema(disclosureProperties);
+
+export const getDisclosurePropertiesModel = t.Pick(
+  disclosurePropertiesInsertModel,
+  ["disclosureId"],
+);

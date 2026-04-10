@@ -119,6 +119,7 @@ export const audit_table_enum = pgEnum("audit_table_enum", [
   "disclosure_notes",
   "disclosure_consultations",
   "disclosure_details",
+  "disclosure_properties",
 ]);
 
 export const audit_action_type_enum = pgEnum("audit_action_type_enum", [
@@ -367,6 +368,21 @@ export const disclosureDetails = pgTable("disclosure_details", {
   ...updatedByColumn,
 });
 
+export const disclosureProperties = pgTable("disclosure_properties", {
+  disclosureId: uuid("disclosure_id")
+    .references(() => disclosures.id)
+    .primaryKey(),
+  pros: text("pros"),
+  cons: text("cons"),
+  note: text("note"),
+  meds: text("meds"),
+  audio: text("audio"),
+  ...createdAtColumn,
+  ...createdByColumn,
+  ...updatedAtColumn,
+  ...updatedByColumn,
+});
+
 export const notifications = pgTable("notifications", {
   id: uuid("id").primaryKey().defaultRandom(),
   type: notification_type_enum("type").notNull(),
@@ -573,6 +589,10 @@ export const disclosureRelations = relations(disclosures, ({ one, many }) => ({
     references: [employees.id],
     relationName: "updatedBy",
   }),
+  properties: one(disclosureProperties, {
+    fields: [disclosures.id],
+    references: [disclosureProperties.disclosureId],
+  }),
 }));
 
 // export const disclosuresToVisistsRelations = relations(
@@ -698,3 +718,23 @@ export const paymentRelations = relations(payments, ({ one }) => ({
 export const subPatientRelations = relations(subPatients, ({ one }) => ({
   disclosure: one(disclosures),
 }));
+
+export const disclosurePropertiesRelations = relations(
+  disclosureProperties,
+  ({ one }) => ({
+    createdBy: one(employees, {
+      fields: [disclosureProperties.createdBy],
+      references: [employees.id],
+      relationName: "createdBy",
+    }),
+    updatedBy: one(employees, {
+      fields: [disclosureProperties.updatedBy],
+      references: [employees.id],
+      relationName: "updatedBy",
+    }),
+    disclosure: one(disclosures, {
+      fields: [disclosureProperties.disclosureId],
+      references: [disclosures.id],
+    }),
+  }),
+);

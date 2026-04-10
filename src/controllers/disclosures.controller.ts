@@ -4,6 +4,7 @@ import {
   addDisclosureConsultationModel,
   addDisclosureModel,
   addDisclosureNoteModel,
+  addDisclosurePropertiesModel,
   addSubPatientModel,
   archiveDisclosureModel,
   completeDisclosureConsultationModel,
@@ -21,6 +22,7 @@ import {
   updateDisclosureConsultationModel,
   updateDisclosureModel,
   updateDisclosureNoteModel,
+  updateDisclosurePropertiesModel,
   updateSubPatientModel,
 } from "../models/disclosure.model";
 import { DisclosureService } from "../services/disclosure.service";
@@ -329,6 +331,36 @@ export const DisclosuresController = new Elysia({
         disclosureService.deleteDisclosureSubPatient(params.id),
       {
         params: t.Object({ id: t.String({ format: "uuid" }) }),
+      },
+    )
+    .get(
+      "/properties",
+      ({ query, disclosureService }) =>
+        disclosureService.getDisclosureProperties(query.disclosureId),
+      {
+        query: getDisclosureDetailsModel,
+      },
+    )
+    .post(
+      "/properties",
+      ({ body, disclosureService, user }) =>
+        disclosureService.addDisclosureProperties({
+          ...body,
+          createdBy: user.id,
+        }),
+      {
+        body: addDisclosurePropertiesModel,
+      },
+    )
+    .put(
+      "/properties",
+      ({ body, disclosureService, user }) =>
+        disclosureService.updateDisclosureProperties({
+          ...body,
+          updatedBy: user.id,
+        }),
+      {
+        body: updateDisclosurePropertiesModel,
       },
     ),
 );

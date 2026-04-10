@@ -3,6 +3,7 @@ import { TDbContext } from "../db/drizzle";
 import {
   disclosureDetails,
   disclosureNotes,
+  disclosureProperties,
   disclosures,
   patients,
   patientsPhoneNumbers,
@@ -13,6 +14,7 @@ import {
   TAddDisclosureDetailsDto,
   TAddDisclosureDto,
   TAddDisclosureNoteEntityDto,
+  TAddDisclosurePropertiesDto,
   TAddSubPatientDto,
   TFilterDisclosuresDto,
   TGetDateAppointmentsDto,
@@ -22,6 +24,7 @@ import {
   TUpdateDisclosureDetailsDto,
   TUpdateDisclosureDto,
   TUpdateDisclosureNoteEntityDto,
+  TUpdateDisclosurePropertiesDto,
   TUpdateSubPatientDto,
 } from "../types/disclosure.type";
 import {
@@ -662,5 +665,37 @@ export class DisclosureRepo {
   }
   async deleteDisclosureSubPatient(id: string) {
     await this.db.delete(subPatients).where(eq(subPatients.id, id));
+  }
+
+  async getDisclosureProperties(disclosureId: string) {
+    return await this.db.query.disclosureProperties.findFirst({
+      where: eq(disclosureProperties.disclosureId, disclosureId),
+      with: { createdBy: ACTIONER_WITH, updatedBy: ACTIONER_WITH },
+    });
+  }
+
+  async addDisclosureProperties(
+    dto: Omit<TAddDisclosurePropertiesDto, "audioFile"> & { audio?: string },
+    tx?: TDbContext,
+  ) {
+    return await (tx || this.db)
+      .insert(disclosureProperties)
+      .values(dto)
+      .returning();
+  }
+
+  async updateDisclosureProperties(
+    dto: Omit<
+      TUpdateDisclosurePropertiesDto,
+      "audioFile" | "deleteAudioFile"
+    > & { audio?: string },
+    tx?: TDbContext,
+  ) {
+    const { disclosureId, ...rest } = dto;
+    return await (tx || this.db)
+      .update(disclosureProperties)
+      .set(rest)
+      .where(eq(disclosureProperties.disclosureId, disclosureId))
+      .returning();
   }
 }
