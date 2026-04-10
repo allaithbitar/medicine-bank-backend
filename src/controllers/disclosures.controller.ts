@@ -350,6 +350,7 @@ export const DisclosuresController = new Elysia({
         }),
       {
         body: addDisclosurePropertiesModel,
+        parse: "multipart/form-data",
       },
     )
     .put(
@@ -361,6 +362,7 @@ export const DisclosuresController = new Elysia({
         }),
       {
         body: updateDisclosurePropertiesModel,
+        parse: "multipart/form-data",
       },
     ),
 );
