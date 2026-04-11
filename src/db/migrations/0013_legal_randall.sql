@@ -1,0 +1,1 @@
+ALTER TABLE "employees" ADD COLUMN "can_be_consulted" boolean DEFAULT false;

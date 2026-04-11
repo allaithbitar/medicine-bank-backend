@@ -156,6 +156,7 @@ export const employees = pgTable("employees", {
   password: text("password").notNull(),
   phone: text("phone").notNull().unique(),
   role: emplyee_role_enum("role").notNull(),
+  canBeConsulted: boolean("can_be_consulted").default(false),
   // areaId: uuid("area_id").references(() => areas.id, { onDelete: "set null" }),
   ...createdAtColumn,
   ...updatedAtColumn,

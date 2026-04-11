@@ -35,9 +35,10 @@ import {
   disclosureDetails,
   disclosureProperties,
   disclosures,
+  employees,
   patientsPhoneNumbers,
 } from "../db/schema";
-import { eq, inArray, InferInsertModel } from "drizzle-orm";
+import { and, eq, inArray, InferInsertModel } from "drizzle-orm";
 import { AuditLogRepo } from "../repos/audit-log.repo";
 import { deleteAudioFile, isDbError, saveAudioFile } from "../db/helpers";
 import { DisclosureConsultationRepo } from "../repos/disclosure-consultation.repo";
@@ -356,12 +357,22 @@ export class DisclosureService {
         tx as any,
       );
 
-      await this.notificationService.sendNotificationToRoles(
+      const employeesThatCanBeConsulted = await tx
+        .select({ id: employees.id })
+        .from(employees)
+        .where(
+          and(
+            eq(employees.role, "manager"),
+            eq(employees.canBeConsulted, true),
+          ),
+        );
+
+      await this.notificationService.sendNotificationToIds(
         {
           from: addedConsultation.createdBy!,
           type: "consultation_requested",
-          roles: ["manager"],
           recordId: addedConsultation.id,
+          ids: employeesThatCanBeConsulted.map((i) => i.id),
         },
         tx as any,
       );

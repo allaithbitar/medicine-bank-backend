@@ -103,6 +103,29 @@ export class NotificationService {
     }
   }
 
+  async sendNotificationToIds(
+    dto: Omit<TAddNotificationDto, "to"> & { ids: string[] },
+    tx?: TDbContext,
+  ) {
+    const { ids, ...rest } = dto;
+    // const employeesInRoles = await this.db
+    //   .select({ id: employees.id })
+    //   .from(employees)
+    //   .where(inArray(employees.role, dto.roles));
+    //
+    // const employeeIds = employeesInRoles.map((e) => e.id);
+
+    if (ids.length > 0) {
+      await this.createNotification(
+        ids.map((id) => ({
+          ...dto,
+          to: id,
+        })),
+        tx,
+      );
+    }
+  }
+
   async markAsRead(id: string) {
     const notification = await this.notificationRepo.findById(id);
     if (!notification) throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
