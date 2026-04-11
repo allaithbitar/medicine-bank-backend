@@ -158,7 +158,11 @@ export class DisclosureService {
       ];
 
       auditProperties.forEach((property) => {
-        if (oldDisclosure[property] !== updatedDisclosure[property]) {
+        if (
+          oldDisclosure[property] !== updatedDisclosure[property] ||
+          // always audit visitResult even when the value hasn't changed
+          ("visitResult" in dto && property === "visitResult")
+        ) {
           auditsToAdd.push({
             recordId: id,
             column: disclosures[property].name,
