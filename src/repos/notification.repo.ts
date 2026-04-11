@@ -37,7 +37,7 @@ export class NotificationRepo {
   async findByEmployeeId(employeeId: string): Promise<TNotificationEntity[]> {
     return this.db.query.notifications.findMany({
       where: eq(notifications.to, employeeId),
-      orderBy: desc(notifications.id),
+      orderBy: desc(notifications.createdAt),
     });
   }
 
@@ -84,7 +84,7 @@ export class NotificationRepo {
       },
       limit: pageSize,
       offset: pageSize * pageNumber,
-      orderBy: desc(notifications.id),
+      orderBy: desc(notifications.createdAt),
     });
 
     return {
@@ -100,7 +100,7 @@ export class NotificationRepo {
   ): Promise<TNotificationEntity[]> {
     return this.db.query.notifications.findMany({
       where: eq(notifications.to, employeeId),
-      orderBy: desc(notifications.id),
+      orderBy: desc(notifications.createdAt),
     });
   }
 
