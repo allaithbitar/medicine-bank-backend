@@ -119,6 +119,10 @@ export class DisclosureService {
         dto.status = "active";
       }
 
+      if ("visitResult" in dto) {
+        dto.lastVisitDate = new Date().toISOString();
+      }
+
       const [updatedDisclosure] = await this.disclosureRepo.update(
         {
           ...dto,

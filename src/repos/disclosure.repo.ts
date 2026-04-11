@@ -186,7 +186,7 @@ export class DisclosureRepo {
 
       let pdQuery = priorityDegress.map((pd) =>
         and(
-          sql`${disclosures.createdAt} <= NOW() - INTERVAL '${sql.raw(String(pd.durationInDays!))} days'`,
+          sql`COALESCE(${disclosures.lastVisitDate}, ${disclosures.createdAt}) <= NOW() - INTERVAL '${sql.raw(String(pd.durationInDays!))} days'`,
           eq(disclosures.priorityId, pd.id),
         ),
       );

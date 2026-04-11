@@ -329,6 +329,10 @@ export const disclosures = pgTable("disclosures", {
     .notNull()
     .default(false),
   //
+  lastVisitDate: timestamp("last_visit_date", {
+    mode: "string",
+    withTimezone: true,
+  }),
   ...createdAtColumn,
   ...updatedAtColumn,
   ...createdByColumn,

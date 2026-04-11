@@ -1,0 +1,1 @@
+ALTER TABLE "disclosures" ADD COLUMN "last_visit_date" timestamp with time zone;
