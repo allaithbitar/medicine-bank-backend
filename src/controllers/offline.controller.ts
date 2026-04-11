@@ -9,6 +9,7 @@ import {
   disclosureConsultations,
   disclosureDetails,
   disclosureNotes,
+  disclosureProperties,
   disclosures,
   employees,
   familyMembers,
@@ -133,11 +134,18 @@ export const OfflineController = new Elysia({
 
         const _disclosureNoteIds = _disclosureNotes.map((dn) => dn.id);
 
-        const _disclosureDetails = await db
+        // const _disclosureDetails = await db
+        //   .select()
+        //   .from(disclosureDetails)
+        //   .orderBy(desc(disclosureDetails.createdAt))
+        //   .where(inArray(disclosureDetails.disclosureId, _disclosureIds))
+        //   .execute();
+
+        const _disclosureProperties = await db
           .select()
-          .from(disclosureDetails)
-          .orderBy(desc(disclosureDetails.createdAt))
-          .where(inArray(disclosureDetails.disclosureId, _disclosureIds))
+          .from(disclosureProperties)
+          .orderBy(desc(disclosureProperties.createdAt))
+          .where(inArray(disclosureProperties.disclosureId, _disclosureIds))
           .execute();
 
         const _auditLogs = await db
@@ -174,12 +182,13 @@ export const OfflineController = new Elysia({
           areas: _areas,
           disclosureNotes: _disclosureNotes,
           disclosureConsultations: _disclosureConsultations,
-          disclosureDetails: _disclosureDetails,
+          disclosureDetails: [],
           patientsPhoneNumbers: _patientsPhoneNumbers,
           medicines: _medicines,
           patientMedicines: _patientsMedicines,
           familyMembers: _familyMembers,
           disclosureSubPatients: _disclosureSubPatients,
+          disclosureProperties: _disclosureProperties,
         };
       },
     ),

@@ -849,6 +849,8 @@ export class DisclosureService {
             createdAt: auditCreatedAt,
           });
         });
+        if (auditsToAdd.length)
+          await this.auditLogRepo.create(auditsToAdd, tx as any);
       }
     });
   }
@@ -865,7 +867,7 @@ export class DisclosureService {
       if (!oldDisclosureProperties)
         throw new NotFoundError(ERROR_CODES.ENTITY_NOT_FOUND);
 
-      let audio: string | undefined =
+      let audio: string | null | undefined =
         oldDisclosureProperties.audio || undefined;
 
       if (_deleteAudioFile === "true" || audioFile) {
@@ -874,6 +876,7 @@ export class DisclosureService {
             await deleteAudioFile(oldDisclosureProperties.audio);
           } catch {}
         }
+        audio = null;
       }
 
       if (audioFile) {
@@ -916,6 +919,8 @@ export class DisclosureService {
             });
           }
         });
+        if (auditsToAdd.length)
+          await this.auditLogRepo.create(auditsToAdd, tx as any);
       }
     });
   }

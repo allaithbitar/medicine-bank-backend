@@ -50,6 +50,13 @@ export class AuditLogRepo {
             sql`(SELECT id FROM disclosure_notes WHERE disclosure_id = ${disclosureId})`,
           ),
         ),
+        and(
+          eq(auditLogs.table, "disclosure_properties"),
+          inArray(
+            auditLogs.recordId,
+            sql`(SELECT disclosure_id FROM disclosure_properties WHERE disclosure_id = ${disclosureId})`,
+          ),
+        ),
       ),
       dateFilter,
     );

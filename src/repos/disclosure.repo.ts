@@ -688,7 +688,7 @@ export class DisclosureRepo {
     dto: Omit<
       TUpdateDisclosurePropertiesDto,
       "audioFile" | "deleteAudioFile"
-    > & { audio?: string },
+    > & { audio?: string | null },
     tx?: TDbContext,
   ) {
     const { disclosureId, ...rest } = dto;
