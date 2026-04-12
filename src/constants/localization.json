@@ -37,5 +37,15 @@
   "priority_degrees.urgent": "مستعجل",
   "priority_degrees.mandatory": "ضروري",
   "priority_degrees.noraml": "عادي",
-  "priority_degrees.attention": "انتباه"
+  "priority_degrees.attention": "انتباه",
+  "house_ownership.owned": "ملك",
+  "house_ownership.rent": "إيجار",
+  "house_ownership.loan": "إعارة",
+  "house_ownership.mortage": "رهن",
+  "house_condition.very_good": "جيد جداً",
+  "house_condition.good": "جيد",
+  "house_condition.medium": "متوسط",
+  "house_condition.bad": "سيء",
+  "house_condition.very_bad": "سيء جداً",
+  "house_condition.not_working": "لا يعمل"
 }
