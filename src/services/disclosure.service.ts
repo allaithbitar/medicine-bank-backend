@@ -562,72 +562,73 @@ export class DisclosureService {
         if (oldDisclosure.status === "archived") {
           throw new ForbiddenError(ERROR_CODES.FORBIDDEN_ACTION);
         }
+
         let archiveNumber: undefined | string = undefined;
 
-        if (manualArchiveNumber) {
-          archiveNumber = manualArchiveNumber;
-
-          await this.disclosureRepo.update(
-            {
-              id,
-              status: "archived",
-              archiveNumber,
-              updatedBy,
-            },
-            tx as any,
-          );
-        } else {
-          while (true) {
-            archiveNumber = generateRandomNumberStr();
-
-            try {
-              await this.disclosureRepo.update(
-                {
-                  id,
-                  status: "archived",
-                  archiveNumber,
-                  updatedBy,
-                },
-                tx as any,
-              );
-
-              break;
-            } catch (err: any) {
-              if (err?.code === PG_ERROR_CODES.UNIQUE_CONSTRAINT) {
-                continue;
-              }
-              throw err;
-            }
-          }
-        }
+        const auditsToAdd: InferInsertModel<typeof auditLogs>[] = [];
 
         const createdAt = new Date().toISOString();
 
-        await this.auditLogRepo.create(
-          [
-            {
-              recordId: id,
-              column: disclosures.archiveNumber.name,
-              action: "UPDATE",
-              createdBy: updatedBy,
-              newValue: archiveNumber,
-              oldValue: oldDisclosure.archiveNumber,
-              table: "disclosures",
-              createdAt,
-            },
-            {
-              recordId: id,
-              column: disclosures.status.name,
-              action: "UPDATE",
-              createdBy: updatedBy,
-              newValue: "archived",
-              oldValue: oldDisclosure.status,
-              table: "disclosures",
-              createdAt,
-            },
-          ],
-          tx as any,
-        );
+        if (!oldDisclosure.archiveNumber) {
+          if (manualArchiveNumber) {
+            archiveNumber = manualArchiveNumber;
+
+            await this.disclosureRepo.update(
+              {
+                id,
+                status: "archived",
+                archiveNumber,
+                updatedBy,
+              },
+              tx as any,
+            );
+          } else {
+            while (true) {
+              archiveNumber = generateRandomNumberStr();
+              try {
+                await this.disclosureRepo.update(
+                  {
+                    id,
+                    status: "archived",
+                    archiveNumber,
+                    updatedBy,
+                  },
+                  tx as any,
+                );
+
+                break;
+              } catch (err: any) {
+                if (err?.code === PG_ERROR_CODES.UNIQUE_CONSTRAINT) {
+                  continue;
+                }
+                throw err;
+              }
+            }
+          }
+          auditsToAdd.push({
+            recordId: id,
+            column: disclosures.archiveNumber.name,
+            action: "UPDATE",
+            createdBy: updatedBy,
+            newValue: archiveNumber,
+            oldValue: null,
+            table: "disclosures",
+            createdAt,
+          });
+        }
+
+        auditsToAdd.push({
+          recordId: id,
+          column: disclosures.status.name,
+          action: "UPDATE",
+          createdBy: updatedBy,
+          newValue: "archived",
+          oldValue: oldDisclosure.status,
+          table: "disclosures",
+          createdAt,
+        });
+
+        await this.auditLogRepo.create(auditsToAdd, tx as any);
       } catch (error: any) {
         if (
           isDbError(error) &&
@@ -658,7 +659,7 @@ export class DisclosureService {
           id,
           status: "active",
           updatedBy,
-          archiveNumber: null,
+          // archiveNumber: null,
         },
         tx as any,
       );
@@ -673,18 +674,6 @@ export class DisclosureService {
             createdBy: updatedBy,
             newValue: "active",
             oldValue: "archived",
-            table: "disclosures",
-            createdAt: new Date().toISOString(),
-          },
-          {
-            recordId: id,
-            column: disclosures.archiveNumber.name,
-            action: "UPDATE",
-            createdBy: updatedBy,
-            newValue: null,
-            oldValue: oldDisclosure.archiveNumber
-              ? String(oldDisclosure.archiveNumber)
-              : null,
             table: "disclosures",
             createdAt: new Date().toISOString(),
           },
