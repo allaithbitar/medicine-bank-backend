@@ -1,12 +1,12 @@
 import { inject, injectable } from "inversify";
 import { TDbContext } from "../db/drizzle";
-import { and, count, eq, gte, lte } from "drizzle-orm";
+import { and, count, eq, gte, inArray, lte } from "drizzle-orm";
 import {
   TAddDisclosureConsultationEntityDto,
   TGetDisclosureConsultationsDto,
   TUpdateDisclosureConsultationEntityDto,
 } from "../types/disclosure.type";
-import { disclosureConsultations } from "../db/schema";
+import { disclosureConsultations, disclosures, patients } from "../db/schema";
 import {
   ACTIONER_WITH,
   DEFAULT_PAGE_NUMBER,
@@ -109,9 +109,44 @@ export class DisclosureConsultationRepo {
         desc(disclosureConsultations.createdAt),
     });
 
+    const disclosureIds = [...new Set(result.map((d) => d.disclosureId))];
+
+    const patientIdsAndDisclosureIds = await this.db
+      .select({
+        disclosureId: disclosures.id,
+        patientId: disclosures.patientId,
+      })
+      .from(disclosures)
+      .where(inArray(disclosures.id, disclosureIds));
+
+    const patientIds = patientIdsAndDisclosureIds.map((i) => i.patientId);
+
+    const disclosureIdPatientIdDictionary = patientIdsAndDisclosureIds.reduce(
+      (acc, curr) => {
+        acc[curr.disclosureId] = curr.patientId;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+
+    const patientsData = await this.db
+      .select()
+      .from(patients)
+      .where(inArray(patients.id, patientIds));
+
+    const itemsWithPatients = result.map((item) => {
+      const patientId = disclosureIdPatientIdDictionary[item.disclosureId];
+      const patient = patientsData.find((p) => p.id === patientId);
+      return {
+        ...item,
+        patient,
+      };
+    });
+    console.log(itemsWithPatients);
+
     const totalCount = await this.getCount(rest);
 
-    return { items: result, totalCount, pageSize, pageNumber };
+    return { items: itemsWithPatients, totalCount, pageSize, pageNumber };
   }
 
   async getById(id: string) {
@@ -125,7 +160,7 @@ export class DisclosureConsultationRepo {
       where: eq(disclosureConsultations.id, id),
       with: {
         disclosure: {
-          with: { rating: true },
+          with: { rating: true, patient: true },
         },
         consultedBy: ACTIONER_WITH,
         createdBy: ACTIONER_WITH,
