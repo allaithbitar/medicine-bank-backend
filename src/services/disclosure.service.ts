@@ -569,42 +569,48 @@ export class DisclosureService {
 
         const createdAt = new Date().toISOString();
 
-        if (!oldDisclosure.archiveNumber) {
-          if (manualArchiveNumber) {
-            archiveNumber = manualArchiveNumber;
+        if (
+          (manualArchiveNumber && !oldDisclosure.archiveNumber) ||
+          (manualArchiveNumber &&
+            oldDisclosure.archiveNumber &&
+            manualArchiveNumber !== oldDisclosure.archiveNumber)
+        ) {
+          archiveNumber = manualArchiveNumber;
 
-            await this.disclosureRepo.update(
-              {
-                id,
-                status: "archived",
-                archiveNumber,
-                updatedBy,
-              },
-              tx as any,
-            );
-          } else {
-            while (true) {
-              archiveNumber = generateRandomNumberStr();
-              try {
-                await this.disclosureRepo.update(
-                  {
-                    id,
-                    status: "archived",
-                    archiveNumber,
-                    updatedBy,
-                  },
-                  tx as any,
-                );
+          await this.disclosureRepo.update(
+            {
+              id,
+              status: "archived",
+              archiveNumber,
+              updatedBy,
+            },
+            tx as any,
+          );
+        } else {
+          while (true) {
+            archiveNumber = generateRandomNumberStr();
+            try {
+              await this.disclosureRepo.update(
+                {
+                  id,
+                  status: "archived",
+                  archiveNumber,
+                  updatedBy,
+                },
+                tx as any,
+              );
 
-                break;
-              } catch (err: any) {
-                if (err?.code === PG_ERROR_CODES.UNIQUE_CONSTRAINT) {
-                  continue;
-                }
-                throw err;
+              break;
+            } catch (err: any) {
+              if (err?.code === PG_ERROR_CODES.UNIQUE_CONSTRAINT) {
+                continue;
               }
+              throw err;
             }
           }
+        }
+
+        if (archiveNumber !== oldDisclosure.archiveNumber)
           auditsToAdd.push({
             recordId: id,
             column: disclosures.archiveNumber.name,
@@ -615,7 +621,6 @@ export class DisclosureService {
             table: "disclosures",
             createdAt,
           });
-        }
 
         auditsToAdd.push({
           recordId: id,
