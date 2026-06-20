@@ -38,56 +38,55 @@ const DiContainer = new Container();
 
 DiContainer.bind("db").toConstantValue(DbInstance);
 
-DiContainer.bind<JwtService>(JwtService).toSelf().inRequestScope();
-// DiContainer.bind<EmployeeRepo>(EmployeeRepo).toSelf().inRequestScope();
-DiContainer.bind<EmployeeRepo>(EmployeeRepo).toSelf().inRequestScope();
-DiContainer.bind<EmployeeService>(EmployeeService).toSelf().inRequestScope();
-DiContainer.bind<PatientRepo>(PatientRepo).toSelf().inRequestScope();
-DiContainer.bind<PatientService>(PatientService).toSelf().inRequestScope();
-DiContainer.bind<DisclosureRepo>(DisclosureRepo).toSelf().inRequestScope();
+DiContainer.bind<JwtService>(JwtService).toSelf().inSingletonScope();
+DiContainer.bind<EmployeeRepo>(EmployeeRepo).toSelf().inSingletonScope();
+DiContainer.bind<EmployeeService>(EmployeeService).toSelf().inSingletonScope();
+DiContainer.bind<PatientRepo>(PatientRepo).toSelf().inSingletonScope();
+DiContainer.bind<PatientService>(PatientService).toSelf().inSingletonScope();
+DiContainer.bind<DisclosureRepo>(DisclosureRepo).toSelf().inSingletonScope();
 DiContainer.bind<DisclosureService>(DisclosureService)
   .toSelf()
-  .inRequestScope();
+  .inSingletonScope();
 
-DiContainer.bind<AreaRepo>(AreaRepo).toSelf().inRequestScope();
-DiContainer.bind<AreaService>(AreaService).toSelf().inRequestScope();
-DiContainer.bind<CityRepo>(CityRepo).toSelf().inRequestScope();
-DiContainer.bind<CityService>(CityService).toSelf().inRequestScope();
+DiContainer.bind<AreaRepo>(AreaRepo).toSelf().inSingletonScope();
+DiContainer.bind<AreaService>(AreaService).toSelf().inSingletonScope();
+DiContainer.bind<CityRepo>(CityRepo).toSelf().inSingletonScope();
+DiContainer.bind<CityService>(CityService).toSelf().inSingletonScope();
 DiContainer.bind<PriorityDegreeRepo>(PriorityDegreeRepo)
   .toSelf()
-  .inRequestScope();
+  .inSingletonScope();
 DiContainer.bind<PriorityDegreeService>(PriorityDegreeService)
   .toSelf()
-  .inRequestScope();
-DiContainer.bind<RatingRepo>(RatingRepo).toSelf().inRequestScope();
-DiContainer.bind<RatingService>(RatingService).toSelf().inRequestScope();
-DiContainer.bind<SatisticsService>(SatisticsService).toSelf().inRequestScope();
-DiContainer.bind<FamilyMemberRepo>(FamilyMemberRepo).toSelf().inRequestScope();
+  .inSingletonScope();
+DiContainer.bind<RatingRepo>(RatingRepo).toSelf().inSingletonScope();
+DiContainer.bind<RatingService>(RatingService).toSelf().inSingletonScope();
+DiContainer.bind<SatisticsService>(SatisticsService).toSelf().inSingletonScope();
+DiContainer.bind<FamilyMemberRepo>(FamilyMemberRepo).toSelf().inSingletonScope();
 DiContainer.bind<FamilyMemberService>(FamilyMemberService)
   .toSelf()
-  .inRequestScope();
-DiContainer.bind<MedicineRepo>(MedicineRepo).toSelf().inRequestScope();
-DiContainer.bind<MedicineService>(MedicineService).toSelf().inRequestScope();
+  .inSingletonScope();
+DiContainer.bind<MedicineRepo>(MedicineRepo).toSelf().inSingletonScope();
+DiContainer.bind<MedicineService>(MedicineService).toSelf().inSingletonScope();
 
 DiContainer.bind<SystemBroadcastRepo>(SystemBroadcastRepo)
   .toSelf()
-  .inRequestScope();
+  .inSingletonScope();
 DiContainer.bind<SystemBroadcastService>(SystemBroadcastService)
   .toSelf()
-  .inRequestScope();
+  .inSingletonScope();
 
-DiContainer.bind<MeetingRepo>(MeetingRepo).toSelf().inRequestScope();
-DiContainer.bind<MeetingService>(MeetingService).toSelf().inRequestScope();
-DiContainer.bind<AuditLogRepo>(AuditLogRepo).toSelf().inRequestScope();
+DiContainer.bind<MeetingRepo>(MeetingRepo).toSelf().inSingletonScope();
+DiContainer.bind<MeetingService>(MeetingService).toSelf().inSingletonScope();
+DiContainer.bind<AuditLogRepo>(AuditLogRepo).toSelf().inSingletonScope();
 DiContainer.bind<DisclosureConsultationRepo>(DisclosureConsultationRepo)
   .toSelf()
-  .inRequestScope();
-DiContainer.bind<NotificationRepo>(NotificationRepo).toSelf().inRequestScope();
+  .inSingletonScope();
+DiContainer.bind<NotificationRepo>(NotificationRepo).toSelf().inSingletonScope();
 DiContainer.bind<NotificationService>(NotificationService)
   .toSelf()
-  .inRequestScope();
-DiContainer.bind<AutocompleteRepo>(AutocompleteRepo).toSelf().inRequestScope();
-DiContainer.bind<PaymentRepo>(PaymentRepo).toSelf().inRequestScope();
-DiContainer.bind<PaymentService>(PaymentService).toSelf().inRequestScope();
+  .inSingletonScope();
+DiContainer.bind<AutocompleteRepo>(AutocompleteRepo).toSelf().inSingletonScope();
+DiContainer.bind<PaymentRepo>(PaymentRepo).toSelf().inSingletonScope();
+DiContainer.bind<PaymentService>(PaymentService).toSelf().inSingletonScope();
 
 export default DiContainer;
