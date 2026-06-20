@@ -3,7 +3,6 @@ import { TDbContext } from "../db/drizzle";
 import {
   and,
   countDistinct,
-  desc,
   eq,
   gt,
   gte,
@@ -36,6 +35,7 @@ import {
 
 const columns = {
   disclosureId: disclosures.id,
+  disclosureCreatedAt: disclosures.createdAt,
   scout: {
     id: employees.id,
     name: employees.name,
@@ -175,11 +175,16 @@ export class PaymentRepo {
       .where(where)
       .limit(pageSize)
       .offset(pageSize * pageNumber)
-      .orderBy(disclosures.id, desc(auditLogs.createdAt))
       .execute();
 
+    const sorted = items.sort(
+      (a, b) =>
+        new Date(b.rating?.completedAt as any).getTime() -
+        new Date(a.rating?.completedAt as any).getTime(),
+    );
+
     return {
-      items,
+      items: sorted,
       totalCount,
       pageSize,
       pageNumber,
@@ -230,10 +235,16 @@ export class PaymentRepo {
       .leftJoin(ratings, eq(disclosures.ratingId, ratings.id))
       .where(where)
       .limit(pageSize)
-      .offset(pageSize * pageNumber)
-      .orderBy(disclosures.id, desc(payments.createdAt));
+      .offset(pageSize * pageNumber);
+
+    const sorted = items.sort(
+      (a, b) =>
+        new Date(b.paidAt as any).getTime() -
+        new Date(a.paidAt as any).getTime(),
+    );
+
     return {
-      items,
+      items: sorted,
       totalCount,
       pageSize,
       pageNumber,

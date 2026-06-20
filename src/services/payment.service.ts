@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { inject, injectable } from "inversify";
 import { PaymentRepo } from "../repos/payment.repo";
 import {
-  TGetEligibleDisclosuresDto,
+  TFilterPaymentsDto,
   TMarkDisclosuresAsPaidDto,
 } from "../types/payment.type";
 
@@ -10,11 +10,11 @@ import {
 export class PaymentService {
   constructor(@inject(PaymentRepo) private paymentRepo: PaymentRepo) {}
 
-  async getPaymentsHistory(dto: TGetEligibleDisclosuresDto) {
+  async getPaymentsHistory(dto: TFilterPaymentsDto) {
     return this.paymentRepo.getPaymentsHistory(dto);
   }
 
-  async getEligibleDisclosures(dto: TGetEligibleDisclosuresDto) {
+  async getEligibleDisclosures(dto: TFilterPaymentsDto) {
     return this.paymentRepo.getEligibleDisclosures(dto);
   }
 
