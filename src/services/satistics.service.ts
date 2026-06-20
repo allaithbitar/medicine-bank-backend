@@ -409,7 +409,7 @@ export class SatisticsService {
               isNotNull(disclosures.customRating),
             ),
           ),
-          gt(disclosures.createdAt, PAYMENTS_START_DATE),
+          gt(auditLogs.createdAt, PAYMENTS_START_DATE),
           gte(disclosures.createdAt, fromDate),
           lte(disclosures.createdAt, toDate),
           sql`${payments.disclosureId} IS NULL`,

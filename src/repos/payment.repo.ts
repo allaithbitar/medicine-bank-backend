@@ -107,7 +107,7 @@ export class PaymentRepo {
       ),
     );
 
-    const paymentStartFilter = gt(disclosures.createdAt, PAYMENTS_START_DATE);
+    const paymentStartFilter = gt(auditLogs.createdAt, PAYMENTS_START_DATE);
 
     const hasNoPaymentFilter = sql`${payments.disclosureId} IS NULL`;
 
